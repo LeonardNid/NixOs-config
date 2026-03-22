@@ -2,7 +2,7 @@
 # your system.  Help is available in the configuration.nix(5) man page
 # and in the NixOS manual (accessible by running ‘nixos-help’).
 
-{ config, pkgs, ... }:
+{ config, pkgs, self, ... }:
 
 {
   imports =
@@ -15,7 +15,7 @@
   boot.loader.efi.canTouchEfiVariables = true;
 
   # IOMMU und GPU Passthrough
-  boot.kernelParams = [ "intel_iommu=on" "iommu=pt" "vfio-pci.ids=10de:2206,10de:1aef" ];
+  boot.kernelParams = [ "intel_iommu=on" "iommu=pt" "vfio-pci.ids=10de:2206,10de:1aef" "random.trust_cpu=on" ];
   boot.kernelModules = [ "vfio_pci" "vfio" ];
 
   # Virtualisierung
@@ -166,5 +166,9 @@
   # Before changing this value read the documentation for this option
   # (e.g. man configuration.nix or on https://nixos.org/nixos/options.html).
   system.stateVersion = "25.11"; # Did you read the comment?
+
+  # Build-Name im Boot-Menü (zeigt den Git-Commit-Hash)
+  system.configurationRevision = self.rev or "dirty";
+  system.nixos.label = "git-${self.shortRev or "dirty"}";
 
 }
