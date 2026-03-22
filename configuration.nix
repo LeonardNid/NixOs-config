@@ -16,7 +16,7 @@
 
   # IOMMU und GPU Passthrough
   boot.kernelParams = [ "intel_iommu=on" "iommu=pt" "vfio-pci.ids=10de:2206,10de:1aef" ];
-  boot.initrd.kernelModules = [ "vfio_pci" "vfio" "vfio_iommu_type1" ];
+  boot.kernelModules = [ "vfio_pci" "vfio" ];
 
   # Virtualisierung
   virtualisation.libvirtd = {
