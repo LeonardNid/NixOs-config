@@ -14,8 +14,24 @@
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
 
-  # IOMMU für GPU Passthrough
-  boot.kernelParams = [ "intel_iommu=on" "iommu=pt" ];
+  # IOMMU und GPU Passthrough
+  boot.kernelParams = [ "intel_iommu=on" "iommu=pt" "vfio-pci.ids=10de:2206,10de:1aef" ];
+  boot.initrd.kernelModules = [ "vfio_pci" "vfio" "vfio_iommu_type1" ];
+
+  # Virtualisierung
+  virtualisation.libvirtd = {
+    enable = true;
+    qemu = {
+      package = pkgs.qemu_kvm;
+      runAsRoot = true;
+      swtpm.enable = true;
+      ovmf.enable = true;
+    };
+  };
+  virtualisation.spiceUSBRedirection.enable = true;
+
+  programs.virt-manager.enable = true;
+  users.users.leonardn.extraGroups = [ "libvirtd" "kvm" ];
 
 
   nix.settings.experimental-features = [ "nix-command" "flakes" ];
