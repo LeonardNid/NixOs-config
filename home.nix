@@ -7,7 +7,15 @@
 
   # User-spezifische Packages (Tools die nur du brauchst)
   home.packages = with pkgs; [
-    # Hier kannst du z.B. htop, ripgrep, etc. hinzufügen
+    (writeShellScriptBin "rebuild" ''
+      cd /etc/nixos
+      git add .
+      if ! git diff --cached --quiet; then
+        git commit -m "''${1:-nixos: $(date '+%Y-%m-%d %H:%M')}"
+      fi
+      sudo nixos-rebuild switch --flake /etc/nixos#leonardn
+      git push
+    '')
   ];
 
   # Git Konfiguration
@@ -26,7 +34,6 @@
     shellAliases = {
       ll = "ls -la";
       la = "ls -A";
-      rebuild = "sudo nixos-rebuild switch --flake /etc/nixos#leonardn";
     };
   };
 
