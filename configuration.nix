@@ -31,7 +31,6 @@
   virtualisation.spiceUSBRedirection.enable = true;
 
   programs.virt-manager.enable = true;
-  users.users.leonardn.extraGroups = [ "libvirtd" "kvm" ];
 
 
   nix.settings.experimental-features = [ "nix-command" "flakes" ];
@@ -115,7 +114,7 @@
   users.users.leonardn = {
     isNormalUser = true;
     description = "Leonard Niedens";
-    extraGroups = [ "networkmanager" "wheel" ];
+    extraGroups = [ "networkmanager" "wheel" "libvirtd" "kvm" ];
     packages = with pkgs; [
       kdePackages.kate
     #  thunderbird
