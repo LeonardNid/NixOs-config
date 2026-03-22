@@ -6,7 +6,15 @@
   home.stateVersion = "25.11";
 
   # User-spezifische Packages (Tools die nur du brauchst)
+  programs.neovim = {
+    enable = true;
+    extraConfig = ''
+      set clipboard=unnamedplus
+    '';
+  };
+
   home.packages = with pkgs; [
+    wl-clipboard
     (writeShellScriptBin "rebuild" ''
       cd /etc/nixos
       git add .
@@ -35,6 +43,11 @@
       ll = "ls -la";
       la = "ls -A";
     };
+  };
+
+  # Starship Prompt
+  programs.starship = {
+    enable = true;
   };
 
   # Home Manager selbst verwalten lassen

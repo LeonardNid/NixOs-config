@@ -14,6 +14,9 @@
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
 
+  # IOMMU für GPU Passthrough
+  boot.kernelParams = [ "intel_iommu=on" "iommu=pt" ];
+
 
   nix.settings.experimental-features = [ "nix-command" "flakes" ];
   nix.settings = {
