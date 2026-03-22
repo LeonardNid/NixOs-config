@@ -23,7 +23,10 @@
   boot.blacklistedKernelModules = [ "nouveau" "nvidiafb" ];
 
   # Virtualisierung
-  virtualisation.libvirtd.enable = true;
+  virtualisation.libvirtd = {
+    enable = true;
+    qemu.swtpm.enable = true;
+  };
 
   # Looking Glass (KVMFR Kernel Modul für shared memory)
   boot.extraModulePackages = [ config.boot.kernelPackages.kvmfr ];
