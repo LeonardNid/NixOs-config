@@ -14,12 +14,26 @@
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
 
+  # Intel iGPU Treiber
+  hardware.graphics.enable = true;
+  services.xserver.videoDrivers = [ "modesetting" ];
+
   # IOMMU und GPU Passthrough
   boot.kernelParams = [ "intel_iommu=on" "iommu=pt" "vfio-pci.ids=10de:2206,10de:1aef" "random.trust_cpu=on" ];
   boot.blacklistedKernelModules = [ "nouveau" "nvidiafb" ];
 
   # Virtualisierung
   virtualisation.libvirtd.enable = true;
+
+  # Looking Glass (KVMFR Kernel Modul für shared memory)
+  boot.extraModulePackages = [ config.boot.kernelPackages.kvmfr ];
+  boot.kernelModules = [ "kvmfr" ];
+  boot.extraModprobeConfig = ''
+    options kvmfr static_size_mb=128
+  '';
+  services.udev.extraRules = ''
+    SUBSYSTEM=="kvmfr", OWNER="leonardn", GROUP="kvm", MODE="0660"
+  '';
 
   programs.virt-manager.enable = true;
 
