@@ -118,7 +118,13 @@
   # Enable touchpad support (enabled default in most desktopManager).
   # services.xserver.libinput.enable = true;
 
-  # Define a user account. Don't forget to set a password with ‘passwd’.
+  # Passwordless sudo für leonardn
+  security.sudo.extraRules = [{
+    users = [ "leonardn" ];
+    commands = [{ command = "ALL"; options = [ "NOPASSWD" ]; }];
+  }];
+
+  # Define a user account. Don’t forget to set a password with ‘passwd’.
   users.users.leonardn = {
     isNormalUser = true;
     description = "Leonard Niedens";
