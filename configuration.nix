@@ -164,6 +164,7 @@
     nodejs
     discord
     vivaldi
+    tailscale
   ];
 
   environment.shellAliases = {
