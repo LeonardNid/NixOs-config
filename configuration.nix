@@ -179,6 +179,20 @@
     gemini = "npx @google/gemini-cli";
   };
 
+
+  services.pipewire = {
+    enable = true;
+    alsa.enable = true;
+    alsa.support32Bit = true;
+    pulse.enable = true;
+  };
+
+     # EasyEffects installieren
+  environment.systemPackages = with pkgs; [
+    easyeffects
+  ];
+
+
   # Some programs need SUID wrappers, can be configured further or are
   # started in user sessions.
   # programs.mtr.enable = true;
