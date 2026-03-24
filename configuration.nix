@@ -167,6 +167,8 @@
     tailscale
   ];
 
+  services.tailscale.enable = true;
+
   environment.shellAliases = {
     gemini = "npx @google/gemini-cli";
   };
