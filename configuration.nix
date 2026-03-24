@@ -163,6 +163,7 @@
     wget
     nodejs
     discord
+    vivaldi
   ];
 
   environment.shellAliases = {
