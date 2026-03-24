@@ -169,6 +169,12 @@
 
   services.tailscale.enable = true;
 
+   environment.sessionVariables = {
+     DEFAULT_BROWSER = "vivaldi-stable";
+     BROWSER = "vivaldi-stable";
+   };
+
+
   environment.shellAliases = {
     gemini = "npx @google/gemini-cli";
   };
