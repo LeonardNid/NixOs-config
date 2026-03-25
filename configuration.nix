@@ -181,7 +181,6 @@
     tailscale
     easyeffects
     obsidian
-    nextcloud
   ];
 
   services.tailscale.enable = true;
