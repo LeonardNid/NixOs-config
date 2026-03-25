@@ -226,7 +226,7 @@
   # --- NEXTCLOUD KONFIGURATION ---
   services.nextcloud = {
     enable = true;
-    package = pkgs.nextcloud30;
+    package = pkgs.nextcloud31;
     hostName = "leoserver.tail6bb5cd.ts.net";
     https = true;
     database.createLocally = true;
