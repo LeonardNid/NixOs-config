@@ -31,10 +31,18 @@
         "/dev/null", "/dev/full", "/dev/zero",
         "/dev/random", "/dev/urandom",
         "/dev/ptmx", "/dev/userfaultfd",
-        "/dev/input/by-id/usb-ZSA_Technology_Labs_Voyager_3VJVr_VqPOGY-event-kbd",
-        "/dev/input/by-id/usb-Corsair_CORSAIR_SLIPSTREAM_WIRELESS_USB_Receiver_752687B4A4DC9C99-event-mouse",
         "/dev/input/event0",
-        "/dev/input/event6"
+        "/dev/input/event1",
+        "/dev/input/event2",
+        "/dev/input/event3",
+        "/dev/input/event4",
+        "/dev/input/event5",
+        "/dev/input/event6",
+        "/dev/input/event7",
+        "/dev/input/event8",
+        "/dev/input/event9",
+        "/dev/input/event10",
+        "/dev/input/event259"
       ]
     '';
   };
@@ -49,9 +57,15 @@
     SUBSYSTEM=="kvmfr", OWNER="leonardn", GROUP="kvm", MODE="0660"
     SUBSYSTEM=="input", ATTRS{idVendor}=="3297", ATTRS{idProduct}=="1977", GROUP="kvm", MODE="0660"
     SUBSYSTEM=="input", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="1bdc", GROUP="kvm", MODE="0660"
+    KERNEL=="event*", ATTRS{idVendor}=="3297", ATTRS{idProduct}=="1977", SYMLINK+="input/voyager-kbd", TAG+="uaccess"
+    KERNEL=="event*", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="1bdc", SYMLINK+="input/corsair-mouse", TAG+="uaccess"
   '';
 
   programs.virt-manager.enable = true;
+
+  # ZSA Keyboard (Voyager) Support
+  hardware.keyboard.zsa.enable = true;
+  users.groups.plugdev = {};
 
 
   nix.settings.experimental-features = [ "nix-command" "flakes" ];
@@ -141,7 +155,7 @@
   users.users.leonardn = {
     isNormalUser = true;
     description = "Leonard Niedens";
-    extraGroups = [ "networkmanager" "wheel" "libvirtd" "kvm" ];
+    extraGroups = [ "networkmanager" "wheel" "libvirtd" "kvm" "plugdev" ];
     packages = with pkgs; [
       kdePackages.kate
     #  thunderbird
@@ -166,6 +180,8 @@
     vivaldi
     tailscale
     easyeffects
+    obsidian
+    nextcloud
   ];
 
   services.tailscale.enable = true;

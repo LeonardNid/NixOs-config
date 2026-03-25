@@ -16,6 +16,7 @@
   home.packages = with pkgs; [
     wl-clipboard
     looking-glass-client
+    keymapp
     (writeShellScriptBin "rebuild" ''
       cd /etc/nixos
       git add .
