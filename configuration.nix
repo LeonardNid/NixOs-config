@@ -223,6 +223,36 @@
   # this value at the release version of the first install of this system.
   # Before changing this value read the documentation for this option
   # (e.g. man configuration.nix or on https://nixos.org/nixos/options.html).
+  # --- NEXTCLOUD KONFIGURATION ---
+  services.nextcloud = {
+    enable = true;
+    package = pkgs.nextcloud30;
+    hostName = "leoserver.tail6bb5cd.ts.net";
+    https = true;
+    database.createLocally = true;
+    config.dbtype = "pgsql";
+    config = {
+      adminuser = "admin";
+      adminpassFile = "/var/lib/nextcloud/adminpass";
+    };
+    configureRedis = true;
+    settings = {
+      trusted_domains = [ "leoserver.tail6bb5cd.ts.net" ];
+      overwriteprotocol = "https";
+    };
+  };
+
+  services.nginx = {
+    enable = true;
+    virtualHosts."leoserver.tail6bb5cd.ts.net" = {
+      listen = [ { addr = "0.0.0.0"; port = 8080; ssl = true; } ];
+      sslCertificate = "/var/lib/tailscale/certs/leoserver.tail6bb5cd.ts.net.crt";
+      sslCertificateKey = "/var/lib/tailscale/certs/leoserver.tail6bb5cd.ts.net.key";
+    };
+  };
+
+  networking.firewall.allowedTCPPorts = [ 8080 ];
+  # -------------------------------
   system.stateVersion = "25.11"; # Did you read the comment?
 
   # Build-Name im Boot-Menü (zeigt den Git-Commit-Hash)
