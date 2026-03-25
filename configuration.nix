@@ -182,6 +182,7 @@
     easyeffects
     obsidian
     nextcloud-client
+    zapzap
   ];
 
   services.tailscale.enable = true;
