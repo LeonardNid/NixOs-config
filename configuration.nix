@@ -26,23 +26,15 @@
   virtualisation.libvirtd = {
     enable = true;
     qemu.swtpm.enable = true;
-    qemu.verbatimConfig = ''
+    qemu.verbatimConfig = let
+      eventDevices = builtins.genList (i: ''"/dev/input/event${toString i}"'') 261;
+    in ''
       cgroup_device_acl = [
         "/dev/null", "/dev/full", "/dev/zero",
         "/dev/random", "/dev/urandom",
         "/dev/ptmx", "/dev/userfaultfd",
-        "/dev/input/event0",
-        "/dev/input/event1",
-        "/dev/input/event2",
-        "/dev/input/event3",
-        "/dev/input/event4",
-        "/dev/input/event5",
-        "/dev/input/event6",
-        "/dev/input/event7",
-        "/dev/input/event8",
-        "/dev/input/event9",
-        "/dev/input/event10",
-        "/dev/input/event259"
+        "/dev/kvmfr0",
+        ${builtins.concatStringsSep ",\n        " eventDevices}
       ]
     '';
   };
@@ -54,14 +46,19 @@
     options kvmfr static_size_mb=128
   '';
   services.udev.extraRules = ''
-    SUBSYSTEM=="kvmfr", OWNER="leonardn", GROUP="kvm", MODE="0660"
+    SUBSYSTEM=="kvmfr", GROUP="kvm", MODE="0660"
     SUBSYSTEM=="input", ATTRS{idVendor}=="3297", ATTRS{idProduct}=="1977", GROUP="kvm", MODE="0660"
     SUBSYSTEM=="input", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="1bdc", GROUP="kvm", MODE="0660"
+    SUBSYSTEM=="input", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="1bb2", GROUP="kvm", MODE="0660"
     KERNEL=="event*", ATTRS{idVendor}=="3297", ATTRS{idProduct}=="1977", SYMLINK+="input/voyager-kbd", TAG+="uaccess"
-    KERNEL=="event*", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="1bdc", SYMLINK+="input/corsair-mouse", TAG+="uaccess"
+    KERNEL=="event*", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="1bdc", ENV{ID_INPUT_MOUSE}=="1", SYMLINK+="input/vm-mouse", OPTIONS+="link_priority=50", TAG+="uaccess"
+    KERNEL=="event*", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="1bb2", ENV{ID_INPUT_MOUSE}=="1", SYMLINK+="input/vm-mouse", OPTIONS+="link_priority=100", TAG+="uaccess"
   '';
 
   programs.virt-manager.enable = true;
+
+  # Corsair Maus/Tastatur Support (Open-Source iCUE Alternative)
+  hardware.ckb-next.enable = true;
 
   # ZSA Keyboard (Voyager) Support
   hardware.keyboard.zsa.enable = true;
@@ -212,11 +209,8 @@
   # Enable the OpenSSH daemon.
   # services.openssh.enable = true;
 
-  # Open ports in the firewall.
-  # networking.firewall.allowedTCPPorts = [ ... ];
-  # networking.firewall.allowedUDPPorts = [ ... ];
-  # Or disable the firewall altogether.
-  # networking.firewall.enable = false;
+  # Firewall: Scream Audio (UDP 4010) von VM erlauben
+  networking.firewall.allowedUDPPorts = [ 4010 ];
 
   # This value determines the NixOS release from which the default
   # settings for stateful data, like file locations and database versions
