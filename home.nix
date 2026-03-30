@@ -22,8 +22,9 @@
     (writeShellScriptBin "rebuild" ''
       MESSAGE="''${1:-update}"
       DATE=$(date '+%Y-%m-%d %H:%M')
-      # Label für Boot-Menü: Nachricht + Datum (nur erlaubte Zeichen)
-      LABEL=$(echo "$MESSAGE-$DATE" | tr ' ' '-' | sed 's/[^a-zA-Z0-9:_.-]/-/g')
+      TIME=$(date '+%H:%M')
+      # Label für Boot-Menü: Nachricht--Uhrzeit (nur erlaubte Zeichen)
+      LABEL=$(echo "$MESSAGE--$TIME" | tr ' ' '-' | sed 's/[^a-zA-Z0-9:_.-]/-/g')
       echo "$LABEL" > /etc/nixos/label.txt
       cd /etc/nixos
       git add .

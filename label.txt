@@ -1,1 +1,1 @@
-initial-setup
+boot-label-format--08:20
