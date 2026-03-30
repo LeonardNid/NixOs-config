@@ -1,5 +1,5 @@
 {
-  description = "Mein erstes NixOS Flake Setup";
+  description = "NixOS Konfiguration - leonardn";
 
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
@@ -11,26 +11,23 @@
   };
 
   outputs = { self, nixpkgs, claude-code-nix, home-manager, ... }: {
-    nixosConfigurations = {
-      leonardn = nixpkgs.lib.nixosSystem {
-        system = "x86_64-linux";
-        specialArgs = { inherit self; };
-        modules = [
-          ./hardware-configuration.nix
-          ./configuration.nix
-          home-manager.nixosModules.home-manager
-          {
-            home-manager.useGlobalPkgs = true;
-            home-manager.useUserPackages = true;
-            home-manager.users.leonardn = import ./home.nix;
-          }
-          {
-            environment.systemPackages = [
-              claude-code-nix.packages.x86_64-linux.default
-            ];
-          }
-        ];
-      };
+    nixosConfigurations.leonardn = nixpkgs.lib.nixosSystem {
+      system = "x86_64-linux";
+      specialArgs = { inherit self; };
+      modules = [
+        ./hosts/leonardn
+        home-manager.nixosModules.home-manager
+        {
+          home-manager.useGlobalPkgs = true;
+          home-manager.useUserPackages = true;
+          home-manager.users.leonardn = import ./home;
+        }
+        {
+          environment.systemPackages = [
+            claude-code-nix.packages.x86_64-linux.default
+          ];
+        }
+      ];
     };
   };
 }
