@@ -14,5 +14,6 @@
     obsidian
     nextcloud-client
     zapzap
+    vscode
   ];
 }
