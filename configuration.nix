@@ -129,6 +129,9 @@
   services.displayManager.autoLogin.enable = true;
   services.displayManager.autoLogin.user = "leonardn";
 
+  # KWallet automatisch entsperren bei Login (PAM-Integration)
+  security.pam.services.sddm.kwallet.enable = true;
+
   # Configure keymap in X11
   services.xserver.xkb = {
     layout = "de";
