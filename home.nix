@@ -18,6 +18,7 @@
     looking-glass-client
     keymapp
     scream
+    libnotify
     (writeShellScriptBin "rebuild" ''
       cd /etc/nixos
       git add .
@@ -46,17 +47,38 @@
           echo "VM starten..."
           sudo virsh start "$VM_NAME"
 
-          # Kurz warten bis KVMFR bereit ist
+          # Warten bis KVMFR bereit ist
           sleep 2
 
-          # Looking Glass starten
+          # Idle/Sleep blockieren solange VM läuft
+          systemd-inhibit --what=idle:sleep --who="Windows VM" --why="Gaming auf VM" sleep infinity &
+          echo $! > /tmp/vm-inhibit.pid
+
+          # Looking Glass starten (Vollbild, kein Auto-Input-Grab, Log in Datei)
           echo "Looking Glass starten..."
-          looking-glass-client -f /dev/kvmfr0 win:size=2560x1440 win:dontUpscale=on spice:enable=no &
+          looking-glass-client -F -f /dev/kvmfr0 \
+            win:size=2560x1440 win:dontUpscale=on \
+            input:captureOnFocus=no input:grabKeyboardOnFocus=no \
+            win:requestActivation=no \
+            spice:enable=no \
+            > /tmp/looking-glass.log 2>&1 &
           LG_PID=$!
+
+          # Background-Watcher: räumt automatisch auf wenn VM stoppt
+          (while sudo virsh domstate "$VM_NAME" 2>/dev/null | grep -q "running"; do
+            sleep 5
+          done
+          pkill -f looking-glass-client 2>/dev/null
+          kill "$(cat /tmp/vm-inhibit.pid 2>/dev/null)" 2>/dev/null
+          rm -f /tmp/vm-inhibit.pid
+          notify-send "Windows VM" "VM gestoppt, aufgeräumt.") &
+
           echo "Looking Glass läuft (PID: $LG_PID)"
+          echo "Log: /tmp/looking-glass.log"
           echo ""
           echo "=== VM läuft! ScrollLock = Input umschalten ==="
-          echo "Zum Beenden: vm stop"
+          echo "VM stoppt automatisch wenn Windows herunterfährt."
+          echo "Oder manuell: vm stop"
           ;;
 
         stop)
@@ -65,23 +87,31 @@
           # Looking Glass beenden
           pkill -f looking-glass-client 2>/dev/null && echo "Looking Glass beendet"
 
-          # VM herunterfahren (ACPI shutdown)
-          echo "VM herunterfahren..."
-          sudo virsh shutdown "$VM_NAME"
+          # Idle-Inhibitor freigeben
+          kill "$(cat /tmp/vm-inhibit.pid 2>/dev/null)" 2>/dev/null
+          rm -f /tmp/vm-inhibit.pid
 
-          # Warten bis VM aus ist (max 60 Sekunden)
-          for i in $(seq 1 60); do
-            if ! sudo virsh domstate "$VM_NAME" 2>/dev/null | grep -q "running"; then
-              echo "VM ist aus."
-              break
-            fi
-            sleep 1
-          done
-
-          # Falls VM noch läuft, force stop
+          # Falls VM noch läuft, herunterfahren
           if sudo virsh domstate "$VM_NAME" 2>/dev/null | grep -q "running"; then
-            echo "VM reagiert nicht, erzwinge Shutdown..."
-            sudo virsh destroy "$VM_NAME"
+            echo "VM herunterfahren..."
+            sudo virsh shutdown "$VM_NAME"
+
+            # Warten bis VM aus ist (max 60 Sekunden)
+            for i in $(seq 1 60); do
+              if ! sudo virsh domstate "$VM_NAME" 2>/dev/null | grep -q "running"; then
+                echo "VM ist aus."
+                break
+              fi
+              sleep 1
+            done
+
+            # Falls VM noch läuft, force stop
+            if sudo virsh domstate "$VM_NAME" 2>/dev/null | grep -q "running"; then
+              echo "VM reagiert nicht, erzwinge Shutdown..."
+              sudo virsh destroy "$VM_NAME"
+            fi
+          else
+            echo "VM ist bereits aus."
           fi
 
           echo "Festplatten sind wieder verfügbar (KDE mountet automatisch)"

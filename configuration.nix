@@ -1,6 +1,6 @@
 # Edit this configuration file to define what should be installed on
 # your system.  Help is available in the configuration.nix(5) man page
-# and in the NixOS manual (accessible by running ‘nixos-help’).
+# and in the NixOS manual (accessible by running 'nixos-help').
 
 { config, pkgs, self, ... }:
 
@@ -18,7 +18,7 @@
   hardware.graphics.enable = true;
   services.xserver.videoDrivers = [ "modesetting" ];
 
-  # IOMMU und GPU Passthrough
+  # IOMMU und GPU Passthrough (statisch an vfio-pci gebunden)
   boot.kernelParams = [ "intel_iommu=on,sm_on" "iommu=pt" "vfio-pci.ids=10de:2206,10de:1aef" "random.trust_cpu=on" ];
   boot.blacklistedKernelModules = [ "nouveau" "nvidiafb" ];
 
@@ -26,8 +26,9 @@
   virtualisation.libvirtd = {
     enable = true;
     qemu.swtpm.enable = true;
+    onBoot = "ignore";  # VM nicht automatisch starten
     qemu.verbatimConfig = let
-      eventDevices = builtins.genList (i: ''"/dev/input/event${toString i}"'') 261;
+      eventDevices = builtins.genList (i: ''"/dev/input/event${toString i}"'') 300;
     in ''
       cgroup_device_acl = [
         "/dev/null", "/dev/full", "/dev/zero",
@@ -53,12 +54,27 @@
     KERNEL=="event*", ATTRS{idVendor}=="3297", ATTRS{idProduct}=="1977", SYMLINK+="input/voyager-kbd", TAG+="uaccess"
     KERNEL=="event*", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="1bdc", ENV{ID_INPUT_MOUSE}=="1", SYMLINK+="input/vm-mouse", OPTIONS+="link_priority=50", TAG+="uaccess"
     KERNEL=="event*", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="1bb2", ENV{ID_INPUT_MOUSE}=="1", SYMLINK+="input/vm-mouse", OPTIONS+="link_priority=100", TAG+="uaccess"
+    KERNEL=="event*", ATTRS{name}=="CorsairFixed", SYMLINK+="input/corsair-fixed", GROUP="kvm", MODE="0666", TAG+="uaccess"
   '';
 
   programs.virt-manager.enable = true;
 
-  # Corsair Maus/Tastatur Support (Open-Source iCUE Alternative)
-  hardware.ckb-next.enable = true;
+  # Corsair Darkstar Scroll-Fix:
+  # Grabbed die Maus, blockiert Hi-Res Scroll Events, teilt Scroll-Werte durch 10,
+  # und entprellt kurze Richtungsumkehrungen (Encoder-Bounce).
+  systemd.services.corsair-scroll-fix = let
+    python = pkgs.python3.withPackages (ps: [ ps.evdev ]);
+  in {
+    description = "Corsair Darkstar Scroll Wheel Fix";
+    wantedBy = [ "multi-user.target" ];
+    after = [ "systemd-udev-settle.service" ];
+    serviceConfig = {
+      Type = "simple";
+      Restart = "always";
+      RestartSec = 3;
+      ExecStart = "${python}/bin/python3 ${./corsair-scroll-fix.py}";
+    };
+  };
 
   # ZSA Keyboard (Voyager) Support
   hardware.keyboard.zsa.enable = true;
@@ -110,6 +126,8 @@
   # Enable the KDE Plasma Desktop Environment.
   services.displayManager.sddm.enable = true;
   services.desktopManager.plasma6.enable = true;
+  services.displayManager.autoLogin.enable = true;
+  services.displayManager.autoLogin.user = "leonardn";
 
   # Configure keymap in X11
   services.xserver.xkb = {
@@ -148,7 +166,7 @@
     commands = [{ command = "ALL"; options = [ "NOPASSWD" ]; }];
   }];
 
-  # Define a user account. Don’t forget to set a password with ‘passwd’.
+  # Define a user account. Don't forget to set a password with 'passwd'.
   users.users.leonardn = {
     isNormalUser = true;
     description = "Leonard Niedens";
@@ -214,7 +232,7 @@
 
   # This value determines the NixOS release from which the default
   # settings for stateful data, like file locations and database versions
-  # on your system were taken. It‘s perfectly fine and recommended to leave
+  # on your system were taken. It's perfectly fine and recommended to leave
   # this value at the release version of the first install of this system.
   # Before changing this value read the documentation for this option
   # (e.g. man configuration.nix or on https://nixos.org/nixos/options.html).
