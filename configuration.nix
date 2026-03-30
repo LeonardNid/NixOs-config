@@ -238,8 +238,8 @@
   # (e.g. man configuration.nix or on https://nixos.org/nixos/options.html).
   system.stateVersion = "25.11"; # Did you read the comment?
 
-  # Build-Name im Boot-Menü (zeigt den Git-Commit-Hash)
+  # Build-Name im Boot-Menü (Nachricht + Datum aus label.txt)
   system.configurationRevision = self.rev or "dirty";
-  system.nixos.label = "git-${self.shortRev or "dirty"}";
+  system.nixos.label = builtins.replaceStrings ["\n"] [""] (builtins.readFile ./label.txt);
 
 }
