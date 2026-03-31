@@ -6,7 +6,7 @@
     ../../system/boot.nix
     ../../system/hardware.nix
     ../../system/gpu-passthrough.nix
-    ../../system/corsair-scroll-fix.nix
+    ../../system/corsair-mouse-daemon.nix
     ../../system/nix-settings.nix
     ../../system/networking.nix
     ../../system/locale.nix
