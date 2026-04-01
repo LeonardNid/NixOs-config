@@ -16,5 +16,6 @@
     zapzap
     vscode
     mpv
+    vlc
   ];
 }
