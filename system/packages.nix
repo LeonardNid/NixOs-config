@@ -15,5 +15,6 @@
     nextcloud-client
     zapzap
     vscode
+    mpv
   ];
 }
