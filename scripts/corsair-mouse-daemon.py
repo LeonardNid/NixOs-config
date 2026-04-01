@@ -19,7 +19,6 @@ PRODUCT_SLIPSTREAM = 0x1BDC
 HIRES_PER_STEP = 120  # Standard: 120 hi-res units = 1 logical scroll step
 DEBOUNCE_MS = 60  # Ignore direction reversals within this window
 DIR_CONFIRM = 2   # Require N consecutive events in new direction before accepting
-MAX_STEPS = 1     # Max scroll steps per event (smooths out large jumps)
 IDLE_RESET_MS = 2000  # Reset direction state after this idle period
 
 # Button remapping: source key code -> action
@@ -258,17 +257,15 @@ def main():
                                 wheel_acc += event.value
                                 steps = wheel_acc // HIRES_PER_STEP
                                 if steps != 0:
-                                    # Clamp to MAX_STEPS to avoid jumps
-                                    clamped = max(-MAX_STEPS, min(MAX_STEPS, steps))
-                                    wheel_acc = 0  # Discard excess to prevent accumulator growth
+                                    wheel_acc -= steps * HIRES_PER_STEP
                                     if args.debug_scroll:
                                         print(f"[EMIT]    val={event.value:+5d} "
                                               f"dt={dt:.1f}ms acc={wheel_acc:+5d} "
-                                              f"steps={clamped:+d}",
+                                              f"steps={steps:+d}",
                                               file=sys.stderr)
                                     ui.write_event(InputEvent(
                                         event.sec, event.usec,
-                                        ecodes.EV_REL, ecodes.REL_WHEEL, clamped
+                                        ecodes.EV_REL, ecodes.REL_WHEEL, steps
                                     ))
                                     ui.syn()
                                 elif args.debug_scroll:
@@ -300,15 +297,14 @@ def main():
                                 wheel_acc = pending_acc
                                 steps = wheel_acc // HIRES_PER_STEP
                                 if steps != 0:
-                                    clamped = max(-MAX_STEPS, min(MAX_STEPS, steps))
-                                    wheel_acc = 0
+                                    wheel_acc -= steps * HIRES_PER_STEP
                                     if args.debug_scroll:
                                         print(f"[CONFIRM] dir={'UP' if direction > 0 else 'DN'} "
-                                              f"acc={wheel_acc:+5d} steps={clamped:+d}",
+                                              f"acc={wheel_acc:+5d} steps={steps:+d}",
                                               file=sys.stderr)
                                     ui.write_event(InputEvent(
                                         event.sec, event.usec,
-                                        ecodes.EV_REL, ecodes.REL_WHEEL, clamped
+                                        ecodes.EV_REL, ecodes.REL_WHEEL, steps
                                     ))
                                     ui.syn()
                                 pending_dir = 0
