@@ -9,6 +9,9 @@
       ll = "ls -la";
       la = "ls -A";
     };
+    initExtra = ''
+      eval "$(zoxide init zsh)"
+    '';
   };
 
   programs.starship.enable = true;
