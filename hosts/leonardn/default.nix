@@ -5,7 +5,7 @@
     ./hardware-configuration.nix
     ../../system/boot.nix
     ../../system/hardware.nix
-    ../../system/gpu-passthrough.nix
+    ../../vm/gpu-passthrough.nix
     ../../system/corsair-mouse-daemon.nix
     ../../system/nix-settings.nix
     ../../system/networking.nix

@@ -1,0 +1,167 @@
+<domain type="kvm" xmlns:qemu="http://libvirt.org/schemas/domain/qemu/1.0">
+  <name>windows11</name>
+  <uuid>63f4588e-8820-450f-bea1-d278b0fd2b4a</uuid>
+  <memory unit="MiB">16384</memory>
+  <currentMemory unit="MiB">16384</currentMemory>
+  <vcpu placement="static">12</vcpu>
+
+  <os>
+    <type arch="x86_64" machine="pc-q35-9.2">hvm</type>
+    <loader readonly="yes" secure="yes" type="pflash">/run/libvirt/nix-ovmf/edk2-x86_64-secure-code.fd</loader>
+  </os>
+
+  <features>
+    <acpi/>
+    <apic/>
+    <hyperv mode="custom">
+      <relaxed state="on"/>
+      <vapic state="on"/>
+      <spinlocks state="on" retries="8191"/>
+      <vendor_id state="on" value="randomid"/>
+    </hyperv>
+    <kvm>
+      <hidden state="on"/>
+    </kvm>
+    <vmport state="off"/>
+    <ioapic driver="kvm"/>
+  </features>
+
+  <cpu mode="host-passthrough" check="none" migratable="on">
+    <maxphysaddr mode="passthrough" limit="39"/>
+    <topology sockets="1" dies="1" cores="6" threads="2"/>
+  </cpu>
+
+  <clock offset="localtime">
+    <timer name="rtc" tickpolicy="catchup"/>
+    <timer name="pit" tickpolicy="delay"/>
+    <timer name="hpet" present="no"/>
+    <timer name="hypervclock" present="yes"/>
+  </clock>
+
+  <on_poweroff>destroy</on_poweroff>
+  <on_reboot>restart</on_reboot>
+  <on_crash>destroy</on_crash>
+
+  <pm>
+    <suspend-to-mem enabled="no"/>
+    <suspend-to-disk enabled="no"/>
+  </pm>
+
+  <devices>
+    <emulator>/run/libvirt/nix-emulators/qemu-system-x86_64</emulator>
+
+    <!-- VM Disk (VirtIO für beste Performance) -->
+    <disk type="file" device="disk">
+      <driver name="qemu" type="qcow2" discard="unmap"/>
+      <source file="/var/lib/libvirt/images/win11.qcow2"/>
+      <target dev="vda" bus="virtio"/>
+      <boot order="2"/>
+    </disk>
+
+    <!-- Windows 11 ISO -->
+    <disk type="file" device="cdrom">
+      <driver name="qemu" type="raw"/>
+      <source file="/home/leonardn/Downloads/Win11_25H2_German_x64_v2.iso"/>
+      <target dev="sda" bus="sata"/>
+      <readonly/>
+      <boot order="1"/>
+    </disk>
+
+    <!-- 1TB WD HDD (Spiele) -->
+    <disk type="block" device="disk">
+      <driver name="qemu" type="raw" cache="none" io="native"/>
+      <source dev="/dev/sdb"/>
+      <target dev="vdb" bus="virtio"/>
+    </disk>
+
+    <!-- 2TB Kingston NVMe (Spiele) -->
+    <disk type="block" device="disk">
+      <driver name="qemu" type="raw" cache="none" io="native"/>
+      <source dev="/dev/nvme0n1"/>
+      <target dev="vdc" bus="virtio"/>
+    </disk>
+
+    <!-- VirtIO Treiber ISO -->
+    <disk type="file" device="cdrom">
+      <driver name="qemu" type="raw"/>
+      <source file="/home/leonardn/Downloads/virtio-win-0.1.285.iso"/>
+      <target dev="sdb" bus="sata"/>
+      <readonly/>
+    </disk>
+
+    <!-- Netzwerk -->
+    <interface type="network">
+      <source network="default"/>
+      <model type="virtio"/>
+    </interface>
+
+    <!-- USB Controller -->
+    <controller type="usb" model="qemu-xhci" ports="15"/>
+
+    <!-- RTX 3080 GPU -->
+    <hostdev mode="subsystem" type="pci" managed="yes">
+      <source>
+        <address domain="0x0000" bus="0x01" slot="0x00" function="0x0"/>
+      </source>
+      <rom bar="on"/>
+    </hostdev>
+
+    <!-- RTX 3080 Audio -->
+    <hostdev mode="subsystem" type="pci" managed="yes">
+      <source>
+        <address domain="0x0000" bus="0x01" slot="0x00" function="0x1"/>
+      </source>
+    </hostdev>
+
+    <!-- DualSense Wireless Controller (USB Passthrough) -->
+    <hostdev mode="subsystem" type="usb" managed="yes">
+      <source>
+        <vendor id="0x054c"/>
+        <product id="0x0ce6"/>
+      </source>
+    </hostdev>
+
+    <!-- Azeron Keypad (USB Passthrough) -->
+    <hostdev mode="subsystem" type="usb" managed="yes">
+      <source>
+        <vendor id="0x16d0"/>
+        <product id="0x12f7"/>
+      </source>
+    </hostdev>
+
+    <!-- Looking Glass IVSHMEM wird via qemu:commandline konfiguriert (nutzt /dev/kvmfr0) -->
+
+    <!-- Eingabe via virtio (für evdev) -->
+    <input type="keyboard" bus="virtio"/>
+    <input type="mouse" bus="virtio"/>
+
+    <!-- TPM 2.0 wird via qemu:commandline hinzugefügt (libvirt erkennt swtpm nicht) -->
+
+    <!-- SPICE für Input -->
+    <graphics type="spice" autoport="yes"/>
+
+    <!-- VGA Device für SPICE/Looking Glass (laut offizieller LG Doku) -->
+    <video>
+      <model type="vga"/>
+    </video>
+
+    <memballoon model="none"/>
+
+  </devices>
+
+  <!-- PCI-Hole auf 64GB begrenzen damit alle Adressen < 512GB bleiben -->
+  <qemu:commandline>
+    <qemu:arg value="-global"/>
+    <qemu:arg value="q35-pcihost.pci-hole64-size=4G"/>
+    <qemu:arg value="-device"/>
+    <qemu:arg value="{'driver':'ivshmem-plain','id':'shmem0','memdev':'looking-glass'}"/>
+    <qemu:arg value="-object"/>
+    <qemu:arg value="{'qom-type':'memory-backend-file','id':'looking-glass','mem-path':'/dev/kvmfr0','size':134217728,'share':true}"/>
+    <qemu:arg value="-object"/>
+    <qemu:arg value="input-linux,id=mouse,evdev=/dev/input/corsair-fixed"/>
+    <qemu:arg value="-object"/>
+    <qemu:arg value="input-linux,id=kbd0,evdev=/dev/input/by-id/usb-ZSA_Technology_Labs_Voyager_q697z_bvmrrP-event-kbd,grab_all=on,repeat=on,grab-toggle=scrolllock"/>
+    <qemu:arg value="-object"/>
+    <qemu:arg value="input-linux,id=kbd1,evdev=/dev/input/by-id/usb-ZSA_Technology_Labs_Voyager_q697z_bvmrrP-if03-event-kbd,grab_all=on,repeat=on,grab-toggle=scrolllock"/>
+  </qemu:commandline>
+</domain>

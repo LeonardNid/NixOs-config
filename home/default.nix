@@ -5,7 +5,7 @@
     ./neovim.nix
     ./git.nix
     ./shell.nix
-    ./vm.nix
+    ../vm/vm.nix
     ./scripts.nix
     ./packages.nix
   ];
