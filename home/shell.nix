@@ -9,7 +9,7 @@
       ll = "ls -la";
       la = "ls -A";
     };
-    initExtra = ''
+    initContent = ''
       eval "$(zoxide init zsh)"
     '';
   };

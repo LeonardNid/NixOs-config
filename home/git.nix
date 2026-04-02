@@ -3,8 +3,10 @@
 {
   programs.git = {
     enable = true;
-    userName = "Leonard Niedens";
-    userEmail = "niedens03@gmail.com";
-    extraConfig.init.defaultBranch = "main";
+    settings = {
+      user.name = "Leonard Niedens";
+      user.email = "niedens03@gmail.com";
+      init.defaultBranch = "main";
+    };
   };
 }
