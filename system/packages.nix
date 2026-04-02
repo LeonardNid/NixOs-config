@@ -7,7 +7,7 @@
     neovim
     wget
     nodejs
-    discord
+    vesktop
     vivaldi
     tailscale
     easyeffects

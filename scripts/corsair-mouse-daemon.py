@@ -27,6 +27,17 @@ IDLE_RESET_MS = 2000  # Reset direction state after this idle period
 #   [int, ...]       -> keyboard combo, modifiers first (e.g. [ecodes.KEY_LEFTCTRL, ecodes.KEY_C])
 #   [[...], [...]]   -> macro: sequence of combos, each pressed+released in order (on button DOWN only)
 #   None             -> block the button entirely
+"""
+Maus keys:
+vorne oben 1
+vorne unten 2
+hinten oben 3
+hinten unten 4
+vorne dpi 5
+hinten dpi 6
+vorne profil 7
+hinten profil 8
+"""
 BUTTON_MAP = {
     ecodes.KEY_2: ecodes.KEY_LEFTMETA,  # Vorne unten -> Super
     ecodes.KEY_5: [[ecodes.KEY_MUTE], [ecodes.KEY_LEFTMETA, ecodes.KEY_MUTE]],  # DPI vorne -> Mute, dann Super+Mute
