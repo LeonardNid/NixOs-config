@@ -94,12 +94,33 @@
           echo "=== Fertig ==="
           ;;
 
+        pause)
+          echo "=== VM pausieren ==="
+          pkill -f looking-glass-client 2>/dev/null && echo "Looking Glass beendet"
+          sudo virsh suspend "$VM_NAME"
+          echo "=== VM pausiert ==="
+          ;;
+
+        resume)
+          echo "=== VM fortsetzen ==="
+          sudo virsh resume "$VM_NAME"
+          sleep 2
+          looking-glass-client -F -f /dev/kvmfr0 \
+            win:size=2560x1440 win:dontUpscale=on \
+            input:captureOnFocus=no input:grabKeyboardOnFocus=no \
+            win:requestActivation=no \
+            spice:enable=no \
+            > /tmp/looking-glass.log 2>&1 &
+          echo "Looking Glass gestartet (PID: $!)"
+          echo "=== VM läuft wieder ==="
+          ;;
+
         status)
           sudo virsh domstate "$VM_NAME"
           ;;
 
         *)
-          echo "Verwendung: vm {start|stop|status}"
+          echo "Verwendung: vm {start|stop|pause|resume|status}"
           ;;
       esac
     '')
