@@ -23,12 +23,13 @@ IDLE_RESET_MS = 2000  # Reset direction state after this idle period
 
 # Button remapping: source key code -> action
 # Action can be:
-#   int           -> single key remap (e.g. ecodes.KEY_LEFTMETA)
-#   [int, ...]    -> keyboard combo, modifiers first (e.g. [ecodes.KEY_LEFTCTRL, ecodes.KEY_C])
-#   None          -> block the button entirely
+#   int              -> single key remap (e.g. ecodes.KEY_LEFTMETA)
+#   [int, ...]       -> keyboard combo, modifiers first (e.g. [ecodes.KEY_LEFTCTRL, ecodes.KEY_C])
+#   [[...], [...]]   -> macro: sequence of combos, each pressed+released in order (on button DOWN only)
+#   None             -> block the button entirely
 BUTTON_MAP = {
     ecodes.KEY_2: ecodes.KEY_LEFTMETA,  # Vorne unten -> Super
-    ecodes.KEY_5: ecodes.KEY_MUTE,      # DPI vorne -> Mute
+    ecodes.KEY_5: [[ecodes.KEY_MUTE], [ecodes.KEY_LEFTMETA, ecodes.KEY_MUTE]],  # DPI vorne -> Mute, dann Super+Mute
 }
 
 
@@ -87,6 +88,9 @@ def build_combined_caps(mouse, keyboard):
             continue
         if isinstance(action, int):
             existing_keys.add(action)
+        elif isinstance(action, list) and action and isinstance(action[0], list):
+            for combo in action:
+                existing_keys.update(combo)
         elif isinstance(action, list):
             existing_keys.update(action)
 
@@ -147,6 +151,20 @@ def handle_button_remap(event, ui, held_combo_keys):
         ui.write_event(InputEvent(event.sec, event.usec,
                                   ecodes.EV_KEY, action, event.value))
         ui.syn()
+        return True
+
+    # Macro: sequence of combos, fire all on DOWN, ignore UP/REPEAT
+    if isinstance(action, list) and action and isinstance(action[0], list):
+        if event.value == 1:  # DOWN
+            for combo in action:
+                for key in combo:
+                    ui.write_event(InputEvent(event.sec, event.usec,
+                                              ecodes.EV_KEY, key, 1))
+                ui.syn()
+                for key in reversed(combo):
+                    ui.write_event(InputEvent(event.sec, event.usec,
+                                              ecodes.EV_KEY, key, 0))
+                ui.syn()
         return True
 
     # Keyboard combo (modifiers first)
