@@ -17,5 +17,6 @@
     vscode
     mpv
     vlc
+    zoxide
   ];
 }
