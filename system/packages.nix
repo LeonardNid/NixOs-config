@@ -18,5 +18,6 @@
     mpv
     vlc
     zoxide
+    drawing
   ];
 }
