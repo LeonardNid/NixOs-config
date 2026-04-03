@@ -17,9 +17,12 @@ import sys
 VENDOR_CORSAIR = 0x1B1C
 PRODUCT_SLIPSTREAM = 0x1BDC
 HIRES_PER_STEP = 120  # Standard: 120 hi-res units = 1 logical scroll step
-DEBOUNCE_MS = 60  # Ignore direction reversals within this window
-DIR_CONFIRM = 2   # Require N consecutive events in new direction before accepting
-IDLE_RESET_MS = 2000  # Reset direction state after this idle period
+DIR_CONFIRM = 2       # Require N consecutive events in new direction to confirm change
+IDLE_RESET_MS = 200   # Reset direction state after this idle period (ms)
+
+# Scroll acceleration: compensate for encoder missing ticks at high speed
+ACCEL_MAX = 3.0        # Maximum multiplier at top speed
+ACCEL_WINDOW_MS = 100  # dt below this triggers acceleration (above = 1.0x)
 
 # Button remapping: source key code -> action
 # Action can be:
@@ -74,14 +77,6 @@ def build_combined_caps(mouse, keyboard):
     """Build UInput capabilities combining mouse + keyboard + remap keys."""
     caps = mouse.capabilities()
     caps.pop(ecodes.EV_SYN, None)
-
-    # Remove hi-res scroll
-    if ecodes.EV_REL in caps:
-        caps[ecodes.EV_REL] = [
-            c for c in caps[ecodes.EV_REL]
-            if (c[0] if isinstance(c, tuple) else c) not in
-               (ecodes.REL_WHEEL_HI_RES, ecodes.REL_HWHEEL_HI_RES)
-        ]
 
     # Merge keyboard EV_KEY capabilities
     existing_keys = set()
@@ -231,13 +226,9 @@ def main():
         dev.grab()
     print("Grabbed devices, processing events.", file=sys.stderr)
 
-    wheel_acc = 0
-    hwheel_acc = 0
-    last_wheel_dir = 0
-    last_wheel_time = 0.0
-    pending_dir = 0       # Direction we're trying to confirm
-    pending_count = 0     # How many consecutive events in pending_dir
-    pending_acc = 0       # Accumulated value while confirming
+    confirmed_dir = 0     # Last confirmed scroll direction (+1/-1)
+    pending_count = 0     # Consecutive events in unconfirmed new direction
+    last_scroll_time = 0.0
     held_combo_keys = set()
 
     try:
@@ -250,107 +241,85 @@ def main():
                         continue
 
                     if event.type == ecodes.EV_REL:
-                        if event.code == ecodes.REL_WHEEL:
+                        # Block raw legacy scroll (we re-emit from HI_RES)
+                        if event.code in (ecodes.REL_WHEEL, ecodes.REL_HWHEEL):
                             continue
-                        if event.code == ecodes.REL_HWHEEL:
-                            continue
+
                         if event.code == ecodes.REL_WHEEL_HI_RES:
                             now = time.monotonic() * 1000
-                            direction = 1 if event.value > 0 else -1
-                            dt = now - last_wheel_time if last_wheel_time > 0 else 0
-                            last_wheel_time = now
+                            value = event.value
+                            direction = 1 if value > 0 else -1
+                            dt = now - last_scroll_time if last_scroll_time > 0 else IDLE_RESET_MS + 1
+                            last_scroll_time = now
 
-                            # Idle reset: after long pause, accept any direction
+                            # Idle reset: after pause, accept any direction
                             if dt > IDLE_RESET_MS:
-                                if args.debug_scroll:
-                                    print(f"[RESET]   idle {dt:.0f}ms, direction reset",
-                                          file=sys.stderr)
-                                last_wheel_dir = 0
-                                wheel_acc = 0
-                                pending_dir = 0
+                                confirmed_dir = 0
                                 pending_count = 0
-                                pending_acc = 0
 
-                            # Same direction as confirmed: emit normally
-                            if direction == last_wheel_dir or last_wheel_dir == 0:
-                                last_wheel_dir = direction
-                                # Cancel any pending direction change
-                                if pending_dir != 0:
-                                    if args.debug_scroll:
-                                        print(f"[BOUNCE]  pending {pending_count}x "
-                                              f"in {'UP' if pending_dir > 0 else 'DN'} "
-                                              f"dropped, back to original dir",
-                                              file=sys.stderr)
-                                    pending_dir = 0
-                                    pending_count = 0
-                                    pending_acc = 0
-                                wheel_acc += event.value
-                                steps = wheel_acc // HIRES_PER_STEP
-                                if steps != 0:
-                                    wheel_acc -= steps * HIRES_PER_STEP
-                                    if args.debug_scroll:
-                                        print(f"[EMIT]    val={event.value:+5d} "
-                                              f"dt={dt:.1f}ms acc={wheel_acc:+5d} "
-                                              f"steps={steps:+d}",
-                                              file=sys.stderr)
-                                    ui.write_event(InputEvent(
-                                        event.sec, event.usec,
-                                        ecodes.EV_REL, ecodes.REL_WHEEL, steps
-                                    ))
-                                    ui.syn()
-                                elif args.debug_scroll:
-                                    print(f"[ACC]     val={event.value:+5d} "
-                                          f"dt={dt:.1f}ms acc={wheel_acc:+5d}",
-                                          file=sys.stderr)
-                                continue
-
-                            # Direction change: need confirmation
-                            if pending_dir == direction:
-                                # Another event in the pending direction
-                                pending_count += 1
-                                pending_acc += event.value
+                            # Smooth acceleration: linear ramp from 1x to ACCEL_MAX
+                            if dt < ACCEL_WINDOW_MS:
+                                t = dt / ACCEL_WINDOW_MS  # 0.0 (fast) → 1.0 (slow)
+                                accel = ACCEL_MAX - (ACCEL_MAX - 1) * t
                             else:
-                                # First event in new direction
-                                pending_dir = direction
-                                pending_count = 1
-                                pending_acc = event.value
+                                accel = 1.0
+                            accel_value = int(value * accel)
 
-                            if args.debug_scroll:
-                                print(f"[PEND]    val={event.value:+5d} "
-                                      f"dt={dt:.1f}ms count={pending_count}/"
-                                      f"{DIR_CONFIRM}",
-                                      file=sys.stderr)
-
-                            # Confirmed: accept new direction
-                            if pending_count >= DIR_CONFIRM:
-                                last_wheel_dir = direction
-                                wheel_acc = pending_acc
-                                steps = wheel_acc // HIRES_PER_STEP
-                                if steps != 0:
-                                    wheel_acc -= steps * HIRES_PER_STEP
-                                    if args.debug_scroll:
-                                        print(f"[CONFIRM] dir={'UP' if direction > 0 else 'DN'} "
-                                              f"acc={wheel_acc:+5d} steps={steps:+d}",
-                                              file=sys.stderr)
-                                    ui.write_event(InputEvent(
-                                        event.sec, event.usec,
-                                        ecodes.EV_REL, ecodes.REL_WHEEL, steps
-                                    ))
-                                    ui.syn()
-                                pending_dir = 0
+                            if confirmed_dir == 0 or direction == confirmed_dir:
+                                # Same direction or first event: forward immediately
+                                confirmed_dir = direction
                                 pending_count = 0
-                                pending_acc = 0
-                            continue
-                        if event.code == ecodes.REL_HWHEEL_HI_RES:
-                            hwheel_acc += event.value
-                            steps = hwheel_acc // HIRES_PER_STEP
-                            if steps != 0:
-                                hwheel_acc -= steps * HIRES_PER_STEP
                                 ui.write_event(InputEvent(
                                     event.sec, event.usec,
-                                    ecodes.EV_REL, ecodes.REL_HWHEEL, steps
+                                    ecodes.EV_REL, ecodes.REL_WHEEL_HI_RES, accel_value
+                                ))
+                                ui.write_event(InputEvent(
+                                    event.sec, event.usec,
+                                    ecodes.EV_REL, ecodes.REL_WHEEL,
+                                    accel_value // HIRES_PER_STEP
                                 ))
                                 ui.syn()
+                                if args.debug_scroll:
+                                    print(f"[PASS]    val={value:+5d} accel={accel:.1f}x "
+                                          f"out={accel_value:+5d} dt={dt:.1f}ms",
+                                          file=sys.stderr)
+                            else:
+                                # Direction reversal: require confirmation
+                                pending_count += 1
+                                if pending_count >= DIR_CONFIRM:
+                                    # Confirmed real direction change
+                                    confirmed_dir = direction
+                                    pending_count = 0
+                                    ui.write_event(InputEvent(
+                                        event.sec, event.usec,
+                                        ecodes.EV_REL, ecodes.REL_WHEEL_HI_RES, value
+                                    ))
+                                    ui.write_event(InputEvent(
+                                        event.sec, event.usec,
+                                        ecodes.EV_REL, ecodes.REL_WHEEL,
+                                        value // HIRES_PER_STEP
+                                    ))
+                                    ui.syn()
+                                    if args.debug_scroll:
+                                        print(f"[CONFIRM] val={value:+5d} dt={dt:.1f}ms "
+                                              f"dir={'UP' if direction > 0 else 'DN'}",
+                                              file=sys.stderr)
+                                else:
+                                    if args.debug_scroll:
+                                        print(f"[HOLD]    val={value:+5d} dt={dt:.1f}ms "
+                                              f"pending={pending_count}/{DIR_CONFIRM}",
+                                              file=sys.stderr)
+                            continue
+
+                        if event.code == ecodes.REL_HWHEEL_HI_RES:
+                            # Horizontal scroll: forward as-is (no bounce issues)
+                            ui.write_event(event)
+                            ui.write_event(InputEvent(
+                                event.sec, event.usec,
+                                ecodes.EV_REL, ecodes.REL_HWHEEL,
+                                event.value // HIRES_PER_STEP
+                            ))
+                            ui.syn()
                             continue
 
                     # Pass all other events through unchanged
