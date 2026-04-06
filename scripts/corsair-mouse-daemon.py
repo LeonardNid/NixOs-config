@@ -17,8 +17,14 @@ import sys
 VENDOR_CORSAIR = 0x1B1C
 PRODUCT_SLIPSTREAM = 0x1BDC
 HIRES_PER_STEP = 120  # Standard: 120 hi-res units = 1 logical scroll step
+
+# Encoder bounce filter (Corsair Darkstar Wireless has a noisy encoder, esp.
+# in DOWN direction - measured 28% bounce rate vs 4% UP). Geist-ticks appear
+# 80-700ms after the real event, so we need a long idle window AND a spike
+# hold to drop unconfirmed reversals.
 DIR_CONFIRM = 2       # Require N consecutive events in new direction to confirm change
-IDLE_RESET_MS = 200   # Reset direction state after this idle period (ms)
+IDLE_RESET_MS = 1000  # Reset direction state after this idle period (ms)
+SPIKE_HOLD_MS = 150   # Drop pending reversal if not confirmed within this window
 
 # Scroll acceleration: compensate for encoder missing ticks at high speed
 ACCEL_MAX = 3.0        # Maximum multiplier at top speed
@@ -228,6 +234,7 @@ def main():
 
     confirmed_dir = 0     # Last confirmed scroll direction (+1/-1)
     pending_count = 0     # Consecutive events in unconfirmed new direction
+    pending_first_t = 0.0 # Timestamp of first event in pending reversal
     last_scroll_time = 0.0
     held_combo_keys = set()
 
@@ -252,7 +259,16 @@ def main():
                             dt = now - last_scroll_time if last_scroll_time > 0 else IDLE_RESET_MS + 1
                             last_scroll_time = now
 
-                            # Idle reset: after pause, accept any direction
+                            # Spike-hold: drop a stale pending reversal that
+                            # was never confirmed by a 2nd event in time.
+                            if pending_count > 0 and (now - pending_first_t) > SPIKE_HOLD_MS:
+                                if args.debug_scroll:
+                                    print(f"[DROP]    stale pending after "
+                                          f"{now - pending_first_t:.1f}ms",
+                                          file=sys.stderr)
+                                pending_count = 0
+
+                            # Idle reset: after long pause, accept any direction
                             if dt > IDLE_RESET_MS:
                                 confirmed_dir = 0
                                 pending_count = 0
@@ -285,6 +301,8 @@ def main():
                                           file=sys.stderr)
                             else:
                                 # Direction reversal: require confirmation
+                                if pending_count == 0:
+                                    pending_first_t = now
                                 pending_count += 1
                                 if pending_count >= DIR_CONFIRM:
                                     # Confirmed real direction change
