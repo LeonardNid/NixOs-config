@@ -14,5 +14,6 @@
     ../../system/audio.nix
     ../../system/users.nix
     ../../system/packages.nix
+    ../../system/ollama.nix
   ];
 }
