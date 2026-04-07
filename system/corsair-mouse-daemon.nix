@@ -14,7 +14,7 @@
       Type = "simple";
       Restart = "always";
       RestartSec = 3;
-      ExecStart = "${python}/bin/python3 ${../scripts/corsair-mouse-daemon.py}";
+      ExecStart = "${python}/bin/python3 ${../scripts/corsair-mouse-daemon-v2.py}";
     };
   };
 }
