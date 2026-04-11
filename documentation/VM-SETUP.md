@@ -231,35 +231,26 @@ Der Host kann als Autostart-Programm eingerichtet werden.
 
 ### Wie es funktioniert
 
-Die Tastatur und Maus werden über QEMU `input-linux` direkt an die VM durchgereicht.
-Mit **Scroll Lock** kann zwischen Linux und VM gewechselt werden.
+Die Tastatur und Maus werden über QEMU `input-linux` an die VM durchgereicht. Ein eigener **VM Toggle Keyboard Forwarding Daemon** (`scripts/vm-toggle-kbd.py`) verwaltet die ZSA Voyager Tastatur, kombiniert alle USB-Endpunkte in ein virtuelles Gerät (`/dev/input/virtual-voyager`) und steuert den Toggle-Mechanismus zwischen Linux-Host und Windows-VM. 
+Mit der **Scroll Lock**-Taste kann jederzeit nahtlos zwischen Linux und VM gewechselt werden, ohne dass KDE-Shortcuts benötigt werden.
 
-### ZSA Voyager Tastatur (2 Interfaces!)
+### ZSA Voyager Tastatur und Toggle-Daemon
 
-Die Voyager hat **zwei** Keyboard-Interfaces:
-- **event-kbd**: Boot Protocol (6KRO) — sendet immer Tastenevents
-- **if03-event-kbd**: NKRO Interface — sendet die eigentlichen Tastenanschläge
-
-**Beide** müssen als `input-linux` konfiguriert werden, sonst geht der Toggle nicht richtig:
-
-```xml
-<qemu:arg value="-object"/>
-<qemu:arg value="input-linux,id=kbd0,evdev=/dev/input/by-id/usb-ZSA_Technology_Labs_Voyager_q697z_bvmrrP-event-kbd,grab_all=on,repeat=on,grab-toggle=scrolllock"/>
-<qemu:arg value="-object"/>
-<qemu:arg value="input-linux,id=kbd1,evdev=/dev/input/by-id/usb-ZSA_Technology_Labs_Voyager_q697z_bvmrrP-if03-event-kbd,grab_all=on,repeat=on,grab-toggle=scrolllock"/>
-```
-
-### Maus (Toggle zusammen mit Tastatur)
-
-Die Maus wird als **Slave** definiert (OHNE `grab_all`) und **VOR** den Tastaturen (Masters).
-Die Tastaturen propagieren den Toggle-Status an die Maus:
+Da die Voyager mehrere Interfaces besitzt und QEMUs interner `grab-toggle` Mechanismus Limits hat (Slaves werden nur von Master-Geräten freigegeben), übernimmt der Daemon die Steuerung:
+- **Im VM-Modus**: Eingaben gehen an `virtual-voyager` (von QEMU ohne eigenen `grab-toggle` gegriffen).
+- **Beim Toggle**: Der Daemon erkennt `ScrollLock`, gibt die physischen Tastaturen frei (für Linux) und drückt virtuell `ScrollLock` auf einem dedizierten `vm-toggle-kbd` Gerät, das QEMU dazu zwingt, seine Cascade loszulassen (wodurch die Maus freigegeben wird).
+- **Beim Start/Stop**: Über ein FIFO (`/tmp/vm-toggle-kbd.fifo`) wird der Daemon durch das `vm`-Script beim Booten und Herunterfahren exakt mit QEMU synchronisiert (`init_linux_after_qemu_start` und `force_linux`).
 
 ```xml
 <qemu:arg value="-object"/>
-<qemu:arg value="input-linux,id=mouse,evdev=/dev/input/by-id/usb-Corsair_CORSAIR_SLIPSTREAM_WIRELESS_USB_Receiver_752687B4A4DC9C99-event-mouse"/>
+<qemu:arg value="input-linux,id=mouse,evdev=/dev/input/corsair-fixed"/>
+<qemu:arg value="-object"/>
+<qemu:arg value="input-linux,id=kbd0,evdev=/dev/input/virtual-voyager,grab_all=on,repeat=on"/>
+<qemu:arg value="-object"/>
+<qemu:arg value="input-linux,id=vm-toggle,evdev=/dev/input/vm-toggle-kbd,grab_all=on,grab-toggle=scrolllock"/>
 ```
 
-**Reihenfolge ist wichtig**: Maus (Slave) ZUERST, dann Tastaturen (Masters mit `grab_all=on`).
+**Reihenfolge ist wichtig**: Die Maus (Slave) muss ZUERST definiert werden, danach die Tastatur (`virtual-voyager`), und zuletzt das `vm-toggle` Gerät (Master mit `grab-toggle=scrolllock`), damit die Ungrab-Cascade in QEMU rückwärts alle vorherigen Slaves erreicht.
 
 ### Automatische Maus-Erkennung (kabellos vs. kabelgebunden)
 
@@ -499,6 +490,14 @@ das Gerät wird automatisch erkannt wenn es eingesteckt wird (auch im laufenden 
 sudo virsh attach-device windows11 --live /dev/stdin <<< \
   '<hostdev mode="subsystem" type="usb" managed="yes"><source><vendor id="0x16d0"/><product id="0x12f7"/></source></hostdev>'
 ```
+
+### Automatisiertes DualSense Re-Attach
+
+Wenn der DualSense Controller mitten im Spiel getrennt und wieder verbunden wird (z.B. wenn das Ladekabel angesteckt wird), führt QEMU/libvirt standardmäßig kein erneutes Passthrough aus, obwohl das Gerät in der XML steht.
+Dies wurde über eine Kombination aus `udev`-Regel und systemd-Service (`vm-controller-reattach.service`) automatisiert:
+1. Eine udev-Regel erkennt den angeschlossenen DualSense (`054c:0ce6`) und löst den Service aus.
+2. Der Oneshot-Service ruft ein Bash-Script (`vm-fixcon`) auf, das per `virsh domstate` prüft, ob die VM läuft.
+3. Ist die VM aktiv, führt das Script einen `virsh detach-device` gefolgt von einem `virsh attach-device` mit einer XML-Definition für den Controller durch, um ihn sofort live in die Windows-VM einzubinden.
 
 ---
 

@@ -19,7 +19,15 @@ in
       BOOT_DELAY=30  # Sekunden bis Looking Glass startet (anpassen bis Steam Big Picture bereit ist)
       RESUME_DELAY=2
 
-      case "''${1:-}" in
+      ACTION="${1:-}"
+      if [ -z "$ACTION" ]; then
+        ACTION=$(${pkgs.gum}/bin/gum choose "start" "stop" "pause" "resume" "status" --header="Wähle eine Aktion für die Windows 11 VM:")
+        if [ -z "$ACTION" ]; then
+          exit 0
+        fi
+      fi
+
+      case "$ACTION" in
         start)
           echo "=== VM starten ==="
 
