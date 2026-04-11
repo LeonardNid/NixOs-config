@@ -524,3 +524,95 @@ Die VM nutzt das libvirt NAT-Netzwerk `default` (192.168.122.0/24):
 - VM bekommt IP via DHCP (meist 192.168.122.x)
 - Host ist erreichbar unter 192.168.122.1
 - Scream Audio und alle VM↔Host-Kommunikation läuft über `virbr0`
+
+---
+
+## 11. Clipboard-Sync (nicht fertiggestellt, zum Wiederaufgreifen)
+
+### Ziel
+
+Bidirektionaler Clipboard-Sync zwischen Linux-Host und Windows-VM. SPICE-Clipboard wurde
+bewusst deaktiviert (`spice:enable=no`) weil es mit Looking Glass kollidiert. Input Leap
+wurde als zu schwergewichtig abgelehnt (ganzer KVM-Stack nur für Clipboard).
+
+### Gewählter Ansatz
+
+TCP-basierter Clipboard-Sync über `virbr0` (192.168.122.0/24):
+
+```
+Linux (192.168.122.1)                    Windows VM (192.168.122.111)
+─────────────────────                    ────────────────────────────
+Polling-Loop (500ms)                     PowerShell Listener :5556
+  wl-paste → hash-check                   → Set-Clipboard
+  → socat TCP → VM:5556
+
+socat TCP-LISTEN:5557 ◄──────────────   PowerShell Poller (500ms)
+  → wl-copy                               → Get-Clipboard → TcpClient → Host:5557
+```
+
+- Jede Clipboard-Änderung = neue TCP-Verbindung, EOF = Nachrichtenende (kein Framing nötig)
+- Anti-Ping-Pong via SHA-256-Hash des letzten gesendeten/empfangenen Inhalts
+- Text-only, max 10 MB
+- Firewall: TCP 5557 auf Linux öffnen (5556 auf Windows-Seite)
+
+### Was bereits implementiert und getestet war
+
+**Linux-Seite (danach revertiert):**
+- `vm/vm.nix`: `socat` als Paket, zwei `writeShellScript`-Scripts, zwei systemd User-Services
+  (Pattern wie Scream-Service)
+- `vm/gpu-passthrough.nix`: `networking.firewall.allowedTCPPorts = [ 5557 ]`
+- TCP-Verbindung zu Windows:5556 hat funktioniert (verifiziert per `socat` manuell)
+- Linux-Service lief stabil (Polling-Loop aktiv, `sleep 0.5` im Prozessbaum sichtbar)
+
+**Windows-Seite (`vm/clipboard-sync.ps1` liegt noch im Repo):**
+- TCP-Listener auf Port 5556 (Background-Runspace)
+- Polling-Sender alle 500ms (`Get-Clipboard` → TcpClient)
+- SHA-256-Deduplication
+- Windows-Firewall-Regel: TCP 5556 inbound erlaubt (bereits eingerichtet)
+- Autostart-Shortcut in `shell:startup` (bereits eingerichtet)
+
+### Gefundene Bugs (alle gefixt im Revert-Stand)
+
+| Bug | Ursache | Fix |
+|-----|---------|-----|
+| `wl-paste --watch` schlägt fehl | KDE Plasma 6 / KWin unterstützt `zwlr_data_control_manager_v1` nicht | Auf 500ms-Polling mit `wl-paste --no-newline` umgestellt |
+| `sleep: command not found` | Nix `writeShellScript` hat kein PATH | `export PATH="..."` am Scriptanfang mit allen nötigen Paketen |
+| `virsh net-dhcp-leases default` leer | `virtnetworkd` findet `dnsmasq` nicht im PATH | Auf `ip neigh show dev virbr0` umgestellt |
+| awk-Filter liefert leere VM-IP | `$3=="lladdr"` falsch, korrekt ist `$2=="lladdr"` | Filter korrigiert (aber revertiert bevor getestet) |
+
+### Was noch offen ist
+
+1. **awk-Fix verifizieren**: Der letzte Fix (`$2=="lladdr"`) war korrekt (manuell getestet),
+   aber der Rebuild wurde revertiert bevor der End-to-End-Test abgeschlossen war.
+
+2. **Set-Clipboard in PowerShell-Runspace**: Möglicherweise STA-Thread-Problem.
+   Workaround bereits im Script: `$rs.ApartmentState = [System.Threading.ApartmentState]::STA`.
+   Ob das ausreicht ist unklar — der Windows-Empfang war noch nicht verifiziert.
+   Alternativ: `clip.exe` statt `Set-Clipboard` verwenden (keine Threading-Probleme,
+   aber schlechtere Unicode-Unterstützung).
+
+3. **Windows→Linux-Richtung**: Komplett ungetestet.
+
+### VM-IP ermitteln (wichtig)
+
+`virsh net-dhcp-leases default` funktioniert nicht (dnsmasq-Problem). Stattdessen:
+
+```bash
+ip neigh show dev virbr0 | awk '$2=="lladdr" {print $1}' | head -1
+```
+
+Liefert die aktuelle VM-IP (z.B. `192.168.122.111`).
+
+### Nix-Script PATH-Template
+
+Alle Tools müssen in Nix-Scripts explizit im PATH sein:
+
+```nix
+export PATH="${pkgs.coreutils}/bin:${pkgs.gawk}/bin:${pkgs.iproute2}/bin:${pkgs.socat}/bin:${pkgs.wl-clipboard}/bin"
+```
+
+### Wiederaufnahme
+
+Den Revert-Commit rückgängig machen und mit dem awk-Fix + Windows-Test weitermachen.
+Der Code liegt in `vm/clipboard-sync.ps1` (Windows-Seite, noch im Repo).
+Linux-Seite muss in `vm/vm.nix` und `vm/gpu-passthrough.nix` neu eingetragen werden.
