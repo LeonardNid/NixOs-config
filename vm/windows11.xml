@@ -158,12 +158,12 @@
     <qemu:arg value="-object"/>
     <qemu:arg value="{'qom-type':'memory-backend-file','id':'looking-glass','mem-path':'/dev/kvmfr0','size':134217728,'share':true}"/>
     <qemu:arg value="-object"/>
-    <qemu:arg value="input-linux,id=vm-toggle,evdev=/dev/input/vm-toggle-kbd,grab_all=on,grab-toggle=scrolllock"/>
-    <qemu:arg value="-object"/>
     <qemu:arg value="input-linux,id=mouse,evdev=/dev/input/corsair-fixed"/>
     <qemu:arg value="-object"/>
     <qemu:arg value="input-linux,id=kbd0,evdev=/dev/input/by-id/usb-ZSA_Technology_Labs_Voyager_q697z_bvmrrP-event-kbd,grab_all=on,repeat=on,grab-toggle=scrolllock"/>
     <qemu:arg value="-object"/>
     <qemu:arg value="input-linux,id=kbd1,evdev=/dev/input/by-id/usb-ZSA_Technology_Labs_Voyager_q697z_bvmrrP-if03-event-kbd,grab_all=on,repeat=on,grab-toggle=scrolllock"/>
+    <qemu:arg value="-object"/>
+    <qemu:arg value="input-linux,id=vm-toggle,evdev=/dev/input/vm-toggle-kbd,grab_all=on,grab-toggle=scrolllock"/>
   </qemu:commandline>
 </domain>
