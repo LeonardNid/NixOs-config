@@ -135,14 +135,6 @@ in
         resume)
           echo "=== VM fortsetzen ==="
           sudo virsh resume "$VM_NAME"
-          for i in $(seq 1 $RESUME_DELAY); do
-            filled=$(( i * 30 / RESUME_DELAY ))
-            empty=$(( 30 - filled ))
-            bar=$(printf '%0.s█' $(seq 1 $filled) 2>/dev/null)$(printf '%0.s░' $(seq 1 $empty) 2>/dev/null)
-            printf '\r[%s] %d/5s' "$bar" "$i"
-            sleep 1
-          done
-          echo ""
           looking-glass-client -F -f /dev/kvmfr0 \
             win:size=2560x1440 win:dontUpscale=on \
             input:captureOnFocus=no input:grabKeyboardOnFocus=no \
