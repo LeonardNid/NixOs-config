@@ -70,7 +70,8 @@ def set_grab(devices, grab):
             else:
                 dev.ungrab()
         except OSError as e:
-            print(f"Failed to {'grab' if grab else 'ungrab'} {dev.name}: {e}", file=sys.stderr)
+            if e.errno != 22:  # Ignore Invalid argument (already grabbed/ungrabbed)
+                print(f"Failed to {'grab' if grab else 'ungrab'} {dev.name}: {e}", file=sys.stderr)
 
 def main():
     devices = find_voyager_devices()
