@@ -66,6 +66,7 @@ in
     KERNEL=="event*", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="1bb2", ENV{ID_INPUT_MOUSE}=="1", SYMLINK+="input/vm-mouse", OPTIONS+="link_priority=100", TAG+="uaccess"
     KERNEL=="event*", ATTRS{name}=="CorsairFixed", SYMLINK+="input/corsair-fixed", GROUP="kvm", MODE="0666", TAG+="uaccess"
     KERNEL=="event*", ATTRS{name}=="VMToggleKbd", SYMLINK+="input/vm-toggle-kbd", GROUP="kvm", MODE="0660", TAG+="uaccess"
+    KERNEL=="event*", ATTRS{name}=="VirtualVoyager", SYMLINK+="input/virtual-voyager", GROUP="kvm", MODE="0660", TAG+="uaccess"
     ACTION=="add", SUBSYSTEM=="usb", ATTR{idVendor}=="054c", ATTR{idProduct}=="0ce6", TAG+="systemd", ENV{SYSTEMD_WANTS}="vm-controller-reattach.service"
   '';
 
