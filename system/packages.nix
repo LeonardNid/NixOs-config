@@ -19,5 +19,6 @@
     vlc
     zoxide
     drawing
+    gimp
   ];
 }
