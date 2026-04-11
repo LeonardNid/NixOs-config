@@ -17,6 +17,7 @@ in
     (writeShellScriptBin "vm" ''
       VM_NAME="windows11"
       BOOT_DELAY=30  # Sekunden bis Looking Glass startet (anpassen bis Steam Big Picture bereit ist)
+      RESUME_DELAY=2
 
       case "''${1:-}" in
         start)
@@ -130,8 +131,8 @@ in
         resume)
           echo "=== VM fortsetzen ==="
           sudo virsh resume "$VM_NAME"
-          for i in $(seq 1 5); do
-            filled=$(( i * 30 / 5 ))
+          for i in $(seq 1 $RESUME_DELAY); do
+            filled=$(( i * 30 / RESUME_DELAY ))
             empty=$(( 30 - filled ))
             bar=$(printf '%0.s█' $(seq 1 $filled) 2>/dev/null)$(printf '%0.s░' $(seq 1 $empty) 2>/dev/null)
             printf '\r[%s] %d/5s' "$bar" "$i"
