@@ -35,16 +35,17 @@ in
           echo "VM starten..."
           sudo virsh start "$VM_NAME"
 
+          # QEMU kurz Zeit geben zum Starten und Greifen der Inputs
+          sleep 0.5
+          # Input sofort zurück zu Linux togglen (via virtuelles vm-toggle-kbd)
+          echo "init_linux_after_qemu_start" > /tmp/vm-toggle-kbd.fifo
+
           # Warten bis KVMFR bereit ist
           sleep 2
 
           # Idle/Sleep blockieren solange VM läuft
           systemd-inhibit --what=idle:sleep --who="Windows VM" --why="Gaming auf VM" sleep infinity &
           echo $! > /tmp/vm-inhibit.pid
-
-          # Input sofort zurück zu Linux togglen (via virtuelles vm-toggle-kbd)
-          sleep 1
-          echo "init_linux_after_qemu_start" > /tmp/vm-toggle-kbd.fifo
 
           # Warten bis Windows + Steam hochgefahren ist
           echo "=== Windows bootet... (ScrollLock = Input umschalten) ==="
@@ -62,6 +63,7 @@ in
           looking-glass-client -F -f /dev/kvmfr0 \
             win:size=2560x1440 win:dontUpscale=on \
             input:captureOnFocus=no input:grabKeyboardOnFocus=no \
+            input:escapeKey=KEY_PAUSE \
             win:requestActivation=no \
             spice:enable=no \
             > /tmp/looking-glass.log 2>&1 &
@@ -144,6 +146,7 @@ in
           looking-glass-client -F -f /dev/kvmfr0 \
             win:size=2560x1440 win:dontUpscale=on \
             input:captureOnFocus=no input:grabKeyboardOnFocus=no \
+            input:escapeKey=KEY_PAUSE \
             win:requestActivation=no \
             spice:enable=no \
             > /tmp/looking-glass.log 2>&1 &
