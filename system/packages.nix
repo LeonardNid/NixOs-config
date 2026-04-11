@@ -20,5 +20,6 @@
     zoxide
     drawing
     gimp2-with-plugins
+    libreoffice-qt6-fresh
   ];
 }
