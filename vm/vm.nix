@@ -16,6 +16,7 @@ in
     scream
     (writeShellScriptBin "vm" ''
       VM_NAME="windows11"
+      BOOT_DELAY=30  # Sekunden bis Looking Glass startet (anpassen bis Steam Big Picture bereit ist)
 
       case "''${1:-}" in
         start)
@@ -39,6 +40,17 @@ in
           # Idle/Sleep blockieren solange VM läuft
           systemd-inhibit --what=idle:sleep --who="Windows VM" --why="Gaming auf VM" sleep infinity &
           echo $! > /tmp/vm-inhibit.pid
+
+          # Warten bis Windows + Steam hochgefahren ist
+          echo "=== Windows bootet... (ScrollLock = Input zurückholen) ==="
+          for i in $(seq 1 $BOOT_DELAY); do
+            filled=$(( i * 30 / BOOT_DELAY ))
+            empty=$(( 30 - filled ))
+            bar=$(printf '%0.s█' $(seq 1 $filled) 2>/dev/null)$(printf '%0.s░' $(seq 1 $empty) 2>/dev/null)
+            printf '\r[%s] %d/%ds' "$bar" "$i" "$BOOT_DELAY"
+            sleep 1
+          done
+          echo ""
 
           # Looking Glass starten (Vollbild, kein Auto-Input-Grab, Log in Datei)
           echo "Looking Glass starten..."
@@ -114,7 +126,14 @@ in
         resume)
           echo "=== VM fortsetzen ==="
           sudo virsh resume "$VM_NAME"
-          sleep 2
+          for i in $(seq 1 5); do
+            filled=$(( i * 30 / 5 ))
+            empty=$(( 30 - filled ))
+            bar=$(printf '%0.s█' $(seq 1 $filled) 2>/dev/null)$(printf '%0.s░' $(seq 1 $empty) 2>/dev/null)
+            printf '\r[%s] %d/5s' "$bar" "$i"
+            sleep 1
+          done
+          echo ""
           looking-glass-client -F -f /dev/kvmfr0 \
             win:size=2560x1440 win:dontUpscale=on \
             input:captureOnFocus=no input:grabKeyboardOnFocus=no \
