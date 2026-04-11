@@ -61,7 +61,7 @@
     <!-- Windows 11 ISO -->
     <disk type="file" device="cdrom">
       <driver name="qemu" type="raw"/>
-      <source file="/home/leonardn/Downloads/Win11_25H2_German_x64_v2.iso"/>
+      <source file="/home/leonardn/nixos-config/vm/Win11_25H2_German_x64_v2.iso"/>
       <target dev="sda" bus="sata"/>
       <readonly/>
       <boot order="1"/>
@@ -84,7 +84,7 @@
     <!-- VirtIO Treiber ISO -->
     <disk type="file" device="cdrom">
       <driver name="qemu" type="raw"/>
-      <source file="/home/leonardn/Downloads/virtio-win-0.1.285.iso"/>
+      <source file="/home/leonardn/nixos-config/vm/virtio-win-0.1.285.iso"/>
       <target dev="sdb" bus="sata"/>
       <readonly/>
     </disk>
