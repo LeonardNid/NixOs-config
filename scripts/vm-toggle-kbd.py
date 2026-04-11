@@ -25,11 +25,16 @@ DEVICE_NAME = "VMToggleKbd"
 
 
 def inject_scrolllock(ui):
-    ui.write(ecodes.EV_KEY, ecodes.KEY_SCROLLLOCK, 1)
-    ui.syn()
-    time.sleep(0.05)
-    ui.write(ecodes.EV_KEY, ecodes.KEY_SCROLLLOCK, 0)
-    ui.syn()
+    # vm-toggle starts ungrabbed (grab_active=false) while keyboards start grabbed (true).
+    # First Scroll Lock: grabs vm-toggle (false→true), cascade syncs keyboards (already true, no change).
+    # Second Scroll Lock: ungrabs vm-toggle (true→false), cascade releases keyboards (true→false). ✓
+    for _ in range(2):
+        ui.write(ecodes.EV_KEY, ecodes.KEY_SCROLLLOCK, 1)
+        ui.syn()
+        time.sleep(0.05)
+        ui.write(ecodes.EV_KEY, ecodes.KEY_SCROLLLOCK, 0)
+        ui.syn()
+        time.sleep(0.1)
 
 
 def main():
