@@ -166,6 +166,21 @@ def main():
 
                     # Always inject a ScrollLock into VMToggleKbd to make QEMU toggle its mouse grab
                     inject_scrolllock(toggle_ui)
+                elif cmd == "init_linux_after_qemu_start":
+                    # QEMU auto-grabs on start (VM mode). We want to start in Linux mode.
+                    is_vm_mode = False
+                    print("VM started: returning QEMU to Linux mode.", file=sys.stderr)
+                    set_grab(devices, False)
+                    held_keys.clear()
+                    # Inject ScrollLock to make QEMU release its initial grab (returns mouse to Linux)
+                    inject_scrolllock(toggle_ui)
+                elif cmd == "force_linux":
+                    # VM stopped. Force keyboard back to Linux without injecting ScrollLock
+                    # because QEMU is dead/dying anyway.
+                    is_vm_mode = False
+                    print("VM stopped: forcing keyboard back to Linux.", file=sys.stderr)
+                    set_grab(devices, False)
+                    held_keys.clear()
             else:
                 # Event from physical keyboard
                 try:
@@ -197,6 +212,15 @@ def main():
                                         held_keys.add(event.code)
                                     elif event.value == 0:
                                         held_keys.discard(event.code)
+                        else:
+                            # In Linux mode (ungrabbed)
+                            if event.type == ecodes.EV_KEY and event.code == ecodes.KEY_SCROLLLOCK and event.value == 1:
+                                # Switch to VM mode
+                                is_vm_mode = True
+                                print("ScrollLock pressed on Voyager. Switching to VM mode.", file=sys.stderr)
+                                set_grab(devices, is_vm_mode)
+                                held_keys.clear()
+                                inject_scrolllock(toggle_ui)
                 except OSError:
                     print(f"Device error on {readable.name}. Exiting to restart.", file=sys.stderr)
                     cleanup(0, None)

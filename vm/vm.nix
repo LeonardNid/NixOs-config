@@ -44,7 +44,7 @@ in
 
           # Input sofort zurück zu Linux togglen (via virtuelles vm-toggle-kbd)
           sleep 1
-          echo "toggle" > /tmp/vm-toggle-kbd.fifo
+          echo "init_linux_after_qemu_start" > /tmp/vm-toggle-kbd.fifo
 
           # Warten bis Windows + Steam hochgefahren ist
           echo "=== Windows bootet... (ScrollLock = Input umschalten) ==="
@@ -71,6 +71,7 @@ in
           (while sudo virsh domstate "$VM_NAME" 2>/dev/null | grep -q "running"; do
             sleep 5
           done
+          echo "force_linux" > /tmp/vm-toggle-kbd.fifo
           pkill -f looking-glass-client 2>/dev/null
           kill "$(cat /tmp/vm-inhibit.pid 2>/dev/null)" 2>/dev/null
           rm -f /tmp/vm-inhibit.pid
@@ -117,6 +118,7 @@ in
             echo "VM ist bereits aus."
           fi
 
+          echo "force_linux" > /tmp/vm-toggle-kbd.fifo
           echo "Festplatten sind wieder verfügbar (KDE mountet automatisch)"
           echo "=== Fertig ==="
           ;;
