@@ -1,1 +1,1 @@
-make-vm-script-interactive--23:36
+fix-vm-script-bash-variables-missing-escaping--23:36
