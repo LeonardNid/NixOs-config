@@ -1,5 +1,15 @@
 { pkgs, ... }:
 
+let
+  controllerXml = pkgs.writeText "dualsense-hostdev.xml" ''
+    <hostdev mode="subsystem" type="usb" managed="yes">
+      <source>
+        <vendor id="0x054c"/>
+        <product id="0x0ce6"/>
+      </source>
+    </hostdev>
+  '';
+in
 {
   home.packages = with pkgs; [
     looking-glass-client
@@ -119,8 +129,20 @@
           sudo virsh domstate "$VM_NAME"
           ;;
 
+        fixcon)
+          echo "=== Controller neu verbinden ==="
+          if ! sudo virsh domstate "$VM_NAME" 2>/dev/null | grep -q running; then
+            echo "VM ist nicht aktiv."
+            exit 1
+          fi
+          sudo virsh detach-device "$VM_NAME" "${controllerXml}" 2>/dev/null || true
+          sleep 1
+          sudo virsh attach-device "$VM_NAME" "${controllerXml}"
+          echo "=== Controller verbunden ==="
+          ;;
+
         *)
-          echo "Verwendung: vm {start|stop|pause|resume|status}"
+          echo "Verwendung: vm {start|stop|pause|resume|fixcon|status}"
           ;;
       esac
     '')
