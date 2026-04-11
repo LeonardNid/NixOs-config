@@ -1,6 +1,7 @@
 { config, pkgs, ... }:
 
 let
+  vmToggleKbd = pkgs.python3.withPackages (ps: [ ps.evdev ]);
   controllerXml = pkgs.writeText "dualsense-hostdev.xml" ''
     <hostdev mode="subsystem" type="usb" managed="yes">
       <source>
@@ -64,10 +65,24 @@ in
     KERNEL=="event*", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="1bdc", ENV{ID_INPUT_MOUSE}=="1", SYMLINK+="input/vm-mouse", OPTIONS+="link_priority=50", TAG+="uaccess"
     KERNEL=="event*", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="1bb2", ENV{ID_INPUT_MOUSE}=="1", SYMLINK+="input/vm-mouse", OPTIONS+="link_priority=100", TAG+="uaccess"
     KERNEL=="event*", ATTRS{name}=="CorsairFixed", SYMLINK+="input/corsair-fixed", GROUP="kvm", MODE="0666", TAG+="uaccess"
+    KERNEL=="event*", ATTRS{name}=="VMToggleKbd", SYMLINK+="input/vm-toggle-kbd", GROUP="kvm", MODE="0660", TAG+="uaccess"
     ACTION=="add", SUBSYSTEM=="usb", ATTR{idVendor}=="054c", ATTR{idProduct}=="0ce6", TAG+="systemd", ENV{SYSTEMD_WANTS}="vm-controller-reattach.service"
   '';
 
   programs.virt-manager.enable = true;
+
+  # VM Toggle Keyboard Daemon (virtuelles uinput-Keyboard für QEMU grab-toggle)
+  systemd.services.vm-toggle-kbd = {
+    description = "VM Toggle Keyboard Daemon";
+    wantedBy = [ "multi-user.target" ];
+    after = [ "systemd-udev-settle.service" ];
+    serviceConfig = {
+      Type = "simple";
+      Restart = "always";
+      RestartSec = 3;
+      ExecStart = "${vmToggleKbd}/bin/python3 ${../scripts/vm-toggle-kbd.py}";
+    };
+  };
 
   # Auto-Reattach DualSense Controller bei USB-Reconnect
   systemd.services.vm-controller-reattach = {

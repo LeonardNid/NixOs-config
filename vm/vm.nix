@@ -41,8 +41,12 @@ in
           systemd-inhibit --what=idle:sleep --who="Windows VM" --why="Gaming auf VM" sleep infinity &
           echo $! > /tmp/vm-inhibit.pid
 
+          # Input sofort zurück zu Linux togglen (via virtuelles vm-toggle-kbd)
+          sleep 1
+          echo "toggle" > /tmp/vm-toggle-kbd.fifo
+
           # Warten bis Windows + Steam hochgefahren ist
-          echo "=== Windows bootet... (ScrollLock = Input zurückholen) ==="
+          echo "=== Windows bootet... (ScrollLock = Input umschalten) ==="
           for i in $(seq 1 $BOOT_DELAY); do
             filled=$(( i * 30 / BOOT_DELAY ))
             empty=$(( 30 - filled ))
