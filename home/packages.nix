@@ -27,12 +27,12 @@
       interval = { swipe = 0.5; };
       swipe = {
         "3" = {
-          up.command = "YDOTOOL_SOCKET=/run/user/$(id -u)/ydotool_socket ydotool key 125:1 17:1 17:0 125:0";   # Meta+W → Übersicht
-          down.command = "YDOTOOL_SOCKET=/run/user/$(id -u)/ydotool_socket ydotool key 125:1 32:1 32:0 125:0"; # Meta+D → Desktop
+          up.begin.command    = "YDOTOOL_SOCKET=/run/user/$(id -u)/ydotool_socket ydotool key 125:1 17:1 17:0 125:0";   # Meta+W → Übersicht
+          down.begin.command  = "YDOTOOL_SOCKET=/run/user/$(id -u)/ydotool_socket ydotool key 125:1 32:1 32:0 125:0";  # Meta+D → Desktop
         };
         "4" = {
-          left.command  = "YDOTOOL_SOCKET=/run/user/$(id -u)/ydotool_socket ydotool key 65506:1 65361:1 65361:0 65506:0"; # Ctrl+Left
-          right.command = "YDOTOOL_SOCKET=/run/user/$(id -u)/ydotool_socket ydotool key 65506:1 65363:1 65363:0 65506:0"; # Ctrl+Right
+          left.begin.command  = "YDOTOOL_SOCKET=/run/user/$(id -u)/ydotool_socket ydotool key 65506:1 65361:1 65361:0 65506:0"; # Ctrl+Left
+          right.begin.command = "YDOTOOL_SOCKET=/run/user/$(id -u)/ydotool_socket ydotool key 65506:1 65363:1 65363:0 65506:0"; # Ctrl+Right
         };
       };
     };
