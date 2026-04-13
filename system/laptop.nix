@@ -43,11 +43,8 @@
     enable = true;
     keyboards.default = {
       devices = [ "/dev/input/by-path/platform-i8042-serio-0-event-kbd" ];
+      extraDefCfg = "process-unmapped-keys yes";
       config = ''
-      (defcfg
-        process-unmapped-keys yes
-      )
-
       (defsrc
         a s d f j k l '
       )

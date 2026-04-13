@@ -1,1 +1,1 @@
-kanata:-fix-key-roll-order-with-process-unmapped-keys--22:23
+kanata:-fix-roll-order-with-extraDefCfg-process-unmapped-keys--22:26
