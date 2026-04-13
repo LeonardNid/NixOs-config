@@ -1,1 +1,1 @@
-laptop:-enable-lockscreen--5min-inactivity---resume---21:56
+laptop:-require-password-at-boot--move-autologin-to-desktop-only---22:01

@@ -18,4 +18,8 @@
   ];
 
   networking.hostName = "leonardn";
+
+  # Desktop: auto-login (kein Passwort beim Booten)
+  services.displayManager.autoLogin.enable = true;
+  services.displayManager.autoLogin.user = "leonardn";
 }
