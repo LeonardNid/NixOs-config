@@ -16,6 +16,16 @@ in
       --file kwinrc --group TabBox --key DelayTime 0
   '';
 
+  # Lockscreen: nach 5 Minuten Inaktivität + beim Aufwachen aus Suspend
+  home.activation.lockscreen = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+    $DRY_RUN_CMD ${pkgs.kdePackages.kconfig}/bin/kwriteconfig6 \
+      --file kscreenlockerrc --group Daemon --key Autolock true
+    $DRY_RUN_CMD ${pkgs.kdePackages.kconfig}/bin/kwriteconfig6 \
+      --file kscreenlockerrc --group Daemon --key Timeout 5
+    $DRY_RUN_CMD ${pkgs.kdePackages.kconfig}/bin/kwriteconfig6 \
+      --file kscreenlockerrc --group Daemon --key LockOnResume true
+  '';
+
   # Fusuma: Touchpad-Gesten für Wayland/KDE Plasma 6
   services.fusuma = {
     enable = true;
