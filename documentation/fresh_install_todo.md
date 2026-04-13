@@ -42,6 +42,7 @@ git -C ~/nixos-config remote set-url origin git@github.com:LeonardNid/NixOs-conf
 - [ ] Vivaldi: Sync-Login (Einstellungen → Sync)
 - [ ] Vaultwarden-Extension: Einloggen & Hostseite auswählen
 - [ ] `claude authenticate`
+- [ ] Nextcloud: Account einrichten (einmalig – danach startet es automatisch im Hintergrund)
 
 ---
 
