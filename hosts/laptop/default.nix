@@ -5,8 +5,7 @@
     ./hardware-configuration.nix
     ../../system/boot.nix
     ../../system/hardware.nix
-    ../../vm/gpu-passthrough.nix
-    ../../system/corsair-mouse-daemon.nix
+    ../../system/laptop.nix
     ../../system/nix-settings.nix
     ../../system/networking.nix
     ../../system/locale.nix
@@ -14,8 +13,8 @@
     ../../system/audio.nix
     ../../system/users.nix
     ../../system/packages.nix
-    ../../system/ollama.nix
   ];
 
-  networking.hostName = "leonardn";
+  # Laptop-spezifischer Hostname
+  networking.hostName = "laptop";
 }

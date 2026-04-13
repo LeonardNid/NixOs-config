@@ -10,24 +10,32 @@
     };
   };
 
-  outputs = { self, nixpkgs, claude-code-nix, home-manager, ... }: {
+  outputs = { self, nixpkgs, claude-code-nix, home-manager, ... }:
+  let
+    homeManagerModules = [
+      home-manager.nixosModules.home-manager
+      {
+        home-manager.useGlobalPkgs = true;
+        home-manager.useUserPackages = true;
+        home-manager.users.leonardn = import ./home;
+      }
+      {
+        environment.systemPackages = [
+          claude-code-nix.packages.x86_64-linux.default
+        ];
+      }
+    ];
+  in {
     nixosConfigurations.leonardn = nixpkgs.lib.nixosSystem {
       system = "x86_64-linux";
       specialArgs = { inherit self; };
-      modules = [
-        ./hosts/leonardn
-        home-manager.nixosModules.home-manager
-        {
-          home-manager.useGlobalPkgs = true;
-          home-manager.useUserPackages = true;
-          home-manager.users.leonardn = import ./home;
-        }
-        {
-          environment.systemPackages = [
-            claude-code-nix.packages.x86_64-linux.default
-          ];
-        }
-      ];
+      modules = [ ./hosts/leonardn ] ++ homeManagerModules;
+    };
+
+    nixosConfigurations.laptop = nixpkgs.lib.nixosSystem {
+      system = "x86_64-linux";
+      specialArgs = { inherit self; };
+      modules = [ ./hosts/laptop ] ++ homeManagerModules;
     };
   };
 }
