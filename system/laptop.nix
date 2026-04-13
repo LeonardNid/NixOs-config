@@ -31,6 +31,31 @@
     RADEON_DPM_PERF_LEVEL_ON_BAT = "auto";
   };
 
+  # Home Row Mods via Kanata
+  services.kanata = {
+    enable = true;
+    keyboards.default.config = ''
+      (defsrc
+        a s d f j k l '
+      )
+
+      (deflayer default
+        @a @s @d @f @j @k @l @ä
+      )
+
+      (defalias
+        a  (tap-hold-release 200 150 a   lmet)
+        s  (tap-hold-release 200 150 s   lalt)
+        d  (tap-hold-release 200 150 d   lsft)
+        f  (tap-hold-release 200 150 f   lctl)
+        j  (tap-hold-release 200 150 j   rctl)
+        k  (tap-hold-release 200 150 k   rsft)
+        l  (tap-hold-release 200 150 l   ralt)
+        ä  (tap-hold-release 200 150 '   rmet)
+      )
+    '';
+  };
+
   # Touchpad
   services.libinput = {
     enable = true;
