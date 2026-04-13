@@ -1,1 +1,1 @@
-fix-kwin-latency:-disable-amdgpu-gfxoff-on-laptop--21:12
+gestures:-replace-ydotool-with-qdbus-kglobalaccel-for-clean-shortcut-invocation--21:15
