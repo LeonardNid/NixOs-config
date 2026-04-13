@@ -1,1 +1,1 @@
-kanata:-specify-keyboard-device-path--22:17
+kanata:-disable-PrivateUsers-to-allow-device-access--22:18

@@ -1,4 +1,4 @@
-{ pkgs, ... }:
+{ pkgs, lib, ... }:
 
 {
   # Power Management mit TLP
@@ -30,6 +30,9 @@
     RADEON_DPM_PERF_LEVEL_ON_AC = "high";
     RADEON_DPM_PERF_LEVEL_ON_BAT = "auto";
   };
+
+  # Kanata läuft mit PrivateUsers=true (User-Namespace) – verhindert Device-Zugriff
+  systemd.services.kanata-default.serviceConfig.PrivateUsers = lib.mkForce false;
 
   # Home Row Mods via Kanata
   services.kanata = {
