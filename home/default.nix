@@ -8,6 +8,8 @@
     ../vm/vm.nix
     ./scripts.nix
     ./packages.nix
+    ./vscode.nix
+    ./xdg.nix
   ];
 
   home.username = "leonardn";

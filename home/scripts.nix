@@ -19,7 +19,7 @@
       if ! git diff --cached --quiet; then
         git commit -m "$MESSAGE ($DATE)"
       fi
-      sudo nixos-rebuild switch --flake /home/leonardn/nixos-config#leonardn
+      sudo nixos-rebuild switch --flake /home/leonardn/nixos-config#$(hostname)
       git push
     '')
   ];

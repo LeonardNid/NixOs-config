@@ -16,7 +16,6 @@
     obsidian
     nextcloud-client
     zapzap
-    vscode
     mpv
     vlc
     zoxide
