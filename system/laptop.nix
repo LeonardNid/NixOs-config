@@ -19,8 +19,11 @@
   # Verhindert Konflikte mit TLP
   services.power-profiles-daemon.enable = false;
 
-  # uinput für ydotool (Wayland-Tastaturemulation)
   boot.kernelModules = [ "uinput" ];
+
+  # AMD Renoir GFXOFF deaktivieren – verhindert GPU-Wakeup-Delay bei KWin-Effekten
+  # (Alt+Tab, Super+W etc. sonst ~1s verzögert weil GPU aufwachen muss)
+  boot.kernelParams = [ "amdgpu.gfxoff=0" ];
 
   # Touchpad
   services.libinput = {

@@ -1,1 +1,1 @@
-add-CLAUDE.md-with-project-structure-and-rules--20:07
+fix-kwin-latency:-disable-amdgpu-gfxoff-on-laptop--21:12
