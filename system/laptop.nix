@@ -31,8 +31,12 @@
     RADEON_DPM_PERF_LEVEL_ON_BAT = "auto";
   };
 
-  # Kanata läuft mit PrivateUsers=true (User-Namespace) – verhindert Device-Zugriff
-  systemd.services.kanata-default.serviceConfig.PrivateUsers = lib.mkForce false;
+  # Kanata: Hardening-Optionen die Device-Zugriff blockieren deaktivieren
+  systemd.services.kanata-default.serviceConfig = {
+    PrivateUsers = lib.mkForce false;
+    DynamicUser = lib.mkForce false;
+    User = lib.mkForce "root";
+  };
 
   # Home Row Mods via Kanata
   services.kanata = {

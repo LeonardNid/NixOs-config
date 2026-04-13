@@ -1,1 +1,1 @@
-kanata:-disable-PrivateUsers-to-allow-device-access--22:18
+kanata:-run-as-root-to-bypass-uinput-permission-issues--22:19
