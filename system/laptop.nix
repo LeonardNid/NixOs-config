@@ -54,7 +54,7 @@
       )
 
       (deflayer nav
-        _    _   up  _   _   _   _   lft down rgt  _   _  home end
+        _    _   up  _   _   _   _  left down rght  _   _  home end
       )
 
       (defalias
