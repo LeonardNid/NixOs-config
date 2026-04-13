@@ -1,1 +1,1 @@
-update-kwin-latency-documentation--21:38
+kwin-latency:-gpu-high-only-on-AC--auto-on-battery-via-TLP--21:45
