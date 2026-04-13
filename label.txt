@@ -1,1 +1,1 @@
-update-fresh-install-guide-with-nextcloud-step--19:16
+add-nextcloud-server-url-to-fresh-install-guide--19:20
