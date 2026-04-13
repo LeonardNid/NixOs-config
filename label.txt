@@ -1,1 +1,1 @@
-gestures:-replace-ydotool-with-qdbus-kglobalaccel-for-clean-shortcut-invocation--21:15
+fix-qdbus-package-name-in-fusuma-extraPackages--21:16
