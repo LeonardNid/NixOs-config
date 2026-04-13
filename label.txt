@@ -1,1 +1,1 @@
-fix-obsidian-taskbar-name:-run-natively-on-wayland--22:46
+fix-obsidian-taskbar-name:-set-wayland-app_id-via---name-flag--22:52

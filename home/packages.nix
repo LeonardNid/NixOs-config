@@ -7,13 +7,16 @@
     libnotify
   ];
 
-  # Obsidian nativ unter Wayland starten – verhindert "electron"-Anzeige in der Taskleiste
-  xdg.desktopEntries.obsidian = {
-    name = "Obsidian";
-    exec = "obsidian --ozone-platform=wayland %u";
-    icon = "obsidian";
-    categories = [ "Office" ];
-    mimeType = [ "x-scheme-handler/obsidian" ];
-    comment = "A powerful knowledge base";
-  };
+  # Obsidian: --name setzt den Wayland app_id korrekt auf "Obsidian" statt "electron"
+  home.file.".local/share/applications/obsidian.desktop".text = ''
+    [Desktop Entry]
+    Name=Obsidian
+    Exec=obsidian --name Obsidian %u
+    Icon=obsidian
+    Type=Application
+    Categories=Office
+    MimeType=x-scheme-handler/obsidian
+    StartupWMClass=Obsidian
+    Comment=A powerful knowledge base
+  '';
 }
