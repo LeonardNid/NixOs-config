@@ -16,19 +16,19 @@
         <property name="borderColor">auto</property>
       </settings>
       <application name="All">
-        <!-- 3 Finger Swipe Up → KDE Übersicht (Meta+W via ydotool) -->
+        <!-- 3 Finger Swipe Up → KDE Übersicht via KWin DBus -->
         <gesture type="SWIPE" fingers="3" direction="UP">
           <action type="RUN_COMMAND">
             <repeat>false</repeat>
-            <command>ydotool key 125:1 17:1 17:0 125:0</command>
+            <command>dbus-send --session --type=method_call --dest=org.kde.KWin /Effects org.kde.KWin.Effects.toggleEffect string:overview</command>
             <on>begin</on>
           </action>
         </gesture>
-        <!-- 3 Finger Swipe Down → Desktop anzeigen (Meta+D via ydotool) -->
+        <!-- 3 Finger Swipe Down → Desktop anzeigen via KWin DBus -->
         <gesture type="SWIPE" fingers="3" direction="DOWN">
           <action type="RUN_COMMAND">
             <repeat>false</repeat>
-            <command>ydotool key 125:1 32:1 32:0 125:0</command>
+            <command>dbus-send --session --type=method_call --dest=org.kde.KWin /KWin org.kde.KWin.showDesktop</command>
             <on>begin</on>
           </action>
         </gesture>

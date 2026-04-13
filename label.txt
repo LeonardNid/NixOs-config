@@ -1,1 +1,1 @@
-fix-touchegg-gestures-with-ydotool-for-wayland--19:50
+fix-touchegg:-use-dbus-for-kwin-gestures-on-wayland--19:50
