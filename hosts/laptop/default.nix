@@ -15,6 +15,8 @@
     ../../system/packages.nix
   ];
 
-  # Laptop-spezifischer Hostname
   networking.hostName = "laptop";
+
+  # Laptop-spezifische Home-Manager-Module (Touchpad, Nextcloud, etc.)
+  home-manager.users.leonardn = { imports = [ ../../home/laptop.nix ]; };
 }
