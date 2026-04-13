@@ -2,6 +2,8 @@
 
 ## Layout
 
+### Home Row Mods
+
 | Taste | Tap | Hold |
 |-------|-----|------|
 | `A`   | a   | Super (links) |
@@ -13,7 +15,28 @@
 | `L`   | l   | Alt (rechts) |
 | `Ä`   | ä   | Super (rechts) |
 
-`Ä` liegt physisch auf der US-`'`-Position (KEY_APOSTROPHE) – Kanata arbeitet mit Rohkeycodes unabhängig vom Tastaturlayout.
+### Weitere Mappings
+
+| Taste | Tap | Hold |
+|-------|-----|------|
+| `Caps` | Escape | – |
+| `W`   | w   | Nav-Layer aktivieren |
+| `Y`   | y   | AltGr (→ Y+Q = @) |
+
+### Nav-Layer (W gehalten)
+
+| Taste | Aktion |
+|-------|--------|
+| `I`   | Pfeil hoch |
+| `J`   | Pfeil links |
+| `K`   | Pfeil runter |
+| `L`   | Pfeil rechts |
+| `M`   | Pos1 (Home) |
+| `,`   | Ende (End) |
+
+### Hinweis: Y-Key auf QWERTZ
+
+`Y` liegt physisch an der US-`Z`-Position (Keycode KEY_Z=44). Kanata referenziert Tasten nach physischer Position (US-Layout), daher heißt der Key intern `z`. `Ä` liegt auf der US-`'`-Position (KEY_APOSTROPHE).
 
 ## Konfiguration (`system/laptop.nix`)
 
