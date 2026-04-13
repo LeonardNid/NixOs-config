@@ -14,7 +14,6 @@
     tailscale
     easyeffects
     obsidian
-    nextcloud-client
     zapzap
     mpv
     vlc
