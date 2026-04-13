@@ -19,8 +19,8 @@
   # Verhindert Konflikte mit TLP
   services.power-profiles-daemon.enable = false;
 
-  # Touchpad-Gesten
-  services.touchegg.enable = true;
+  # uinput für ydotool (Wayland-Tastaturemulation)
+  boot.kernelModules = [ "uinput" ];
 
   # Touchpad
   services.libinput = {
