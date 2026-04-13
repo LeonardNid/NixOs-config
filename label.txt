@@ -1,1 +1,1 @@
-kwin-latency:-gpu-high-only-on-AC--auto-on-battery-via-TLP--21:45
+fix-workspace-gesture:-use-flock-to-prevent-multiple-switches--21:51
