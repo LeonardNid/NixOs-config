@@ -1,1 +1,1 @@
-fix-touchegg:-use-dbus-for-kwin-gestures-on-wayland--19:50
+fix-dbus-interface-name-for-kwin-effects--19:52

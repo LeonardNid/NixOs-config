@@ -20,7 +20,7 @@
         <gesture type="SWIPE" fingers="3" direction="UP">
           <action type="RUN_COMMAND">
             <repeat>false</repeat>
-            <command>dbus-send --session --type=method_call --dest=org.kde.KWin /Effects org.kde.KWin.Effects.toggleEffect string:overview</command>
+            <command>dbus-send --session --type=method_call --dest=org.kde.KWin /Effects org.kde.kwin.Effects.toggleEffect string:overview</command>
             <on>begin</on>
           </action>
         </gesture>
@@ -28,7 +28,7 @@
         <gesture type="SWIPE" fingers="3" direction="DOWN">
           <action type="RUN_COMMAND">
             <repeat>false</repeat>
-            <command>dbus-send --session --type=method_call --dest=org.kde.KWin /KWin org.kde.KWin.showDesktop</command>
+            <command>dbus-send --session --type=method_call --dest=org.kde.KWin /KWin org.kde.KWin.showingDesktop boolean:true</command>
             <on>begin</on>
           </action>
         </gesture>
