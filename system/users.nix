@@ -10,7 +10,7 @@
   users.users.leonardn = {
     isNormalUser = true;
     description = "Leonard Niedens";
-    extraGroups = [ "networkmanager" "wheel" "libvirtd" "kvm" "plugdev" ];
+    extraGroups = [ "networkmanager" "wheel" "libvirtd" "kvm" "plugdev" "input" ];
     shell = pkgs.zsh;
     packages = with pkgs; [
       kdePackages.kate

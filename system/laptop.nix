@@ -19,6 +19,9 @@
   # Verhindert Konflikte mit TLP
   services.power-profiles-daemon.enable = false;
 
+  # Touchpad-Gesten
+  services.touchegg.enable = true;
+
   # Touchpad
   services.libinput = {
     enable = true;
