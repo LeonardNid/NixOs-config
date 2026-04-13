@@ -21,7 +21,7 @@
   # Fusuma: Touchpad-Gesten für Wayland/KDE Plasma 6
   services.fusuma = {
     enable = true;
-    extraPackages = with pkgs; [ ydotool ];
+    extraPackages = with pkgs; [ ydotool coreutils ];
     settings = {
       threshold = { swipe = 0.1; };
       interval = { swipe = 0.5; };

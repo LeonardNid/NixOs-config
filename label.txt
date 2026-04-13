@@ -1,1 +1,1 @@
-replace-touchegg-with-fusuma-ydotool-for-wayland-gestures--19:56
+fix-fusuma-missing-uname-on-nixos--19:57
