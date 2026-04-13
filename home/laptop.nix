@@ -19,15 +19,15 @@
     extraPackages = with pkgs; [ ydotool coreutils ];
     settings = {
       threshold = { swipe = 0.05; };
-      interval = { swipe = 0.3; };
+      interval = { swipe = 0; };
       swipe = {
         "3" = {
-          up.begin.command   = "YDOTOOL_SOCKET=/run/user/$(id -u)/ydotool_socket ydotool key 125:1 17:1 17:0 125:0";  # Meta+W → Übersicht
-          down.begin.command = "YDOTOOL_SOCKET=/run/user/$(id -u)/ydotool_socket ydotool key 125:1 32:1 32:0 125:0"; # Meta+D → Desktop
+          up.command   = "YDOTOOL_SOCKET=/run/user/$(id -u)/ydotool_socket ydotool key 125:1 17:1 17:0 125:0";  # Meta+W → Übersicht
+          down.command = "YDOTOOL_SOCKET=/run/user/$(id -u)/ydotool_socket ydotool key 125:1 32:1 32:0 125:0"; # Meta+D → Desktop
         };
         "4" = {
-          left.begin.command  = "YDOTOOL_SOCKET=/run/user/$(id -u)/ydotool_socket ydotool key 65506:1 65361:1 65361:0 65506:0"; # Ctrl+Left → Desktop wechseln
-          right.begin.command = "YDOTOOL_SOCKET=/run/user/$(id -u)/ydotool_socket ydotool key 65506:1 65363:1 65363:0 65506:0"; # Ctrl+Right → Desktop wechseln
+          left.command  = "YDOTOOL_SOCKET=/run/user/$(id -u)/ydotool_socket ydotool key 65506:1 65361:1 65361:0 65506:0"; # Ctrl+Left → Desktop wechseln
+          right.command = "YDOTOOL_SOCKET=/run/user/$(id -u)/ydotool_socket ydotool key 65506:1 65363:1 65363:0 65506:0"; # Ctrl+Right → Desktop wechseln
         };
       };
     };
