@@ -24,10 +24,15 @@
   # AMD Renoir: GFXOFF deaktivieren + GPU auf performance halten
   # Verhindert ~1s Wakeup-Delay bei KWin-Effekten (Alt+Tab, Overview etc.)
   boot.kernelParams = [ "amdgpu.gfxoff=0" ];
-  services.udev.extraRules = ''
-    ACTION=="add", SUBSYSTEM=="drm", KERNEL=="card[0-9]", DRIVERS=="amdgpu", \
-      ATTR{device/power_dpm_force_performance_level}="high"
-  '';
+  systemd.services.amdgpu-performance = {
+    description = "Set AMD GPU to high performance (prevents KWin wakeup delay)";
+    after = [ "multi-user.target" ];
+    wantedBy = [ "multi-user.target" ];
+    serviceConfig = {
+      Type = "oneshot";
+      ExecStart = "/bin/sh -c 'echo high > /sys/class/drm/card1/device/power_dpm_force_performance_level'";
+    };
+  };
 
   # Touchpad
   services.libinput = {
