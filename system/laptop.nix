@@ -1,6 +1,9 @@
 { pkgs, lib, ... }:
 
 {
+  # WiFi und Bluetooth Firmware (wichtig für Laptop-Hardware)
+  hardware.enableRedistributableFirmware = true;
+  hardware.enableAllFirmware = true;
   # Power Management mit TLP
   services.tlp = {
     enable = true;
