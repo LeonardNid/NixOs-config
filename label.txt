@@ -1,1 +1,1 @@
-gestures:-add-3-finger-left-right-for-workspace-switching--21:19
+fix-kwin-latency-persistence-and-fusuma-interval--21:35
