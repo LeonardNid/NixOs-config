@@ -37,7 +37,17 @@ git -C ~/nixos-config remote set-url origin git@github.com:LeonardNid/NixOs-conf
 
 ---
 
-## 3. Manuell (nicht automatisierbar)
+## 3. Tailscale einrichten (vor Nextcloud!)
+
+```bash
+sudo tailscale up
+```
+
+Browser öffnet sich → einloggen. Danach ist das Tailscale-Netz verfügbar.
+
+---
+
+## 4. Manuell (nicht automatisierbar)
 
 - [ ] Vivaldi: Sync-Login (Einstellungen → Sync)
 - [ ] Vaultwarden-Extension: Einloggen & Hostseite auswählen
