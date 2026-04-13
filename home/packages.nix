@@ -10,26 +10,26 @@
   xdg.configFile."touchegg/touchegg.conf".text = ''
     <touchegg>
       <settings>
-        <property name="animation_delay">150</property>
-        <property name="expiration_time">3000</property>
+        <property name="animation_delay">0</property>
+        <property name="expiration_time">500</property>
         <property name="color">auto</property>
         <property name="borderColor">auto</property>
       </settings>
       <application name="All">
-        <!-- 3 Finger Swipe Up → KDE Übersicht (Meta+W) -->
+        <!-- 3 Finger Swipe Up → KDE Übersicht (Meta+W via ydotool) -->
         <gesture type="SWIPE" fingers="3" direction="UP">
-          <action type="SEND_KEYS">
+          <action type="RUN_COMMAND">
             <repeat>false</repeat>
-            <modifiers>super</modifiers>
-            <keys>W</keys>
+            <command>ydotool key 125:1 17:1 17:0 125:0</command>
+            <on>begin</on>
           </action>
         </gesture>
-        <!-- 3 Finger Swipe Down → Desktop anzeigen (Meta+D) -->
+        <!-- 3 Finger Swipe Down → Desktop anzeigen (Meta+D via ydotool) -->
         <gesture type="SWIPE" fingers="3" direction="DOWN">
-          <action type="SEND_KEYS">
+          <action type="RUN_COMMAND">
             <repeat>false</repeat>
-            <modifiers>super</modifiers>
-            <keys>D</keys>
+            <command>ydotool key 125:1 32:1 32:0 125:0</command>
+            <on>begin</on>
           </action>
         </gesture>
         <!-- 4 Finger Swipe Left/Right → Virtuellen Desktop wechseln -->

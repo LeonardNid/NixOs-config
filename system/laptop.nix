@@ -21,6 +21,7 @@
 
   # Touchpad-Gesten
   services.touchegg.enable = true;
+  services.ydotool.enable = true;
 
   # Touchpad
   services.libinput = {
