@@ -1,1 +1,1 @@
-laptop:-add-kanata-home-row-mods--22:16
+kanata:-specify-keyboard-device-path--22:17

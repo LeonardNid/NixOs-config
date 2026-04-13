@@ -34,7 +34,9 @@
   # Home Row Mods via Kanata
   services.kanata = {
     enable = true;
-    keyboards.default.config = ''
+    keyboards.default = {
+      devices = [ "/dev/input/by-path/platform-i8042-serio-0-event-kbd" ];
+      config = ''
       (defsrc
         a s d f j k l '
       )
@@ -54,6 +56,7 @@
         ä  (tap-hold-release 200 150 '   rmet)
       )
     '';
+    };
   };
 
   # Touchpad
