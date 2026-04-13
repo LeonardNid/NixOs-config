@@ -46,14 +46,19 @@
       extraDefCfg = "process-unmapped-keys yes";
       config = ''
       (defsrc
-        a s d f j k l '
+        caps w i a s d f j k l ' z m ,
       )
 
       (deflayer default
-        @a @s @d @f @j @k @l @ä
+        esc  @w  _   @a  @s  @d  @f  @j  @k  @l  @ä  @y  _    _
+      )
+
+      (deflayer nav
+        _    _   up  _   _   _   _   lft down rgt  _   _  home end
       )
 
       (defalias
+        ;; Home Row Mods
         a  (tap-hold-release 200 150 a   lmet)
         s  (tap-hold-release 200 150 s   lalt)
         d  (tap-hold-release 200 150 d   lsft)
@@ -62,6 +67,10 @@
         k  (tap-hold-release 200 150 k   rsft)
         l  (tap-hold-release 200 150 l   ralt)
         ä  (tap-hold-release 200 150 '   rmet)
+        ;; w: tap=w, hold=Nav-Layer
+        w  (tap-hold             200 150 w   (layer-while-held nav))
+        ;; y (physisch: kanata-z): tap=y, hold=AltGr → y+q=@
+        y  (tap-hold-release 200 150 z   ralt)
       )
     '';
     };
