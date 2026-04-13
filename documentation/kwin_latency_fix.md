@@ -32,21 +32,33 @@ Could not delete texture because no context is current
 In `system/laptop.nix`:
 ```nix
 boot.kernelParams = [ "amdgpu.gfxoff=0" ];
+
+systemd.services.amdgpu-performance = {
+  description = "Set AMD GPU to high performance (prevents KWin wakeup delay)";
+  after = [ "multi-user.target" ];
+  wantedBy = [ "multi-user.target" ];
+  serviceConfig = {
+    Type = "oneshot";
+    ExecStart = "/bin/sh -c 'echo high > /sys/class/drm/card1/device/power_dpm_force_performance_level'";
+  };
+};
 ```
 
-Deaktiviert GFXOFF dauerhaft für den amdgpu-Treiber. Die GPU bleibt aktiv und KWin-Effekte starten sofort.
+`amdgpu.gfxoff=0` deaktiviert GFXOFF im Kernel. Der systemd-Service setzt zusätzlich den Performance-Level auf `high` nach jedem Boot – beide zusammen verhindern den Delay zuverlässig.
 
 **Trade-off:** Minimal höherer Stromverbrauch im Idle (~0.5–1W). Für Desktop-Nutzung irrelevant.
 
 ## Weitere KWin-Optimierungen (ebenfalls gesetzt)
 
-In `~/.config/kwinrc` via plasma-manager oder kwriteconfig6:
+In `home/laptop.nix` via home-manager activation (kwriteconfig6):
 
 ```ini
-[TabBox]
-DelayTime=0          # Alt+Tab sofort zeigen (default: 90ms)
+[KDE] (kdeglobals)
+AnimationDurationFactor=0.5  # Animationen halbiert schnell
 
-[Compositing]
-HiddenPreviews=6     # Alle Fenstertexturen im VRAM halten (default: 5)
-LatencyPolicy=Low    # Niedrige Compositing-Latenz priorisieren
+[TabBox] (kwinrc)
+DelayTime=0                  # Alt+Tab sofort zeigen (default: 90ms)
+
+[Compositing] (kwinrc)
+LatencyPolicy=Low            # Niedrige Compositing-Latenz priorisieren
 ```

@@ -1,1 +1,1 @@
-fix-kwin-latency:-use-systemd-service-for-amdgpu-performance-level--21:36
+update-kwin-latency-documentation--21:38
