@@ -338,6 +338,9 @@ in
     '';
   };
 
+  # GNOME Keyring als Secret Service (für Vivaldi, SSH-Keys, etc.)
+  services.gnome-keyring.enable = true;
+
   # Pakete
   home.packages = with pkgs; [
     kitty                      # Terminal

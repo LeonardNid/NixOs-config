@@ -23,6 +23,10 @@
   # PAM-Integration für hyprlock (Sperrbildschirm)
   security.pam.services.hyprlock = {};
 
+  # GNOME Keyring: automatisch beim SDDM-Login entsperren
+  # Stellt Secret Service bereit, den Vivaldi/Chrome für Passwörter benötigen
+  security.pam.services.sddm.enableGnomeKeyring = true;
+
   # Polkit: benötigt für Berechtigungsdialoge (z.B. WLAN-Passwort, sudo-GUI)
   security.polkit.enable = true;
 

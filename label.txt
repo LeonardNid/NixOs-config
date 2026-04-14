@@ -1,1 +1,1 @@
-rebuild-script:-auto-hyprctl-reload-on-laptop-hyprland--08:43
+add-gnome-keyring-for-Vivaldi-password-store-on-Hyprland--08:52
