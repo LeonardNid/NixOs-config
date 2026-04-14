@@ -1,4 +1,4 @@
-{ ... }:
+{ pkgs, ... }:
 
 {
   # Hyprland Wayland compositor
@@ -23,15 +23,15 @@
   # PAM-Integration für hyprlock (Sperrbildschirm)
   security.pam.services.hyprlock = {};
 
-  # KWallet-PAM für alle Sitzungen aktivieren
+  # KWallet via PAM beim SDDM-Login automatisch entsperren
+  # (Wallet-Passwort muss = Login-Passwort sein)
   security.pam.services.sddm.kwallet.enable = true;
-
-  # GNOME Keyring: automatisch beim SDDM-Login entsperren
-  # Stellt Secret Service bereit, den Vivaldi/Chrome für Passwörter benötigen
-  security.pam.services.sddm.enableGnomeKeyring = true;
 
   # Polkit: benötigt für Berechtigungsdialoge (z.B. WLAN-Passwort, sudo-GUI)
   security.polkit.enable = true;
+
+  # kwalletd6 installieren → D-Bus-Aktivierung + exec-once in Hyprland
+  environment.systemPackages = [ pkgs.kdePackages.kwallet ];
 
   services.printing.enable = true;
 }

@@ -23,6 +23,8 @@ in
         "hyprpaper"
         "wl-paste --watch cliphist store"
         "nm-applet --indicator"
+        # KWallet-Daemon starten → Secret Service für Browser/SSH-Keys
+        "kwalletd6"
       ];
 
       # Input
@@ -337,9 +339,6 @@ in
       }
     '';
   };
-
-  # GNOME Keyring als Secret Service (für Vivaldi, SSH-Keys, etc.)
-  services.gnome-keyring.enable = true;
 
   xdg.desktopEntries.vivaldi-stable = {
     name = "Vivaldi";

@@ -1,1 +1,1 @@
-ollama--20:06
+kwallet-hyprland-fix:-gnome-keyring-entfernt--kwalletd6-autostart--21:10
