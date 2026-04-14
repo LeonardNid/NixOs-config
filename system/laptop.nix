@@ -21,16 +21,6 @@
 
   boot.kernelModules = [ "uinput" ];
 
-  # AMD Renoir: GFXOFF deaktivieren + GPU auf performance halten
-  # Verhindert ~1s Wakeup-Delay bei KWin-Effekten (Alt+Tab, Overview etc.)
-  # GFXOFF deaktivieren – verhindert GPU-Wakeup-Delay bei KWin-Effekten
-  boot.kernelParams = [ "amdgpu.gfxoff=0" ];
-  # GPU-Performance: high auf AC (kein KWin-Delay), auto auf Akku (Stromsparen)
-  services.tlp.settings = {
-    RADEON_DPM_PERF_LEVEL_ON_AC = "high";
-    RADEON_DPM_PERF_LEVEL_ON_BAT = "auto";
-  };
-
   # Kanata: Hardening-Optionen die Device-Zugriff blockieren deaktivieren
   systemd.services.kanata-default.serviceConfig = {
     PrivateUsers = lib.mkForce false;
