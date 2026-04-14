@@ -85,6 +85,11 @@
     criticalPowerAction = "HybridSleep";
   };
 
+  # KWallet PAM-Unlock: auf login-Service (SDDM delegiert an login via substack)
+  # Gilt für beide Desktops (KDE + Hyprland) – wallet wird beim Login entsperrt
+  # Voraussetzung: KWallet-Passwort = Login-Passwort
+  security.pam.services.login.kwallet.enable = true;
+
   # Laptop-typische Pakete
   environment.systemPackages = with pkgs; [
     brightnessctl

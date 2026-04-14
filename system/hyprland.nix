@@ -23,14 +23,10 @@
   # PAM-Integration für hyprlock (Sperrbildschirm)
   security.pam.services.hyprlock = {};
 
-  # KWallet via PAM beim SDDM-Login automatisch entsperren
-  # (Wallet-Passwort muss = Login-Passwort sein)
-  security.pam.services.sddm.kwallet.enable = true;
-
   # Polkit: benötigt für Berechtigungsdialoge (z.B. WLAN-Passwort, sudo-GUI)
   security.polkit.enable = true;
 
-  # kwalletd6 installieren → D-Bus-Aktivierung + exec-once in Hyprland
+  # kwalletd6 bereitstellen (PAM-Unlock läuft über system/laptop.nix → login-Service)
   environment.systemPackages = [ pkgs.kdePackages.kwallet ];
 
   services.printing.enable = true;

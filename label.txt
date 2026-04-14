@@ -1,1 +1,1 @@
-switch-hyprland--21:12
+kwallet-fix:-pam-auf-login-service--sddm-delegiert-an-login---einheitlich-fuer-kde-hyprland--21:24
