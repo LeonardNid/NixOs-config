@@ -20,6 +20,10 @@
         git commit -m "$MESSAGE ($DATE)"
       fi
       sudo nixos-rebuild switch --flake /home/leonardn/nixos-config#$(hostname)
+      # Hyprland-Config neu laden, falls auf dem Laptop unter Hyprland
+      if [ "$(hostname)" = "laptop" ] && [ "$XDG_CURRENT_DESKTOP" = "Hyprland" ]; then
+        hyprctl reload
+      fi
       git push
     '')
   ];

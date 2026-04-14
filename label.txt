@@ -1,1 +1,1 @@
-fix-gestures:-use-horizontal-direction-in-gestures-block--08:41
+rebuild-script:-auto-hyprctl-reload-on-laptop-hyprland--08:43
