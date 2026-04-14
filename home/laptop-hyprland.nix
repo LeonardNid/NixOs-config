@@ -17,14 +17,15 @@ in
 
       # Autostart
       exec-once = [
+        # PAM_KWALLET5_LOGIN in D-Bus-Activation-Environment eintragen → muss VOR kwalletd6 laufen
+        # Sonst startet ksecretd via D-Bus ohne PAM-Socket und fragt nach Passwort
+        "dbus-update-activation-environment --systemd PAM_KWALLET5_LOGIN && kwalletd6"
         polkitAgent
         "waybar"
         "mako"
         "hyprpaper"
         "wl-paste --watch cliphist store"
         "nm-applet --indicator"
-        # KWallet-Daemon starten → Secret Service für Browser/SSH-Keys
-        "kwalletd6"
       ];
 
       # Input
