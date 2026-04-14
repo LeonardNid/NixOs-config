@@ -1,1 +1,1 @@
-kwallet-hyprland-fix:-gnome-keyring-entfernt--kwalletd6-autostart--21:10
+switch-hyprland--21:12
