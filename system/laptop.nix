@@ -101,20 +101,4 @@
     powertop
     acpi
   ];
-
-  environment.sessionVariables = {
-    # 1. DRM-Modifier deaktivieren (Der wahrscheinlichste Fix)
-    # Zwingt KWin, Standard-Speicherformate zu nutzen. Verhindert oft, 
-    # dass der Treiber ewig braucht, um Buffer für die Thumbnails auszuhandeln.
-    KWIN_DRM_USE_MODIFIERS = "0";
-
-    # 2. Explicit Sync deaktivieren
-    # Plasma 6 nutzt Wayland Explicit Sync. Der AMD-Treiber hat damit bei 
-    # manchen APUs aktuell noch Timing-Probleme, was zu Hängern führt.
-    KWIN_EXPLICIT_SYNC = "0";
-
-    # 3. QML-Rendermethode erzwingen
-    # Zwingt die Task-Switcher-UI, den Basis-Szenegraph zu nutzen.
-    QSG_RENDER_LOOP = "basic";
-  };
 }
