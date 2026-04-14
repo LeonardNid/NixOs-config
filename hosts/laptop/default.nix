@@ -19,6 +19,7 @@ in
     ../../system/audio.nix
     ../../system/users.nix
     ../../system/packages.nix
+    ../../system/ollama.nix
   ]
   ++ lib.optional (desktop == "kde")      ../../system/desktop.nix
   ++ lib.optional (desktop == "hyprland") ../../system/hyprland.nix;
