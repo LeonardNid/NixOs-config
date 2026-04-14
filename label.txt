@@ -1,1 +1,1 @@
-fix-gesture-direction:-right--1--left--1--08:39
+fix-gestures:-use-horizontal-direction-in-gestures-block--08:41
