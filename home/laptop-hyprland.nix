@@ -210,15 +210,17 @@ in
   # Benachrichtigungen
   services.mako = {
     enable = true;
-    defaultTimeout = 5000;
-    backgroundColor = "#1e1e2ecc";
-    textColor = "#cdd6f4";
-    borderColor = "#89b4fa";
-    borderRadius = 8;
-    width = 360;
-    margin = "12";
-    padding = "12";
-    font = "JetBrainsMono Nerd Font 11";
+    settings = {
+      default-timeout = 5000;
+      background-color = "#1e1e2ecc";
+      text-color = "#cdd6f4";
+      border-color = "#89b4fa";
+      border-radius = 8;
+      width = 360;
+      margin = "12";
+      padding = "12";
+      font = "JetBrainsMono Nerd Font 11";
+    };
   };
 
   # Status-Leiste
