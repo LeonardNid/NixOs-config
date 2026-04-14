@@ -39,9 +39,11 @@ in
 
       # Touchpad-Gesten (Workspace-Wechsel)
       gestures = {
-        workspace_swipe          = true;
-        workspace_swipe_fingers  = 3;
-        workspace_swipe_cancel_ratio = 0.5;
+        workspace_swipe = {
+          enabled      = true;
+          fingers      = 3;
+          cancel_ratio = 0.5;
+        };
       };
 
       # Allgemeines Aussehen
@@ -62,7 +64,7 @@ in
           passes   = 2;
           vibrancy = 0.1696;
         };
-        drop_shadow = false;
+        shadow = { enabled = false; };
       };
 
       animations = {
