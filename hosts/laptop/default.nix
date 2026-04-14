@@ -5,7 +5,7 @@ let
   # DESKTOP WÄHLEN: "kde" oder "hyprland"
   # Danach: rebuild "switch to <desktop>"
   # =============================================
-  desktop = "kde";
+  desktop = "hyprland";
 in
 {
   imports = [

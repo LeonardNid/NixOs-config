@@ -1,1 +1,1 @@
-add-hyprland-support--keep-kde-default--08:18
+swtich-to-hyprland--08:20
