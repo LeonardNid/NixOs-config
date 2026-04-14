@@ -14,9 +14,10 @@ nixos-config/
 │       └── hardware-configuration.nix
 ├── system/                    # NixOS-Module (systemweit, root)
 │   ├── packages.nix           # Gemeinsame System-Pakete (beide Hosts)
-│   ├── desktop.nix            # KDE Plasma 6, SDDM, Auto-Login
+│   ├── desktop.nix            # KDE Plasma 6, SDDM (beide Hosts)
+│   ├── hyprland.nix           # Hyprland Compositor, SDDM (nur Laptop via desktop-Variable)
 │   ├── users.nix              # User leonardn, sudo, Gruppen, Tailscale
-│   ├── laptop.nix             # NUR Laptop: TLP, libinput, touchpad, fusuma/uinput
+│   ├── laptop.nix             # NUR Laptop: TLP, Kanata, libinput, Brillo (desktop-agnostisch)
 │   ├── networking.nix
 │   ├── locale.nix
 │   ├── boot.nix
@@ -26,7 +27,9 @@ nixos-config/
 ├── home/                      # Home-Manager-Module (user leonardn)
 │   ├── default.nix            # Basis: importiert alle shared home-Module
 │   ├── packages.nix           # Gemeinsame user-Pakete (beide Hosts)
-│   ├── laptop.nix             # NUR Laptop: fusuma, ydotool, nextcloud-client
+│   ├── laptop.nix             # NUR Laptop, desktop-agnostisch: Nextcloud
+│   ├── laptop-kde.nix         # NUR Laptop + KDE: Fusuma-Gesten, KWin-Latency-Fix, Lockscreen
+│   ├── laptop-hyprland.nix    # NUR Laptop + Hyprland: Waybar, Wofi, Mako, hyprlock, hypridle
 │   ├── vscode.nix             # VSCode + Copilot Extensions
 │   ├── xdg.nix                # MIME-Defaults (Vivaldi als Standard-Browser)
 │   ├── git.nix                # Git-Konfiguration
@@ -44,18 +47,26 @@ nixos-config/
 
 ### Laptop vs. Desktop trennen
 
-- **Laptop-spezifische System-Module** gehören in `system/laptop.nix` und werden nur in `hosts/laptop/default.nix` importiert.
-- **Laptop-spezifische Home-Module** gehören in `home/laptop.nix` und werden nur in `hosts/laptop/default.nix` eingebunden:
-  ```nix
-  home-manager.users.leonardn = { imports = [ ../../home/laptop.nix ]; };
-  ```
+- **Laptop-spezifische System-Module** gehören in `system/laptop.nix` (desktop-agnostisch).
+- **Desktop-Auswahl** erfolgt über die Variable `desktop` in `hosts/laptop/default.nix`:
+  - `desktop = "kde"` → importiert `system/desktop.nix` + `home/laptop-kde.nix`
+  - `desktop = "hyprland"` → importiert `system/hyprland.nix` + `home/laptop-hyprland.nix`
+  - `home/laptop.nix` (nur Nextcloud) wird immer importiert
 - `system/packages.nix` und `home/packages.nix` sind für **beide Hosts** – nichts Laptop-Spezifisches dort.
+
+### Desktop wechseln (Laptop)
+
+1. In `hosts/laptop/default.nix` die Variable ändern: `desktop = "kde"` ↔ `desktop = "hyprland"`
+2. `rebuild "switch to hyprland"` ausführen
+3. Neu starten → SDDM zeigt die neue Session
 
 ### Neue Pakete hinzufügen
 
 - **System-Paket (alle Hosts):** `system/packages.nix`
 - **User-Paket (alle Hosts):** `home/packages.nix`
-- **Nur Laptop:** `home/laptop.nix` oder `system/laptop.nix`
+- **Nur Laptop, desktop-agnostisch:** `home/laptop.nix`
+- **Nur Laptop + KDE:** `home/laptop-kde.nix`
+- **Nur Laptop + Hyprland:** `home/laptop-hyprland.nix`
 - Programme die home-manager-Optionen brauchen (vscode, git, etc.) gehören in eigene `home/*.nix` Dateien, nicht in `packages.nix`.
 
 ### Rebuild
