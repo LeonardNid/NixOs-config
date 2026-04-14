@@ -362,5 +362,6 @@ in
     networkmanagerapplet        # Netzwerk-Tray-Icon
     polkit_gnome               # Polkit-Authentifizierungsagent
     nerd-fonts.jetbrains-mono  # Icons für Waybar und Mako
+    kdePackages.kwalletmanager # KWallet GUI (Passwort ändern, Einträge verwalten)
   ];
 }
