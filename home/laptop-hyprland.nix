@@ -40,8 +40,8 @@ in
       # Touchpad-Gesten (Workspace-Wechsel via 3-Finger-Swipe)
       # workspace_swipe wurde in 0.51 entfernt, neues gesture-Binding-System:
       gesture = [
-        "3, right, workspace, -1"
-        "3, left,  workspace, +1"
+        "3, right, workspace, +1"
+        "3, left,  workspace, -1"
       ];
 
       # Allgemeines Aussehen

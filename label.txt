@@ -1,1 +1,1 @@
-fix-hyprland-gestures:-use-new-gesture--binding-syntax--0.51----08:35
+fix-gesture-direction:-right--1--left--1--08:39
