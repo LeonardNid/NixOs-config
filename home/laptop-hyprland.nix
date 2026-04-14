@@ -344,7 +344,7 @@ in
   xdg.desktopEntries.vivaldi-stable = {
     name = "Vivaldi";
     genericName = "Web Browser";
-    exec = "vivaldi-stable --password-store=kwallet6 %U";
+    exec = "vivaldi --password-store=kwallet6 %U";
     terminal = false;
     categories = [ "Network" "WebBrowser" ];
     mimeType = [ "text/html" "text/xml" "x-scheme-handler/http" "x-scheme-handler/https" ];
@@ -362,6 +362,5 @@ in
     networkmanagerapplet        # Netzwerk-Tray-Icon
     polkit_gnome               # Polkit-Authentifizierungsagent
     nerd-fonts.jetbrains-mono  # Icons für Waybar und Mako
-    kdePackages.kwalletmanager # KWallet GUI (Passwort ändern, Einträge verwalten)
   ];
 }
