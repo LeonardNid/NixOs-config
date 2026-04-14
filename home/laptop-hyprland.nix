@@ -37,14 +37,12 @@ in
         };
       };
 
-      # Touchpad-Gesten (Workspace-Wechsel)
-      gestures = {
-        workspace_swipe = {
-          enabled      = true;
-          fingers      = 3;
-          cancel_ratio = 0.5;
-        };
-      };
+      # Touchpad-Gesten (Workspace-Wechsel via 3-Finger-Swipe)
+      # workspace_swipe wurde in 0.51 entfernt, neues gesture-Binding-System:
+      gesture = [
+        "3, right, workspace, -1"
+        "3, left,  workspace, +1"
+      ];
 
       # Allgemeines Aussehen
       general = {
