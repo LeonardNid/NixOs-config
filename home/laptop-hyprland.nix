@@ -341,6 +341,15 @@ in
   # GNOME Keyring als Secret Service (für Vivaldi, SSH-Keys, etc.)
   services.gnome-keyring.enable = true;
 
+  xdg.desktopEntries.vivaldi-stable = {
+    name = "Vivaldi";
+    genericName = "Web Browser";
+    exec = "vivaldi-stable --password-store=kwallet6 %U";
+    terminal = false;
+    categories = [ "Network" "WebBrowser" ];
+    mimeType = [ "text/html" "text/xml" "x-scheme-handler/http" "x-scheme-handler/https" ];
+  };
+
   # Pakete
   home.packages = with pkgs; [
     kitty                      # Terminal

@@ -23,6 +23,9 @@
   # PAM-Integration für hyprlock (Sperrbildschirm)
   security.pam.services.hyprlock = {};
 
+  # KWallet-PAM für alle Sitzungen aktivieren
+  security.pam.services.sddm.kwallet.enable = true;
+
   # GNOME Keyring: automatisch beim SDDM-Login entsperren
   # Stellt Secret Service bereit, den Vivaldi/Chrome für Passwörter benötigen
   security.pam.services.sddm.enableGnomeKeyring = true;
