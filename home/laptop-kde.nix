@@ -35,7 +35,7 @@ in
       interval = { swipe = 1; };
       swipe = {
         "3" = {
-          up.command    = "${qdbus} 'Toggle Overview'";
+          up.command    = "${qdbus} 'ExposeAll'";
           down.command  = "${qdbus} 'ExposeAll'";
           left.command  = once "${qdbus} 'Switch to Next Desktop'";
           right.command = once "${qdbus} 'Switch to Previous Desktop'";
@@ -48,3 +48,4 @@ in
     };
   };
 }
+
