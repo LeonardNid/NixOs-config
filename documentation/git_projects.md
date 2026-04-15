@@ -145,7 +145,34 @@ result
 
 ---
 
-## 5. Checkliste für ein neues Projekt
+## 5. Gitignore-Falle: bereits getrackte Dateien
+
+Wenn eine Datei/Ordner schon committed war bevor sie in `.gitignore` stand, ignoriert git sie trotzdem weiterhin. Fix:
+
+```bash
+git rm -r --cached .direnv/   # Beispiel für .direnv
+git commit -m "remove .direnv from tracking"
+```
+
+Danach greift `.gitignore` wie erwartet.
+
+---
+
+## 6. Übersicht & Pushen aller Projekte
+
+Alle Projekte liegen in `~/gitprojs/`. Zwei Scripts stehen zur Verfügung:
+
+```bash
+git-overview    # zeigt alle Projekte mit uncommitted changes oder unpushed commits
+git-push-all    # pusht alle Projekte die unpushed commits haben
+```
+
+**Wichtig:** `git-push-all` pusht nur Projekte mit vorhandenen unpushed **commits**.
+Ungestage Änderungen müssen vorher manuell mit `git add` + `git commit` committed werden.
+
+---
+
+## 7. Checkliste für ein neues Projekt
 
 - [ ] Ordner anlegen
 - [ ] `shell.nix` erstellen
