@@ -35,8 +35,8 @@ in
       interval = { swipe = 1; };
       swipe = {
         "3" = {
-          up.command    = "${qdbus} 'Walk Through Windows'";
-          down.command  = "${qdbus} 'Walk Through Windows (Reverse)'";
+          up.command    = "${qdbus} 'Toggle Overview'";
+          down.command  = "${qdbus} 'ExposeAll'";
           left.command  = once "${qdbus} 'Switch to Next Desktop'";
           right.command = once "${qdbus} 'Switch to Previous Desktop'";
         };
