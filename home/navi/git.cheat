@@ -6,6 +6,9 @@ git status
 # Alle Änderungen stagen und committen
 git add . && git commit -m "<message>"
 
+# Alle Änderungen stagen, committen und pushen
+git add . && git commit -m "<message>" && git push
+
 # Einzelne Datei stagen
 git add <file>
 
