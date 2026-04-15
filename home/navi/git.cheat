@@ -1,3 +1,8 @@
+% nix
+
+# VS Code mit nix-shell Umgebung starten
+nix-shell --run "code ."
+
 % git
 
 # Status anzeigen
