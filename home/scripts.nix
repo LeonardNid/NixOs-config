@@ -49,6 +49,7 @@
       fi
 
       cd /home/leonardn/nixos-config
+      git pull --rebase origin main
       git add .
       if ! git diff --cached --quiet; then
         git commit -m "$MESSAGE ($DATE)"
