@@ -10,6 +10,7 @@
     ./packages.nix
     ./vscode.nix
     ./xdg.nix
+    ./navi.nix
   ];
 
   home.username = "leonardn";

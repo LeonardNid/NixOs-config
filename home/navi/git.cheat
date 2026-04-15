@@ -1,0 +1,52 @@
+% git
+
+# Status anzeigen
+git status
+
+# Alle Änderungen stagen und committen
+git add . && git commit -m "<message>"
+
+# Einzelne Datei stagen
+git add <file>
+
+# Commit erstellen
+git commit -m "<message>"
+
+# Pushen
+git push
+
+# Pushen (erstes Mal, upstream setzen)
+git push -u origin <branch>
+
+# Pullen
+git pull
+
+# Commit-Historie (kompakt)
+git log --oneline
+
+# Unterschiede anzeigen (unstaged)
+git diff
+
+# Unterschiede anzeigen (staged)
+git diff --staged
+
+# Branch erstellen und wechseln
+git checkout -b <branch-name>
+
+# Branch wechseln
+git checkout <branch>
+
+# Alle Branches anzeigen
+git branch
+
+# Branch mergen
+git merge <branch>
+
+# Remote-URL anzeigen
+git remote -v
+
+# Neues Repo einrichten und pushen (Forgejo)
+git init && git checkout -b main && git add . && git commit -m "first commit" && git remote add origin ssh://git@leoserver.tail6bb5cd.ts.net:2222/Draonel/<repo>.git && git push -u origin main
+
+# Unpushed commits anzeigen
+git log @{u}.. --oneline

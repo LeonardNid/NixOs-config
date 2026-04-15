@@ -1,3 +1,38 @@
+# Git Grundbefehle
+
+## Status & Überblick
+```bash
+git status          # Was hat sich geändert?
+git log --oneline   # Commit-Historie (kompakt)
+git diff            # Was wurde geändert (noch nicht gestaged)?
+```
+
+## Änderungen committen
+```bash
+git add datei.txt      # Einzelne Datei stagen
+git add .              # Alle Änderungen stagen
+git commit -m "Nachricht"  # Commit erstellen
+```
+
+## Mit Remote (Forgejo) arbeiten
+```bash
+git push               # Lokale Commits hochladen
+git pull               # Remote-Änderungen holen + mergen
+git fetch              # Remote-Änderungen holen (ohne merge)
+```
+
+## Branches
+```bash
+git branch                  # Alle lokalen Branches anzeigen
+git checkout -b feature-xy  # Neuen Branch erstellen + wechseln
+git checkout main           # Zurück zu main wechseln
+git merge feature-xy        # Branch in aktuellen mergen
+```
+
+---
+
+# Forgejo Setup
+
 1. SSH-Key erstellen                                                                                              
 ssh-keygen -t ed25519 -f ~/.ssh/forgejo      
 Erstellt ein Schlüsselpaar — forgejo (privat) und forgejo.pub (öffentlich).                                       
