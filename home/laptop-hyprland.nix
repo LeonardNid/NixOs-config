@@ -27,7 +27,7 @@ in
         polkitAgent
         "waybar"
         "mako"
-        "hyprpaper"
+        "hyprpaper -c ~/.config/hypr/hyprpaper.conf"
         "wl-paste --watch cliphist store"
         "nm-applet --indicator"
       ];
@@ -347,7 +347,7 @@ in
 
   xdg.configFile."hyprpaper.conf".text = ''
     preload = /home/leonardn/nixos-config/wallpapers/${wallpapername}
-    wallpaper = ,/home/leonardn/nixos-config/wallpapers/${wallpapername}
+    wallpaper = eDP-1,/home/leonardn/nixos-config/wallpapers/${wallpapername}
     splash = false
   '';
   
