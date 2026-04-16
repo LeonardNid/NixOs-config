@@ -342,25 +342,10 @@ in
       }
     '';
   };
-
-  xdg.desktopEntries.vivaldi = {
-    name = "Vivaldi";
-    genericName = "Web Browser";
-    exec = "vivaldi --password-store=kwallet6 %U";
-    terminal = false;
-    categories = [ "Network" "WebBrowser" ];
-    mimeType = [ "text/html" "text/xml" "x-scheme-handler/http" "x-scheme-handler/https" ];
-  };
-
-  xdg.desktopEntries.code = {
-    name = "Visual Studio Code";
-    genericName = "Text Editor";
-    exec = "code --password-store=kwallet6 %F";
-    icon = "vscode";
-    terminal = false;
-    categories = [ "Utility" "TextEditor" "Development" "IDE" ];
-    mimeType = [ "text/plain" "inode/directory" ];
-  };
+  
+  xdg.configFile."vivaldi-flags.conf".text = "--password-store=kwallet6";
+  xdg.configFile."code-flags.conf".text = "--password-store=kwallet6";
+  xdg.configFile."electron-flags.conf".text = "--password-store=kwallet6";
 
   # Pakete
   home.packages = with pkgs; [
