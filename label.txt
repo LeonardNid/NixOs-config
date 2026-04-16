@@ -1,1 +1,1 @@
-fix-hyprpaper-target--19:42
+fix-hyprpaper-config-path--19:45
