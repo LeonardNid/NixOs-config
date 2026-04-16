@@ -20,6 +20,20 @@
       done
     '')
 
+    (pkgs.writeShellScriptBin "git-pull-all" ''
+      for dir in ~/gitprojs/*/; do
+        if git -C "$dir" rev-parse --git-dir &>/dev/null 2>&1; then
+          name=$(basename "$dir")
+          git -C "$dir" fetch --quiet 2>/dev/null
+          unpulled=$(git -C "$dir" log ..@{u} --oneline 2>/dev/null)
+          if [ -n "$unpulled" ]; then
+            echo "Pulle $name..."
+            git -C "$dir" pull --rebase && echo "  ✓ $name aktualisiert" || echo "  ✗ $name fehlgeschlagen"
+          fi
+        fi
+      done
+    '')
+
     (pkgs.writeShellScriptBin "git-push-all" ''
       for dir in ~/gitprojs/*/; do
         if git -C "$dir" rev-parse --git-dir &>/dev/null 2>&1; then
