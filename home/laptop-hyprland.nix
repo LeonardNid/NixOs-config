@@ -346,8 +346,8 @@ in
   };
 
   xdg.configFile."hyprpaper.conf".text = ''
-    preload = /home/leonardn/nixos-config/wallpapers/${wallpapername}
-    wallpaper = eDP-1,/home/leonardn/nixos-config/wallpapers/${wallpapername}
+    preload = /home/leonardn/nixos-config/wallpapers/pexels-raybilcliff-7508276.jpg
+    wallpaper = eDP-1,/home/leonardn/nixos-config/wallpapers/pexels-raybilcliff-7508276.jpg
     splash = false
   '';
   
