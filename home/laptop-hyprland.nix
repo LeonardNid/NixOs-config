@@ -59,7 +59,7 @@ in
         border_size = 2;
         "col.active_border"   = "rgba(89b4faff)";
         "col.inactive_border" = "rgba(585b70aa)";
-        layout = "dwindle";
+        layout = "scrolling";
       };
 
       decoration = {
@@ -85,9 +85,10 @@ in
         ];
       };
 
-      dwindle = {
-        pseudotile     = true;
-        preserve_split = true;
+      scrolling = {
+        column_width             = 0.5;
+        fullscreen_on_one_column = true;
+        follow_focus             = true;
       };
 
       misc = {
@@ -115,15 +116,22 @@ in
         # Screenshot: Vollbild → Clipboard
         "$mod, Print, exec, grim - | wl-copy"
 
-        # Fokus mit Pfeiltasten
-        "$mod, left,  movefocus, l"
-        "$mod, right, movefocus, r"
-        "$mod, up,    movefocus, u"
-        "$mod, down,  movefocus, d"
+        # Fokus mit Pfeiltasten (Scrolling Layout)
+        "$mod, left,  layoutmsg, focus l"
+        "$mod, right, layoutmsg, focus r"
+        "$mod, up,    layoutmsg, focus u"
+        "$mod, down,  layoutmsg, focus d"
         # Fokus mit HJKL (L frei lassen – ist Sperrbildschirm)
-        "$mod, H, movefocus, l"
-        "$mod, J, movefocus, d"
-        "$mod, K, movefocus, u"
+        "$mod, H, layoutmsg, focus l"
+        "$mod, J, layoutmsg, focus d"
+        "$mod, K, layoutmsg, focus u"
+
+        # Spaltenbreite anpassen
+        "$mod, minus, layoutmsg, colresize -conf"
+        "$mod, equal, layoutmsg, colresize +conf"
+        # Spalte tauschen
+        "$mod SHIFT, left,  layoutmsg, swapcol l"
+        "$mod SHIFT, right, layoutmsg, swapcol r"
 
         # Workspaces 1–6 wechseln
         "$mod, 1, workspace, 1"
