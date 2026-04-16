@@ -3,7 +3,7 @@
 let
   polkitAgent = "${pkgs.polkit_gnome}/libexec/polkit-gnome-authentication-agent-1";
 
-  wallpapername = "pexels-raybilcliff-7508276.jpg";
+  wallpapername = "surreal-underwater-3840x2160-26042.jpg";
 in
 {
   # Hyprland Window Manager
