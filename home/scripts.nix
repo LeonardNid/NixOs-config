@@ -91,6 +91,7 @@
         echo ""
         echo "┌─── hyprland ───────────────────────────────────"
         hyprctl reload
+        systemctl --user restart hyprpaper
         echo "└────────────────────────────────────────────────"
       fi
 

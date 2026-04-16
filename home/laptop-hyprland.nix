@@ -99,10 +99,12 @@ in
       bind = [
         # Fenster
         "$mod, Return,  exec,          $terminal"
-        "$mod, D,       exec,          $menu"
+        "ALT, Space,    exec,          $menu"
         "$mod, Q,       killactive"
-        "$mod, F,       fullscreen,    0"
-        "$mod SHIFT, F, togglefloating"
+        "$mod, D,       workspace,     e-1"
+        "$mod, F,       workspace,     e+1"
+        "$mod SHIFT, F, fullscreen,    0"
+        "$mod SHIFT, T, togglefloating"
         "$mod, L,       exec,          hyprlock"
 
         # Clipboard-Historie (cliphist + wofi)
