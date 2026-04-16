@@ -2,6 +2,8 @@
 
 let
   polkitAgent = "${pkgs.polkit_gnome}/libexec/polkit-gnome-authentication-agent-1";
+
+  wallpapername = "pexels-raybilcliff-7508276.jpg"
 in
 {
   # Hyprland Window Manager
@@ -344,8 +346,8 @@ in
   };
 
   xdg.configFile."hyprpaper.conf".text = ''
-    preload = /home/leonardn/nixos-config/wallpapers/background.jpg
-    wallpaper = ,/home/leonardn/nixos-config/wallpapers/background.jpg
+    preload = /home/leonardn/nixos-config/wallpapers/${wallpapername}
+    wallpaper = ,/home/leonardn/nixos-config/wallpapers/{wallpapername}
     splash = false
   '';
   
