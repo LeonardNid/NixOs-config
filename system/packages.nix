@@ -10,7 +10,7 @@
     wget
     nodejs
     vesktop
-    vivaldi
+    (vivaldi.override { commandLinergs = "--password-store=kwallet6"; })
     tailscale
     easyeffects
     obsidian

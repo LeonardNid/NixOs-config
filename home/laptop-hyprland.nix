@@ -343,10 +343,6 @@ in
     '';
   };
   
-  xdg.configFile."vivaldi-flags.conf".text = "--password-store=kwallet6";
-  xdg.configFile."code-flags.conf".text = "--password-store=kwallet6";
-  xdg.configFile."electron-flags.conf".text = "--password-store=kwallet6";
-
   # Pakete
   home.packages = with pkgs; [
     kitty                      # Terminal
