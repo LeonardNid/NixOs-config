@@ -38,6 +38,12 @@
       for dir in ~/gitprojs/*/; do
         if git -C "$dir" rev-parse --git-dir &>/dev/null 2>&1; then
           name=$(basename "$dir")
+          dirty=$(git -C "$dir" status --porcelain 2>/dev/null | grep -v '^??')
+          if [ -n "$dirty" ]; then
+            echo "Committe $name..."
+            git -C "$dir" add -u
+            git -C "$dir" commit -m "update" && echo "  ✓ $name committet" || echo "  ✗ $name commit fehlgeschlagen"
+          fi
           unpushed=$(git -C "$dir" log @{u}.. --oneline 2>/dev/null)
           if [ -n "$unpushed" ]; then
             echo "Pushe $name..."

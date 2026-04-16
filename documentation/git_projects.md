@@ -164,11 +164,18 @@ Alle Projekte liegen in `~/gitprojs/`. Zwei Scripts stehen zur Verfügung:
 
 ```bash
 git-overview    # zeigt alle Projekte mit uncommitted changes oder unpushed commits
-git-push-all    # pusht alle Projekte die unpushed commits haben
+git-push-all    # committet und pusht alle Projekte mit Änderungen
+git-pull-all    # pullt alle Projekte die neue Commits auf dem Remote haben
 ```
 
-**Wichtig:** `git-push-all` pusht nur Projekte mit vorhandenen unpushed **commits**.
-Ungestage Änderungen müssen vorher manuell mit `git add` + `git commit` committed werden.
+**`git-push-all` Verhalten:**
+- Modifizierte/gelöschte Dateien (`git add -u`) werden automatisch committet (Message: `"update"`)
+- Untracked files (`??`) werden **nicht** automatisch hinzugefügt – diese müssen manuell mit `git add` + `git commit` committed werden
+- Danach werden alle Repos mit unpushed commits gepusht
+
+**`git-pull-all` Verhalten:**
+- Holt neue Commits vom Remote (`fetch`) und pullt mit `--rebase`
+- Repos ohne neue Remote-Commits werden übersprungen
 
 ---
 

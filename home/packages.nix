@@ -2,9 +2,10 @@
 
 {
   home.packages = with pkgs; [
-    wl-clipboard
+    # wl-clipboard
     keymapp
     libnotify
+    yazi
   ];
 
   # Obsidian: --name setzt den Wayland app_id korrekt auf "Obsidian" statt "electron"
