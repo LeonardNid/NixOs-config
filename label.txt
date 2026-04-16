@@ -1,1 +1,1 @@
-fix-hyprpaper-config-path--19:45
+use-services.hyprpaper-instead-of-manual-config--19:49

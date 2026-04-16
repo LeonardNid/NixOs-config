@@ -27,7 +27,7 @@ in
         polkitAgent
         "waybar"
         "mako"
-        "hyprpaper -c ~/.config/hypr/hyprpaper.conf"
+        # hyprpaper wird als systemd-User-Service via services.hyprpaper gestartet
         "wl-paste --watch cliphist store"
         "nm-applet --indicator"
       ];
@@ -345,11 +345,14 @@ in
     '';
   };
 
-  xdg.configFile."hypr/hyprpaper.conf".text = ''
-    preload = /home/leonardn/nixos-config/wallpapers/${wallpapername}
-    wallpaper = eDP-1,/home/leonardn/nixos-config/wallpapers/${wallpapername}
-    splash = false
-  '';
+  services.hyprpaper = {
+    enable = true;
+    settings = {
+      preload = [ "/home/leonardn/nixos-config/wallpapers/${wallpapername}" ];
+      wallpaper = [ "eDP-1,/home/leonardn/nixos-config/wallpapers/${wallpapername}" ];
+      splash = false;
+    };
+  };
   
   # Pakete
   home.packages = with pkgs; [
@@ -358,7 +361,7 @@ in
     grim                       # Screenshot
     slurp                      # Bildschirmbereich-Auswahl
     cliphist                   # Clipboard-Historie
-    hyprpaper                  # Wallpaper-Daemon
+    # hyprpaper kommt via services.hyprpaper
     pavucontrol                # Lautstärke-Mixer GUI
     networkmanagerapplet        # Netzwerk-Tray-Icon
     polkit_gnome               # Polkit-Authentifizierungsagent
