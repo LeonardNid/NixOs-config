@@ -347,7 +347,7 @@ in
 
   xdg.configFile."hyprpaper.conf".text = ''
     preload = /home/leonardn/nixos-config/wallpapers/${wallpapername}
-    wallpaper = ,/home/leonardn/nixos-config/wallpapers/{wallpapername}
+    wallpaper = ,/home/leonardn/nixos-config/wallpapers/${wallpapername}
     splash = false
   '';
   
