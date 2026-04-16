@@ -23,6 +23,9 @@
   # PAM-Integration für hyprlock (Sperrbildschirm)
   security.pam.services.hyprlock = {};
 
+  # SDDM anweisen, KWallet beim Login zu entsperren
+  security.pam.services.sddm.kwallet.enable = true;
+
   # Polkit: benötigt für Berechtigungsdialoge (z.B. WLAN-Passwort, sudo-GUI)
   security.polkit.enable = true;
 

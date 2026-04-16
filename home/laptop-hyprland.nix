@@ -17,9 +17,11 @@ in
 
       # Autostart
       exec-once = [
-        # PAM_KWALLET5_LOGIN in D-Bus-Activation-Environment eintragen → muss VOR kwalletd6 laufen
-        # Sonst startet ksecretd via D-Bus ohne PAM-Socket und fragt nach Passwort
-        "dbus-update-activation-environment --systemd PAM_KWALLET5_LOGIN && kwalletd6"
+        # NEU: DBus updaten, KWallet initialisieren und Daemon starten
+        "dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP"
+        "${pkgs.kdePackages.kwallet-pam}/libexec/pam_kwallet_init"
+        "kwalletd6"
+
         polkitAgent
         "waybar"
         "mako"
@@ -341,13 +343,23 @@ in
     '';
   };
 
-  xdg.desktopEntries.vivaldi-stable = {
+  xdg.desktopEntries.vivaldi = {
     name = "Vivaldi";
     genericName = "Web Browser";
     exec = "vivaldi --password-store=kwallet6 %U";
     terminal = false;
     categories = [ "Network" "WebBrowser" ];
     mimeType = [ "text/html" "text/xml" "x-scheme-handler/http" "x-scheme-handler/https" ];
+  };
+
+  xdg.desktopEntries.code = {
+    name = "Visual Studio Code";
+    genericName = "Text Editor";
+    exec = "code --password-store=kwallet6 %F";
+    icon = "vscode";
+    terminal = false;
+    categories = [ "Utility" "TextEditor" "Development" "IDE" ];
+    mimeType = [ "text/plain" "inode/directory" ];
   };
 
   # Pakete
