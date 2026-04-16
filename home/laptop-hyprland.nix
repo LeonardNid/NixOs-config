@@ -85,11 +85,7 @@ in
         ];
       };
 
-      scrolling = {
-        column_width             = 0.5;
-        fullscreen_on_one_column = true;
-        follow_focus             = true;
-      };
+      # scrolling-Block wird weggelassen, Defaults passen
 
       misc = {
         force_default_wallpaper = 0;
