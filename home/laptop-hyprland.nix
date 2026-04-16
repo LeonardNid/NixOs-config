@@ -342,6 +342,12 @@ in
       }
     '';
   };
+
+  xdg.configFile."hyprpaper.conf".text = ''
+    preload = /home/leonardn/nixos-config/wallpapers/background.jpg
+    wallpaper = ,/home/leonardn/nixos-config/wallpapers/background.jpg
+    splash = false
+  '';
   
   # Pakete
   home.packages = with pkgs; [
