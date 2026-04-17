@@ -1,1 +1,1 @@
-sddm-breeze-cursor--23:14
+sddm-software-cursor-fix--23:17
