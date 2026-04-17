@@ -4,7 +4,7 @@
   # niri-flake NixOS-Modul (programs.niri.enable, XDG Portal, Polkit-Agent) wird
   # automatisch via flake.nix eingebunden
   programs.niri.enable = true;
-  programs.niri.package = pkgs.niri:
+  programs.niri.package = pkgs.niri;
 
   # Login manager
   services.displayManager.sddm = {
