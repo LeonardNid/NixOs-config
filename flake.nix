@@ -48,7 +48,6 @@
         mango.nixosModules.mango
         { home-manager.sharedModules = [ mango.hmModules.mango ]; }
         niri-flake.nixosModules.niri
-        { home-manager.sharedModules = [ niri-flake.homeModules.config ]; }
       ] ++ homeManagerModules;
     };
   };
