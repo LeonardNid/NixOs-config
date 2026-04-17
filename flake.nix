@@ -1,6 +1,11 @@
 {
   description = "NixOS Konfiguration - leonardn";
 
+  nixConfig = {
+    extra-substituters = [ "https://niri.cachix.org" ];
+    extra-trusted-public-keys = [ "niri.cachix.org-1:Wv0OmO7pzBacHgP5EQbJMHIiXKBw141h100ffWIbgv4=" ];
+  }
+
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
     claude-code-nix.url = "github:sadjow/claude-code-nix";
