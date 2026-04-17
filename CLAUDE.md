@@ -27,7 +27,7 @@ nixos-config/
 ├── home/                      # Home-Manager-Module (user leonardn)
 │   ├── default.nix            # Basis: importiert alle shared home-Module
 │   ├── packages.nix           # Gemeinsame user-Pakete (beide Hosts)
-│   ├── laptop.nix             # NUR Laptop, desktop-agnostisch: Nextcloud
+│   ├── nextcloud.nix          # Nextcloud (beide Hosts)
 │   ├── laptop-kde.nix         # NUR Laptop + KDE: Fusuma-Gesten, KWin-Latency-Fix, Lockscreen
 │   ├── laptop-hyprland.nix    # NUR Laptop + Hyprland: Waybar, Wofi, Mako, hyprlock, hypridle
 │   ├── vscode.nix             # VSCode + Copilot Extensions
@@ -64,7 +64,7 @@ nixos-config/
 
 - **System-Paket (alle Hosts):** `system/packages.nix`
 - **User-Paket (alle Hosts):** `home/packages.nix`
-- **Nur Laptop, desktop-agnostisch:** `home/laptop.nix`
+- **Nextcloud (beide Hosts):** `home/nextcloud.nix`
 - **Nur Laptop + KDE:** `home/laptop-kde.nix`
 - **Nur Laptop + Hyprland:** `home/laptop-hyprland.nix`
 - Programme die home-manager-Optionen brauchen (vscode, git, etc.) gehören in eigene `home/*.nix` Dateien, nicht in `packages.nix`.

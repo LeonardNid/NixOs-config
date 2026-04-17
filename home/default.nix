@@ -11,6 +11,7 @@
     ./vscode.nix
     ./xdg.nix
     ./navi.nix
+    ./nextcloud.nix
   ];
 
   home.username = "leonardn";

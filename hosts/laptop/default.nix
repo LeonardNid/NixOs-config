@@ -28,7 +28,7 @@ in
 
   # Home-Module: gemeinsam + desktop-spezifisch
   home-manager.users.leonardn = {
-    imports = [ ../../home/laptop.nix ]   # immer: Nextcloud
+    imports = [ ../../home/nextcloud.nix ]   # immer: Nextcloud
       ++ lib.optional (desktop == "kde")      ../../home/laptop-kde.nix
       ++ lib.optional (desktop == "hyprland") ../../home/laptop-hyprland.nix;
   };
