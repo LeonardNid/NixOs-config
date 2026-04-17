@@ -27,7 +27,7 @@ in
         polkitAgent
         "waybar"
         "mako"
-        "hyprpaper -c ~/.config/hypr/hyprpaper.conf"
+        "sleep 2 && hyprpaper -c ~/.config/hypr/hyprpaper.conf"
         "wl-paste --watch cliphist store"
         "nm-applet --indicator"
       ];
@@ -259,7 +259,7 @@ in
       };
 
       clock = {
-        format         = " {:%H:%M}   {:%a %d.%m.%Y}";
+        format         = " {:%H:%M  %a %d.%m.%Y}";
         tooltip-format = "<big>{:%B %Y}</big>\n<tt>{calendar}</tt>";
       };
 
