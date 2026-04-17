@@ -1,1 +1,1 @@
-sddm-theme--23:06
+fix-catppuccin-sddm-corners-qt5compat--23:10

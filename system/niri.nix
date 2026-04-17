@@ -11,6 +11,7 @@
     enable = true;
     wayland.enable = true;
     theme = "catppuccin-sddm-corners";
+    extraPackages = [ pkgs.kdePackages.qt5compat ];
   };
 
   # X11 + Keyboard Layout (SDDM + Xwayland)

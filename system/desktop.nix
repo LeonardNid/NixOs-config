@@ -7,6 +7,7 @@
   services.displayManager.sddm = {
     enable = true;
     theme = "catppuccin-sddm-corners";
+    extraPackages = [ pkgs.kdePackages.qt5compat ];
   };
   environment.systemPackages = [ pkgs.catppuccin-sddm-corners ];
   services.desktopManager.plasma6.enable = true;
