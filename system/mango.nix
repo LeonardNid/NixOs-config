@@ -10,6 +10,10 @@
     wayland.enable = true;
     theme = "catppuccin-sddm-corners";
     extraPackages = [ pkgs.kdePackages.qt5compat ];
+    settings.General = {
+      CursorTheme = "breeze_cursors";
+      CursorSize = 24;
+    };
   };
 
   # X11 + Keyboard Layout (wird von SDDM und Xwayland benötigt)
@@ -31,6 +35,7 @@
   # kwalletd6 bereitstellen
   environment.systemPackages = [
     pkgs.kdePackages.kwallet
+    pkgs.kdePackages.breeze
     pkgs.catppuccin-sddm-corners
   ];
 
