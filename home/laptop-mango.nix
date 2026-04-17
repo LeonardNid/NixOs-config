@@ -91,9 +91,9 @@ in
         "SUPER+SHIFT,Left,exchange_client,left"
         "SUPER+SHIFT,Right,exchange_client,right"
 
-        # Tags navigieren (D/F = links/rechts)
-        "SUPER,d,viewtoleft,0"
-        "SUPER,f,viewtoright,0"
+        # Fenster-Fokus (D/F = links/rechts)
+        "SUPER,d,focusdir,left"
+        "SUPER,f,focusdir,right"
 
         # Tags 1-6 direkt
         "SUPER,1,view,1,0"
