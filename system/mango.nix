@@ -8,6 +8,7 @@
   services.displayManager.sddm = {
     enable = true;
     wayland.enable = true;
+    theme = "catppuccin-sddm-corners";
   };
 
   # X11 + Keyboard Layout (wird von SDDM und Xwayland benötigt)
@@ -27,7 +28,10 @@
   security.polkit.enable = true;
 
   # kwalletd6 bereitstellen
-  environment.systemPackages = [ pkgs.kdePackages.kwallet ];
+  environment.systemPackages = [
+    pkgs.kdePackages.kwallet
+    pkgs.catppuccin-sddm-corners
+  ];
 
   services.printing.enable = true;
 }
