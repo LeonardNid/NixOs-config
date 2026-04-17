@@ -1,0 +1,6 @@
+Hier ist die kurze Zusammenfassung des Problems und der Lösung:
+
+1. **Die Ursache (Exit Code 101):** Dein System hat versucht, den Fenstermanager Niri komplett aus dem Quellcode selbst zu kompilieren. Dabei werden automatisch Tests ausgeführt, die jedoch in der isolierten Nix-Build-Umgebung ohne echte Grafikschnittstelle (EGL) unweigerlich abstürzen.
+2. **Der Lösungsansatz (Cachix):** Um das lokale Kompilieren zu umgehen, mussten wir deinem Nix-Daemon mitteilen, dass er stattdessen fertige, vorkompilierte Niri-Pakete aus dem offiziellen Cache (`niri.cachix.org`) herunterladen soll.
+3. **Der Stolperstein (Falsche Signatur):** Im ersten Versuch hat dein System den Cache aus Sicherheitsgründen abgelehnt (`ignoring substitute...`), weil der Signaturschlüssel (`extra-trusted-public-keys`), den wir in die `flake.nix` eingetragen hatten, veraltet oder falsch war.
+4. **Die finale Lösung:** Mit dem korrekten, gültigen Signaturschlüssel hat dein System den Cache der Niri-Entwickler vertraut, die fehlerhafte lokale Kompilierung übersprungen und das fertige Paket in Sekunden installiert.
