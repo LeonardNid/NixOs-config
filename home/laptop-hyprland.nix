@@ -13,7 +13,7 @@ in
       # Variablen
       "$mod"      = "SUPER";
       "$terminal" = "kitty";
-      "$menu"     = "wofi --show drun";
+      "$menu"     = "rofi -show drun";
 
       monitor = ",preferred,auto,1";
 
@@ -104,8 +104,11 @@ in
         "$mod SHIFT, T, togglefloating"
         "$mod, L,       exec,          hyprlock"
 
-        # Clipboard-Historie (cliphist + wofi)
-        "$mod, V, exec, cliphist list | wofi --dmenu | cliphist decode | wl-copy"
+        # Window-Overview
+        "ALT, Tab,      exec,          rofi -show window"
+
+        # Clipboard-Historie (cliphist + rofi)
+        "$mod, V, exec, cliphist list | rofi -dmenu | cliphist decode | wl-copy"
 
         # Screenshot: Bereich → Clipboard
         ", Print,     exec, grim -g \"$(slurp)\" - | wl-copy"
@@ -366,7 +369,7 @@ in
   # Pakete
   home.packages = with pkgs; [
     kitty                      # Terminal
-    wofi                       # App-Launcher
+    rofi                       # App-Launcher + Window-Overview
     grim                       # Screenshot
     slurp                      # Bildschirmbereich-Auswahl
     cliphist                   # Clipboard-Historie
