@@ -8,9 +8,13 @@
       url = "github:nix-community/home-manager";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    mango = {
+      url = "github:mangowm/mango";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
-  outputs = { self, nixpkgs, claude-code-nix, home-manager, ... }:
+  outputs = { self, nixpkgs, claude-code-nix, home-manager, mango, ... }:
   let
     homeManagerModules = [
       home-manager.nixosModules.home-manager
@@ -35,7 +39,11 @@
     nixosConfigurations.laptop = nixpkgs.lib.nixosSystem {
       system = "x86_64-linux";
       specialArgs = { inherit self; };
-      modules = [ ./hosts/laptop ] ++ homeManagerModules;
+      modules = [
+        ./hosts/laptop
+        mango.nixosModules.mango
+        { home-manager.sharedModules = [ mango.hmModules.mango ]; }
+      ] ++ homeManagerModules;
     };
   };
 }

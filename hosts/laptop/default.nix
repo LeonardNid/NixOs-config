@@ -2,10 +2,10 @@
 
 let
   # =============================================
-  # DESKTOP WÄHLEN: "kde" oder "hyprland"
+  # DESKTOP WÄHLEN: "kde", "hyprland" oder "mango"
   # Danach: rebuild "switch to <desktop>"
   # =============================================
-  desktop = "hyprland";
+  desktop = "mango";
 in
 {
   imports = [
@@ -22,7 +22,8 @@ in
     ../../system/ollama.nix
   ]
   ++ lib.optional (desktop == "kde")      ../../system/desktop.nix
-  ++ lib.optional (desktop == "hyprland") ../../system/hyprland.nix;
+  ++ lib.optional (desktop == "hyprland") ../../system/hyprland.nix
+  ++ lib.optional (desktop == "mango")    ../../system/mango.nix;
 
   networking.hostName = "laptop";
 
@@ -30,6 +31,7 @@ in
   home-manager.users.leonardn = {
     imports = [ ../../home/nextcloud.nix ]   # immer: Nextcloud
       ++ lib.optional (desktop == "kde")      ../../home/laptop-kde.nix
-      ++ lib.optional (desktop == "hyprland") ../../home/laptop-hyprland.nix;
+      ++ lib.optional (desktop == "hyprland") ../../home/laptop-hyprland.nix
+      ++ lib.optional (desktop == "mango")    ../../home/laptop-mango.nix;
   };
 }

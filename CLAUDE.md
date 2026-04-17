@@ -51,13 +51,14 @@ nixos-config/
 - **Desktop-Auswahl** erfolgt über die Variable `desktop` in `hosts/laptop/default.nix`:
   - `desktop = "kde"` → importiert `system/desktop.nix` + `home/laptop-kde.nix`
   - `desktop = "hyprland"` → importiert `system/hyprland.nix` + `home/laptop-hyprland.nix`
-  - `home/laptop.nix` (nur Nextcloud) wird immer importiert
+  - `desktop = "mango"` → importiert `system/mango.nix` + `home/laptop-mango.nix`
+  - `home/nextcloud.nix` wird immer importiert
 - `system/packages.nix` und `home/packages.nix` sind für **beide Hosts** – nichts Laptop-Spezifisches dort.
 
 ### Desktop wechseln (Laptop)
 
-1. In `hosts/laptop/default.nix` die Variable ändern: `desktop = "kde"` ↔ `desktop = "hyprland"`
-2. `rebuild "switch to hyprland"` ausführen
+1. In `hosts/laptop/default.nix` die Variable ändern: `desktop = "kde"` / `"hyprland"` / `"mango"`
+2. `rebuild "switch to mango"` ausführen
 3. Neu starten → SDDM zeigt die neue Session
 
 ### Neue Pakete hinzufügen
@@ -67,6 +68,7 @@ nixos-config/
 - **Nextcloud (beide Hosts):** `home/nextcloud.nix`
 - **Nur Laptop + KDE:** `home/laptop-kde.nix`
 - **Nur Laptop + Hyprland:** `home/laptop-hyprland.nix`
+- **Nur Laptop + Mango:** `home/laptop-mango.nix`
 - Programme die home-manager-Optionen brauchen (vscode, git, etc.) gehören in eigene `home/*.nix` Dateien, nicht in `packages.nix`.
 
 ### Rebuild
