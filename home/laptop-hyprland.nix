@@ -44,12 +44,12 @@ in
         };
       };
 
-      # Touchpad-Gesten (Workspace-Wechsel via 3-Finger-Swipe)
-      # Seit 0.51: gesture-Bindings im gestures-Block, Richtung = horizontal
+      # Touchpad-Gesten
       gestures = {
-        workspace_swipe_invert   = true;
-        workspace_swipe_distance = 400;
-        gesture = [ "3, horizontal, workspace" ];
+        gesture = [
+          "3, horizontal, layoutmsg, focus"  # 3-Finger: zwischen Fenstern wechseln
+          "4, horizontal, workspace"          # 4-Finger: zwischen Workspaces wechseln
+        ];
       };
 
       # Allgemeines Aussehen
