@@ -16,6 +16,8 @@ nixos-config/
 │   ├── packages.nix           # Gemeinsame System-Pakete (beide Hosts)
 │   ├── desktop.nix            # KDE Plasma 6, SDDM (beide Hosts)
 │   ├── hyprland.nix           # Hyprland Compositor, SDDM (nur Laptop via desktop-Variable)
+│   ├── mango.nix              # Mango WM, SDDM (nur Laptop via desktop-Variable)
+│   ├── niri.nix               # Niri WM, SDDM (nur Laptop via desktop-Variable)
 │   ├── users.nix              # User leonardn, sudo, Gruppen, Tailscale
 │   ├── laptop.nix             # NUR Laptop: TLP, Kanata, libinput, Brillo (desktop-agnostisch)
 │   ├── networking.nix
@@ -30,6 +32,8 @@ nixos-config/
 │   ├── nextcloud.nix          # Nextcloud (beide Hosts)
 │   ├── laptop-kde.nix         # NUR Laptop + KDE: Fusuma-Gesten, KWin-Latency-Fix, Lockscreen
 │   ├── laptop-hyprland.nix    # NUR Laptop + Hyprland: Waybar, Wofi, Mako, hyprlock, hypridle
+│   ├── laptop-mango.nix       # NUR Laptop + Mango: Waybar, Rofi, Mako, swaylock, swayidle
+│   ├── laptop-niri.nix        # NUR Laptop + Niri: Waybar, Fuzzel, Mako, swaylock, swayidle
 │   ├── vscode.nix             # VSCode + Copilot Extensions
 │   ├── xdg.nix                # MIME-Defaults (Vivaldi als Standard-Browser)
 │   ├── git.nix                # Git-Konfiguration
@@ -52,13 +56,14 @@ nixos-config/
   - `desktop = "kde"` → importiert `system/desktop.nix` + `home/laptop-kde.nix`
   - `desktop = "hyprland"` → importiert `system/hyprland.nix` + `home/laptop-hyprland.nix`
   - `desktop = "mango"` → importiert `system/mango.nix` + `home/laptop-mango.nix`
+  - `desktop = "niri"` → importiert `system/niri.nix` + `home/laptop-niri.nix`
   - `home/nextcloud.nix` wird immer importiert
 - `system/packages.nix` und `home/packages.nix` sind für **beide Hosts** – nichts Laptop-Spezifisches dort.
 
 ### Desktop wechseln (Laptop)
 
-1. In `hosts/laptop/default.nix` die Variable ändern: `desktop = "kde"` / `"hyprland"` / `"mango"`
-2. `rebuild "switch to mango"` ausführen
+1. In `hosts/laptop/default.nix` die Variable ändern: `desktop = "kde"` / `"hyprland"` / `"mango"` / `"niri"`
+2. `rebuild "switch to <desktop>"` ausführen
 3. Neu starten → SDDM zeigt die neue Session
 
 ### Neue Pakete hinzufügen
@@ -69,6 +74,7 @@ nixos-config/
 - **Nur Laptop + KDE:** `home/laptop-kde.nix`
 - **Nur Laptop + Hyprland:** `home/laptop-hyprland.nix`
 - **Nur Laptop + Mango:** `home/laptop-mango.nix`
+- **Nur Laptop + Niri:** `home/laptop-niri.nix`
 - Programme die home-manager-Optionen brauchen (vscode, git, etc.) gehören in eigene `home/*.nix` Dateien, nicht in `packages.nix`.
 
 ### Rebuild

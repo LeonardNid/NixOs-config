@@ -12,9 +12,13 @@
       url = "github:mangowm/mango";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    niri-flake = {
+      url = "github:sodiboo/niri-flake";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
-  outputs = { self, nixpkgs, claude-code-nix, home-manager, mango, ... }:
+  outputs = { self, nixpkgs, claude-code-nix, home-manager, mango, niri-flake, ... }:
   let
     homeManagerModules = [
       home-manager.nixosModules.home-manager
@@ -43,6 +47,8 @@
         ./hosts/laptop
         mango.nixosModules.mango
         { home-manager.sharedModules = [ mango.hmModules.mango ]; }
+        niri-flake.nixosModules.niri
+        { home-manager.sharedModules = [ niri-flake.homeManagerModules.niri ]; }
       ] ++ homeManagerModules;
     };
   };
