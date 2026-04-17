@@ -12,10 +12,6 @@
     wayland.enable = true;
     theme = "catppuccin-sddm-corners";
     extraPackages = [ pkgs.kdePackages.qt5compat ];
-    settings.General = {
-      CursorTheme = "breeze_cursors";
-      CursorSize = 24;
-    };
   };
 
   # X11 + Keyboard Layout (SDDM + Xwayland)
@@ -37,12 +33,8 @@
   # kwalletd6 bereitstellen
   environment.systemPackages = [
     pkgs.kdePackages.kwallet
-    pkgs.kdePackages.breeze
     pkgs.catppuccin-sddm-corners
   ];
 
   services.printing.enable = true;
-
-  # SDDM Wayland: Software-Cursor erzwingen (Hardware-Cursor-Plane funktioniert nicht)
-  systemd.services.sddm.environment.WLR_NO_HARDWARE_CURSORS = "1";
 }
