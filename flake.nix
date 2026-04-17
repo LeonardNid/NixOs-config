@@ -40,7 +40,7 @@
         environment.systemPackages = [
           claude-code-nix.packages.x86_64-linux.default
           zen-browser.packages.x86_64-linux.default
-          ];
+        ];
       }
     ];
   in {

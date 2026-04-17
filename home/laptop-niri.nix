@@ -79,7 +79,7 @@ in
     binds {
       // Apps
       Mod+T { spawn "kitty"; }
-      Alt+Space { spawn "fuzzel"; }
+      Super { spawn "fuzzel"; }
       Super+Alt+L { spawn "swaylock"; }
       Mod+Q { close-window; }
 
