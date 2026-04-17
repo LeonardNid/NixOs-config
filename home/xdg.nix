@@ -6,10 +6,10 @@
   xdg.mimeApps = {
     enable = true;
     defaultApplications = {
-      "text/html"             = "vivaldi-stable.desktop";
-      "x-scheme-handler/http" = "vivaldi-stable.desktop";
-      "x-scheme-handler/https" = "vivaldi-stable.desktop";
-      "x-scheme-handler/ftp"  = "vivaldi-stable.desktop";
+      "text/html"             = "zen.desktop";
+      "x-scheme-handler/http" = "zen.desktop";
+      "x-scheme-handler/https" = "zen.desktop";
+      "x-scheme-handler/ftp"  = "zen.desktop";
     };
   };
 }

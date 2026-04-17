@@ -21,7 +21,7 @@
   services.tailscale.enable = true;
 
   environment.sessionVariables = {
-    DEFAULT_BROWSER = "vivaldi-stable";
-    BROWSER = "vivaldi-stable";
+    DEFAULT_BROWSER = "zen";
+    BROWSER = "zen";
   };
 }
