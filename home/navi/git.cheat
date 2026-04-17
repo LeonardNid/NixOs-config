@@ -53,6 +53,9 @@ git merge <branch>
 # Remote-URL anzeigen
 git remote -v
 
+# Projekt von Forgejo klonen
+git clone ssh://git@leoserver.tail6bb5cd.ts.net:2222/Draonel/<repo>.git ~/gitprojs/<repo>
+
 # Neues Repo einrichten und pushen (Forgejo)
 git init && git checkout -b main && git add . && git commit -m "first commit" && git remote add origin ssh://git@leoserver.tail6bb5cd.ts.net:2222/Draonel/<repo>.git && git push -u origin main
 

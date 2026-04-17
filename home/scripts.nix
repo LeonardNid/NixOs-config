@@ -68,7 +68,14 @@
       fi
 
       cd /home/leonardn/nixos-config
+      STASHED=0
+      if ! git diff --quiet || ! git diff --cached --quiet; then
+        git stash
+        STASHED=1
+      fi
+
       if ! git pull --rebase origin main; then
+        [ $STASHED -eq 1 ] && git stash pop
         echo "│"
         echo "│ ✗ Rebase-Konflikt in:"
         git diff --name-only --diff-filter=U | sed 's/^/│   /'
@@ -88,6 +95,8 @@
           *) echo "│ Unbekannte Eingabe, breche ab."; git rebase --abort; exit 1;;
         esac
       fi
+
+      [ $STASHED -eq 1 ] && git stash pop
 
       echo "$LABEL" > /home/leonardn/nixos-config/label.txt
       git add .
