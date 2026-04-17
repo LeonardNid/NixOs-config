@@ -148,8 +148,8 @@ in
 
       # --- Window Rules ---
       windowrule = [
-        "isfloating:1,center:1,width:900,height:700,appid:pavucontrol"
-        "isfloating:1,center:1,width:900,height:600,appid:nm-connection-editor"
+        "isfloating:1,width:900,height:700,appid:pavucontrol"
+        "isfloating:1,width:900,height:600,appid:nm-connection-editor"
       ];
     };
 
@@ -183,9 +183,9 @@ in
   # Idle-Daemon: automatisches Sperren
   services.swayidle = {
     enable = true;
-    events = [
-      { event = "before-sleep"; command = "swaylock"; }
-    ];
+    events = {
+      before-sleep = "swaylock";
+    };
     timeouts = [
       { timeout = 300; command = "swaylock"; }
     ];
