@@ -79,7 +79,7 @@ in
     binds {
       // Apps
       Mod+T { spawn "kitty"; }
-      Super { spawn "fuzzel"; }
+      Alt+Space { spawn "fuzzel"; }
       Super+Alt+L { spawn "swaylock"; }
       Mod+Q { close-window; }
 
@@ -341,6 +341,7 @@ in
   home.packages = with pkgs; [
     kitty                      # Terminal
     fuzzel                     # App-Launcher (niri default)
+    kdePackages.dolphin        # File manager
     cliphist                   # Clipboard-Historie
     swaybg                     # Wallpaper-Daemon
     pavucontrol                # Lautstaerke-Mixer GUI
