@@ -21,9 +21,13 @@
       url = "github:sodiboo/niri-flake";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    zen-browser = {
+      url = "github:youwen5/zen-browser-flake";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
-  outputs = { self, nixpkgs, claude-code-nix, home-manager, mango, niri-flake, ... }:
+  outputs = { self, nixpkgs, claude-code-nix, home-manager, mango, niri-flake, zen-browser, ... }:
   let
     homeManagerModules = [
       home-manager.nixosModules.home-manager
@@ -35,6 +39,7 @@
       {
         environment.systemPackages = [
           claude-code-nix.packages.x86_64-linux.default
+          zen-browser.packages.x86_64-linux.default
         ];
       }
     ];
