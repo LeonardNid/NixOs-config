@@ -58,7 +58,6 @@
       DATE=$(date '+%Y-%m-%d %H:%M')
       TIME=$(date '+%H:%M')
       LABEL=$(echo "$MESSAGE--$TIME" | tr ' ' '-' | sed 's/[^a-zA-Z0-9:_.-]/-/g')
-      echo "$LABEL" > /home/leonardn/nixos-config/label.txt
 
       echo ""
       echo "┌─── git ────────────────────────────────────────"
@@ -69,7 +68,28 @@
       fi
 
       cd /home/leonardn/nixos-config
-      git pull --rebase origin main
+      if ! git pull --rebase origin main; then
+        echo "│"
+        echo "│ ✗ Rebase-Konflikt in:"
+        git diff --name-only --diff-filter=U | sed 's/^/│   /'
+        echo "│"
+        git diff --diff-filter=U | sed 's/^/│ /'
+        echo "│"
+        echo "│ Was möchtest du tun?"
+        echo "│   [a] Rebase abbrechen (ursprünglicher Zustand)"
+        echo "│   [s] Meinen lokalen Commit überspringen"
+        echo "│   [m] Manuell lösen (rebuild danach erneut starten)"
+        printf "│ > "
+        read -r choice
+        case $choice in
+          a) git rebase --abort; echo "│ Abgebrochen."; exit 1;;
+          s) git rebase --skip || exit 1;;
+          m) echo "│ Löse den Konflikt, dann: git add . && git rebase --continue"; exit 1;;
+          *) echo "│ Unbekannte Eingabe, breche ab."; git rebase --abort; exit 1;;
+        esac
+      fi
+
+      echo "$LABEL" > /home/leonardn/nixos-config/label.txt
       git add .
       if ! git diff --cached --quiet; then
         git commit -m "$MESSAGE ($DATE)"
