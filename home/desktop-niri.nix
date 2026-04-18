@@ -52,6 +52,14 @@ in
 
     screenshot-path "~/Pictures/Screenshots/Screenshot from %Y-%m-%d %H-%M-%S.png"
 
+    // Monitore
+    output "DP-1" {
+      position x=0 y=0
+    }
+    output "HDMI-A-1" {
+      position x=2560 y=0
+    }
+
     prefer-no-csd
 
     environment {
