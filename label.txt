@@ -1,1 +1,1 @@
-waybar-mic-icon--11:52
+waybar-sound-mute-red--11:54

@@ -343,6 +343,10 @@ in
       #custom-mic.muted {
         color: #f38ba8;
       }
+
+      #pulseaudio.muted {
+        color: #f38ba8;
+      }
     '';
   };
 
