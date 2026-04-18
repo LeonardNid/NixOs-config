@@ -75,6 +75,8 @@ in
 
     environment {
       NIXOS_OZONE_WL "1"
+      XCURSOR_THEME "Adwaita"
+      XCURSOR_SIZE "24"
     }
 
     // Window Rules
