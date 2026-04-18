@@ -13,7 +13,11 @@ in
         repeat-rate 25
         numlock
       }
-      mouse {}
+      mouse {
+        accel-speed 0.0        // -1.0 (langsam) bis 1.0 (schnell), 0.0 = Standard
+        // accel-profile "flat" // "flat" = keine Beschleunigung, "adaptive" = Standard
+        scroll-factor 1.0      // Scroll-Geschwindigkeit: 0.5 = halb so schnell, 2.0 = doppelt
+      }
       focus-follows-mouse max-scroll-amount="0%"
     }
 
