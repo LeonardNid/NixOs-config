@@ -22,7 +22,7 @@ in
     }
 
     layout {
-      gaps 16
+      gaps 8
       center-focused-column "never"
       preset-column-widths {
         proportion 0.333
@@ -253,10 +253,10 @@ in
     settings = [{
       layer    = "top";
       position = "top";
-      height   = 40;
-      "margin-top"   = 8;
-      "margin-left"  = 12;
-      "margin-right" = 12;
+      height   = 36;
+      "margin-top"   = 5;
+      "margin-left"  = 8;
+      "margin-right" = 8;
 
       modules-left   = [ "niri/workspaces" "niri/window" ];
       modules-center = [ "clock" ];
@@ -329,17 +329,17 @@ in
 
       /* ── Workspaces ─────────────────────────── */
       #workspaces {
-        margin: 4px 0 4px 6px;
-        padding: 0 4px;
+        margin: 3px 0 3px 4px;
+        padding: 0 3px;
         background: rgba(49, 50, 68, 0.7);
         border-radius: 10px;
       }
 
       #workspaces button {
-        padding: 2px 11px;
+        padding: 1px 9px;
         color: #6c7086;
         border-radius: 8px;
-        margin: 3px 2px;
+        margin: 2px 2px;
         background: transparent;
         transition: all 0.15s ease-in-out;
       }
@@ -368,9 +368,9 @@ in
         border: 1px solid rgba(137, 180, 250, 0.25);
         color: #cdd6f4;
         font-weight: bold;
-        padding: 2px 20px;
+        padding: 1px 16px;
         border-radius: 10px;
-        margin: 5px 0;
+        margin: 3px 0;
       }
 
       /* ── Rechte Module (Pills) ──────────────── */
@@ -381,8 +381,8 @@ in
       #custom-power {
         background: rgba(49, 50, 68, 0.7);
         border-radius: 10px;
-        padding: 2px 12px;
-        margin: 5px 3px;
+        padding: 1px 10px;
+        margin: 3px 2px;
       }
 
       #custom-mic         { color: #a6e3a1; }
@@ -399,8 +399,8 @@ in
       #custom-power {
         color: #f38ba8;
         background: rgba(243, 139, 168, 0.1);
-        padding: 2px 14px;
-        margin-right: 6px;
+        padding: 1px 12px;
+        margin-right: 4px;
       }
 
       #custom-power:hover {
