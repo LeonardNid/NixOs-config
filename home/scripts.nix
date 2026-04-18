@@ -53,6 +53,18 @@
       done
     '')
 
+    (pkgs.writeShellScriptBin "power-menu" ''
+      chosen=$(printf "󰌾  Sperren\n󰒲  Schlafen\n󰏤  Hibernate\n󰑙  Neustart\n󰐥  Ausschalten" \
+        | fuzzel --dmenu --prompt="⏻   " --width=22 --lines=5)
+      case "$chosen" in
+        *Sperren*)     swaylock ;;
+        *Schlafen*)    systemctl suspend ;;
+        *Hibernate*)   systemctl hibernate ;;
+        *Neustart*)    systemctl reboot ;;
+        *Ausschalten*) systemctl poweroff ;;
+      esac
+    '')
+
     (pkgs.writeShellScriptBin "waybar-mic-status" ''
       if wpctl get-volume @DEFAULT_AUDIO_SOURCE@ 2>/dev/null | grep -q MUTED; then
         echo '{"text":"󰍭 Stumm","class":"muted","tooltip":"Mikrofon stumm"}'

@@ -253,11 +253,14 @@ in
     settings = [{
       layer    = "top";
       position = "top";
-      height   = 34;
+      height   = 40;
+      "margin-top"   = 8;
+      "margin-left"  = 12;
+      "margin-right" = 12;
 
       modules-left   = [ "niri/workspaces" "niri/window" ];
       modules-center = [ "clock" ];
-      modules-right  = [ "custom/mic" "pulseaudio" "network" "tray" ];
+      modules-right  = [ "custom/mic" "pulseaudio" "network" "tray" "custom/power" ];
 
       "niri/workspaces" = {
         format = "{index}";
@@ -277,16 +280,22 @@ in
         on-click    = "mic-toggle";
       };
 
+      "custom/power" = {
+        format   = "󰐥";
+        on-click = "power-menu";
+        tooltip  = false;
+      };
+
       clock = {
         format         = " {:%H:%M  %a %d.%m}";
         tooltip-format = "<big>{:%B %Y}</big>\n<tt>{calendar}</tt>";
       };
 
       network = {
-        format-wifi         = " {essid}";
-        format-ethernet     = " Ethernet";
+        format-wifi         = "󰤨 {essid}";
+        format-ethernet     = "󰈀 Ethernet";
         format-disconnected = "󰤮 offline";
-        tooltip-format      = "{ifname}: {ipaddr}  {signalStrength}%";
+        tooltip-format      = "{ifname}: {ipaddr}";
         on-click            = "nm-connection-editor";
       };
 
@@ -298,66 +307,104 @@ in
       };
 
       tray = {
-        icon-size = 18;
-        spacing   = 8;
+        icon-size = 16;
+        spacing   = 6;
       };
     }];
 
     style = ''
       * {
-        font-family: "JetBrainsMono Nerd Font", "Noto Sans", monospace;
+        font-family: "JetBrainsMono Nerd Font", monospace;
         font-size: 13px;
         min-height: 0;
+        border: none;
+        border-radius: 0;
       }
 
       window#waybar {
-        background-color: rgba(30, 30, 46, 0.92);
+        background-color: rgba(30, 30, 46, 0.88);
         color: #cdd6f4;
-        border-bottom: 2px solid rgba(137, 180, 250, 0.4);
+        border-radius: 12px;
+      }
+
+      /* ── Workspaces ─────────────────────────── */
+      #workspaces {
+        margin: 4px 0 4px 6px;
+        padding: 0 4px;
+        background: rgba(49, 50, 68, 0.7);
+        border-radius: 10px;
       }
 
       #workspaces button {
-        padding: 2px 8px;
+        padding: 2px 11px;
         color: #6c7086;
-        border-radius: 4px;
-        margin: 2px 2px;
+        border-radius: 8px;
+        margin: 3px 2px;
+        background: transparent;
+        transition: all 0.15s ease-in-out;
       }
 
+      #workspaces button.active,
       #workspaces button.focused {
-        color: #89b4fa;
-        background: rgba(137, 180, 250, 0.15);
+        color: #1e1e2e;
+        background: #89b4fa;
       }
 
-      #workspaces button.active {
-        color: #89b4fa;
-        background: rgba(137, 180, 250, 0.15);
+      #workspaces button:hover {
+        color: #cdd6f4;
+        background: rgba(137, 180, 250, 0.2);
       }
 
+      /* ── Window title ───────────────────────── */
       #window {
-        padding: 2px 14px;
-        color: #a6adc8;
+        color: #7f849c;
         font-style: italic;
+        padding: 0 12px;
       }
 
+      /* ── Clock ──────────────────────────────── */
       #clock {
-        padding: 2px 14px;
+        background: rgba(137, 180, 250, 0.12);
+        border: 1px solid rgba(137, 180, 250, 0.25);
         color: #cdd6f4;
+        font-weight: bold;
+        padding: 2px 20px;
+        border-radius: 10px;
+        margin: 5px 0;
       }
 
-      #network,
+      /* ── Rechte Module (Pills) ──────────────── */
+      #custom-mic,
       #pulseaudio,
+      #network,
       #tray,
-      #custom-mic {
-        padding: 2px 10px;
-        color: #cdd6f4;
+      #custom-power {
+        background: rgba(49, 50, 68, 0.7);
+        border-radius: 10px;
+        padding: 2px 12px;
+        margin: 5px 3px;
       }
 
-      #custom-mic.muted {
+      #custom-mic         { color: #a6e3a1; }
+      #custom-mic.muted   { color: #f38ba8; background: rgba(243, 139, 168, 0.12); }
+
+      #pulseaudio         { color: #89b4fa; }
+      #pulseaudio.muted   { color: #f38ba8; background: rgba(243, 139, 168, 0.12); }
+
+      #network            { color: #89dceb; }
+      #network.disconnected { color: #6c7086; }
+
+      #tray { padding: 2px 8px; }
+
+      #custom-power {
         color: #f38ba8;
+        background: rgba(243, 139, 168, 0.1);
+        padding: 2px 14px;
+        margin-right: 6px;
       }
 
-      #pulseaudio.muted {
-        color: #f38ba8;
+      #custom-power:hover {
+        background: rgba(243, 139, 168, 0.25);
       }
     '';
   };
