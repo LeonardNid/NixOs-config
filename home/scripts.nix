@@ -53,6 +53,20 @@
       done
     '')
 
+    (pkgs.writeShellScriptBin "mic-toggle" ''
+      # Physisches Mikrofon (TONOR TD510) + Easy Effects Source synchron muten/unmuten.
+      # Nötig weil @DEFAULT_AUDIO_SOURCE@ nur die virtuelle Easy Effects Source trifft,
+      # aber das physische Gerät weiter aufnimmt.
+      TONOR="alsa_input.usb-TONOR_TONOR_TD510_Dynamic_Mic_2024-04-01A-00.iec958-stereo"
+      if wpctl get-volume "$TONOR" 2>/dev/null | grep -q MUTED; then
+        wpctl set-mute "$TONOR" 0
+        wpctl set-mute @DEFAULT_AUDIO_SOURCE@ 0
+      else
+        wpctl set-mute "$TONOR" 1
+        wpctl set-mute @DEFAULT_AUDIO_SOURCE@ 1
+      fi
+    '')
+
     (pkgs.writeShellScriptBin "rebuild" ''
       MESSAGE="''${1:-update}"
       DATE=$(date '+%Y-%m-%d %H:%M')
