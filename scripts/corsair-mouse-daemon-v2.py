@@ -65,9 +65,11 @@ vorne profil 7
 hinten profil 8
 """
 BUTTON_MAP = {
-    ecodes.KEY_2: ecodes.KEY_LEFTMETA,  # Vorne unten -> Super
+    ecodes.KEY_2: ecodes.KEY_LEFTMETA,                        # Vorne unten -> Super
+    ecodes.KEY_3: [ecodes.KEY_LEFTMETA, ecodes.KEY_RIGHT],    # Hinten oben -> Super+Right
+    ecodes.KEY_4: [ecodes.KEY_LEFTMETA, ecodes.KEY_LEFT],     # Hinten unten -> Super+Left
     ecodes.KEY_5: [[ecodes.KEY_MUTE], [ecodes.KEY_MICMUTE]],  # DPI vorne -> Audio-Mute, dann Mic-Mute
-    ecodes.KEY_6: ecodes.KEY_MICMUTE,   # DPI hinten -> Mic-Mute
+    ecodes.KEY_6: ecodes.KEY_MICMUTE,                         # DPI hinten -> Mic-Mute
 }
 
 
