@@ -47,7 +47,10 @@
     nixosConfigurations.leonardn = nixpkgs.lib.nixosSystem {
       system = "x86_64-linux";
       specialArgs = { inherit self; };
-      modules = [ ./hosts/leonardn ] ++ homeManagerModules;
+      modules = [
+        ./hosts/leonardn
+        niri-flake.nixosModules.niri
+      ] ++ homeManagerModules;
     };
 
     nixosConfigurations.laptop = nixpkgs.lib.nixosSystem {
