@@ -68,6 +68,10 @@ in
 
           # Looking Glass starten (Vollbild, kein Auto-Input-Grab, Log in Datei)
           echo "Looking Glass starten..."
+          if [ "$XDG_CURRENT_DESKTOP" = "niri" ]; then
+            niri msg action focus-monitor-left
+            sleep 0.3
+          fi
           looking-glass-client -F -f /dev/kvmfr0 \
             win:size=2560x1440 win:dontUpscale=on \
             input:captureOnFocus=no input:grabKeyboardOnFocus=no \
@@ -143,6 +147,10 @@ in
         resume)
           echo "=== VM fortsetzen ==="
           sudo virsh resume "$VM_NAME"
+          if [ "$XDG_CURRENT_DESKTOP" = "niri" ]; then
+            niri msg action focus-monitor-left
+            sleep 0.3
+          fi
           looking-glass-client -F -f /dev/kvmfr0 \
             win:size=2560x1440 win:dontUpscale=on \
             input:captureOnFocus=no input:grabKeyboardOnFocus=no \
