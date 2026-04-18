@@ -66,6 +66,11 @@ in
       position x=2560 y=0
     }
 
+    cursor {
+      xcursor-theme "Adwaita"
+      xcursor-size 24
+    }
+
     prefer-no-csd
 
     environment {
@@ -202,6 +207,13 @@ in
   '';
 
   # Sperrbildschirm (Catppuccin Mocha)
+  home.pointerCursor = {
+    gtk.enable = true;
+    package    = pkgs.adwaita-icon-theme;
+    name       = "Adwaita";
+    size       = 24;
+  };
+
   programs.kitty = {
     enable = true;
     settings.confirm_os_window_close = 0;

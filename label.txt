@@ -1,1 +1,1 @@
-waybar--18:42
+cursor-theme-adwaita--18:43
