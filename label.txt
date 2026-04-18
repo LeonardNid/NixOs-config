@@ -1,1 +1,1 @@
-mic-toggle-fix-wpctl--11:48
+waybar-mic-icon--11:52

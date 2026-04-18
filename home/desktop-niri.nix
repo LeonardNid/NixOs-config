@@ -245,7 +245,7 @@ in
       height   = 34;
 
       modules-left   = [ "niri/workspaces" "niri/window" ];
-      modules-right  = [ "clock" "pulseaudio" "network" "tray" ];
+      modules-right  = [ "clock" "custom/mic" "pulseaudio" "network" "tray" ];
 
       "niri/workspaces" = {
         format = "{index}";
@@ -255,6 +255,14 @@ in
       "niri/window" = {
         format = "{title}";
         max-length = 50;
+      };
+
+      "custom/mic" = {
+        exec        = "waybar-mic-status";
+        return-type = "json";
+        interval    = "once";
+        signal      = 1;
+        on-click    = "mic-toggle";
       };
 
       clock = {
@@ -326,9 +334,14 @@ in
 
       #network,
       #pulseaudio,
-      #tray {
+      #tray,
+      #custom-mic {
         padding: 2px 10px;
         color: #cdd6f4;
+      }
+
+      #custom-mic.muted {
+        color: #f38ba8;
       }
     '';
   };

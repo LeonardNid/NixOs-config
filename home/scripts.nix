@@ -53,21 +53,28 @@
       done
     '')
 
+    (pkgs.writeShellScriptBin "waybar-mic-status" ''
+      if wpctl get-volume @DEFAULT_AUDIO_SOURCE@ 2>/dev/null | grep -q MUTED; then
+        echo '{"text":"󰍭 Stumm","class":"muted","tooltip":"Mikrofon stumm"}'
+      else
+        echo '{"text":"󰍬","class":"active","tooltip":"Mikrofon aktiv"}'
+      fi
+    '')
+
     (pkgs.writeShellScriptBin "mic-toggle" ''
       # Physisches Mikrofon (TONOR TD510) + Easy Effects Source synchron muten/unmuten.
       # wpctl akzeptiert nur numerische IDs, daher ID dynamisch aus "wpctl status" lesen.
       TONOR_ID=$(wpctl status | grep -A 30 'Sources:' | grep 'TONOR TD510' | grep -oP '\b\d+(?=\.)')
       if [ -z "$TONOR_ID" ]; then
         wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle
-        exit 0
-      fi
-      if wpctl get-volume "$TONOR_ID" | grep -q MUTED; then
+      elif wpctl get-volume "$TONOR_ID" | grep -q MUTED; then
         wpctl set-mute "$TONOR_ID" 0
         wpctl set-mute @DEFAULT_AUDIO_SOURCE@ 0
       else
         wpctl set-mute "$TONOR_ID" 1
         wpctl set-mute @DEFAULT_AUDIO_SOURCE@ 1
       fi
+      pkill -SIGRTMIN+1 waybar 2>/dev/null || true
     '')
 
     (pkgs.writeShellScriptBin "rebuild" ''
