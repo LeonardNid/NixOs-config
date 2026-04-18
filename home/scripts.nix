@@ -71,7 +71,7 @@
       MESSAGE="''${1:-update}"
       DATE=$(date '+%Y-%m-%d %H:%M')
       TIME=$(date '+%H:%M')
-      LABEL=$(echo "$MESSAGE--$TIME" | tr ' ' '-' | sed 's/[^a-zA-Z0-9:_.-]/-/g')
+      LABEL=$(echo "$MESSAGE--$TIME" | tr ' ' '-' | LC_ALL=C sed 's/[^a-zA-Z0-9:_.-]/-/g')
 
       echo ""
       echo "┌─── git ────────────────────────────────────────"
