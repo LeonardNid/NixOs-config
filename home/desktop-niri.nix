@@ -59,6 +59,7 @@ in
 
     // Monitore
     output "DP-1" {
+      mode "2560x1440@170.001"
       position x=0 y=0
     }
     output "HDMI-A-1" {
