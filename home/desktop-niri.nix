@@ -100,6 +100,12 @@ in
       Mod+K { focus-window-up; }
       Mod+L { focus-column-right; }
 
+      // Monitor-Fokus
+      Mod+Shift+Left  { focus-monitor-left; }
+      Mod+Shift+Right { focus-monitor-right; }
+      Mod+Shift+H { focus-monitor-left; }
+      Mod+Shift+L { focus-monitor-right; }
+
       // Spalten/Fenster verschieben
       Mod+Ctrl+Left  { move-column-left; }
       Mod+Ctrl+Down  { move-window-down; }
