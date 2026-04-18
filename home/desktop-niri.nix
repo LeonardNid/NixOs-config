@@ -67,7 +67,7 @@ in
     }
 
     cursor {
-      xcursor-theme "Adwaita"
+      xcursor-theme "catppuccin-latte-light-cursors"
       xcursor-size 24
     }
 
@@ -75,7 +75,7 @@ in
 
     environment {
       NIXOS_OZONE_WL "1"
-      XCURSOR_THEME "Adwaita"
+      XCURSOR_THEME "catppuccin-latte-light-cursors"
       XCURSOR_SIZE "24"
     }
 
@@ -211,8 +211,8 @@ in
   # Sperrbildschirm (Catppuccin Mocha)
   home.pointerCursor = {
     gtk.enable = true;
-    package    = pkgs.adwaita-icon-theme;
-    name       = "Adwaita";
+    package    = pkgs.catppuccin-cursors.latteLight;
+    name       = "catppuccin-latte-light-cursors";
     size       = 24;
   };
 

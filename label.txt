@@ -1,1 +1,1 @@
-cursor-theme-adwaita--18:48
+catppuccin-latte-light-cursor--18:59
