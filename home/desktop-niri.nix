@@ -18,7 +18,7 @@ in
         // accel-profile "flat" // "flat" = keine Beschleunigung, "adaptive" = Standard
         scroll-factor 1.5      // Scroll-Geschwindigkeit: 0.5 = halb so schnell, 2.0 = doppelt
       }
-      focus-follows-mouse max-scroll-amount="50%"
+      focus-follows-mouse max-scroll-amount="25%"
     }
 
     layout {
