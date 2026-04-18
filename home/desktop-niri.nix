@@ -100,6 +100,12 @@ in
       Mod+K { focus-window-up; }
       Mod+L { focus-column-right; }
 
+      // Scrollen durch Columns/Workspaces mit Mausrad
+      Mod+WheelScrollRight cooldown-ms=150 { focus-column-right; }
+      Mod+WheelScrollLeft  cooldown-ms=150 { focus-column-left; }
+      Mod+WheelScrollDown  cooldown-ms=150 { focus-workspace-down; }
+      Mod+WheelScrollUp    cooldown-ms=150 { focus-workspace-up; }
+
       // Monitor-Fokus
       Mod+Shift+Left  { focus-monitor-left; }
       Mod+Shift+Right { focus-monitor-right; }
