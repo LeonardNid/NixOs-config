@@ -1,1 +1,1 @@
-waybar-floating-pill---power-menu--18:36
+waybar--18:38
