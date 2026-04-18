@@ -250,7 +250,8 @@ in
       height   = 34;
 
       modules-left   = [ "niri/workspaces" "niri/window" ];
-      modules-right  = [ "clock" "custom/mic" "pulseaudio" "network" "tray" ];
+      modules-center = [ "clock" ];
+      modules-right  = [ "custom/mic" "pulseaudio" "network" "tray" ];
 
       "niri/workspaces" = {
         format = "{index}";
@@ -271,7 +272,7 @@ in
       };
 
       clock = {
-        format         = " {:%H:%M  %a %d.%m.%Y}";
+        format         = " {:%H:%M  %a %d.%m.}";
         tooltip-format = "<big>{:%B %Y}</big>\n<tt>{calendar}</tt>";
       };
 
