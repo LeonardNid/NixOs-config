@@ -14,6 +14,7 @@ in
         numlock
       }
       mouse {}
+      focus-follows-mouse max-scroll-amount="0%"
     }
 
     layout {
