@@ -6,6 +6,7 @@
     keymapp
     libnotify
     yazi
+    helix
   ];
 
   # Obsidian: --name setzt den Wayland app_id korrekt auf "Obsidian" statt "electron"

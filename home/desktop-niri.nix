@@ -201,6 +201,11 @@ in
   '';
 
   # Sperrbildschirm (Catppuccin Mocha)
+  programs.kitty = {
+    enable = true;
+    settings.confirm_os_window_close = 0;
+  };
+
   programs.swaylock = {
     enable = true;
     settings = {
@@ -358,7 +363,6 @@ in
 
   # Pakete
   home.packages = with pkgs; [
-    kitty                      # Terminal
     fuzzel                     # App-Launcher
     kdePackages.dolphin        # File manager
     cliphist                   # Clipboard-Historie
