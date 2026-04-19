@@ -1,1 +1,1 @@
-fix:-waybar-igpu-status-timeout-damit-intel_gpu_top-terminiert--19:22
+igpu:-fdinfo-statt-intel_gpu_top--stimmt-mit-Mission-Center---berein---19:33
