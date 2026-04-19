@@ -1,1 +1,1 @@
-fix:-pkill--x-waybar--substring-selbst-kill---16:29
+waybar--16:50

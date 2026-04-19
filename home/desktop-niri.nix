@@ -297,8 +297,7 @@ in
       "custom/vm" = {
         exec        = "waybar-vm-status";
         return-type = "json";
-        interval    = 5;
-        signal      = 2;
+        interval    = 1;
         on-click    = "vm-menu";
       };
 
@@ -457,26 +456,44 @@ in
 
     (pkgs.writeShellScriptBin "waybar-vm-status" ''
       VM="windows11"
-      # In-progress state has priority (written by vm-start/stop-waybar)
-      if [ -f /tmp/vm-waybar-progress ]; then
-        cat /tmp/vm-waybar-progress
+      PROGRESS="/tmp/vm-waybar-progress"
+      CACHE="/tmp/vm-waybar-cache"
+      STAMP="/tmp/vm-waybar-stamp"
+
+      # During active operation: return immediately (called every 1s)
+      if [ -f "$PROGRESS" ]; then
+        cat "$PROGRESS"
         exit 0
       fi
+
+      # Idle: only query virsh every 30 seconds, cache the result
+      NOW=$(date +%s)
+      if [ -f "$STAMP" ] && [ -f "$CACHE" ]; then
+        LAST=$(cat "$STAMP")
+        if [ $(( NOW - LAST )) -lt 30 ]; then
+          cat "$CACHE"
+          exit 0
+        fi
+      fi
+
+      echo "$NOW" > "$STAMP"
       STATE=$(sudo virsh domstate "$VM" 2>/dev/null | xargs 2>/dev/null)
       case "$STATE" in
         "running")
-          echo '{"text":"󰍹 läuft","class":"running","tooltip":"Windows VM läuft – klicken für Menü"}'
+          RESULT='{"text":"󰍹 läuft","class":"running","tooltip":"Windows VM läuft – klicken für Menü"}'
           ;;
         "paused")
-          echo '{"text":"󰍹 pause","class":"paused","tooltip":"Windows VM pausiert – klicken für Menü"}'
+          RESULT='{"text":"󰍹 pause","class":"paused","tooltip":"Windows VM pausiert – klicken für Menü"}'
           ;;
         "shut off")
-          echo '{"text":"󰍹","class":"stopped","tooltip":"Windows VM aus – klicken zum Starten"}'
+          RESULT='{"text":"󰍹","class":"stopped","tooltip":"Windows VM aus – klicken zum Starten"}'
           ;;
         *)
-          echo '{"text":"󰍹","class":"stopped","tooltip":"Windows VM: Status unbekannt"}'
+          RESULT='{"text":"󰍹","class":"stopped","tooltip":"Windows VM: Status unbekannt"}'
           ;;
       esac
+      echo "$RESULT" > "$CACHE"
+      echo "$RESULT"
     '')
 
     (pkgs.writeShellScriptBin "vm-start-waybar" ''
@@ -488,9 +505,8 @@ in
       echo "=== $(date '+%H:%M:%S') START (PID $$) ===" >> "$LOG"
       exec 2>>"$LOG"
 
-      _refresh() { pkill -x -SIGRTMIN+2 waybar 2>/dev/null || true; }
-      _status()  { printf '%s' "$1" > "$STATE_FILE"; _refresh; }
-      _done()    { rm -f "$STATE_FILE"; _refresh; }
+      _status() { printf '%s' "$1" > "$STATE_FILE"; }
+      _done()   { rm -f "$STATE_FILE"; }
 
       _status '{"text":"󰍹 …","class":"progress","tooltip":"Festplatten unmounten..."}'
       echo "$(date '+%H:%M:%S') unmount loop" >> "$LOG"
@@ -544,17 +560,15 @@ in
       pkill -f looking-glass-client 2>/dev/null
       kill "$(cat /tmp/vm-inhibit.pid 2>/dev/null)" 2>/dev/null
       rm -f /tmp/vm-inhibit.pid
-      notify-send "Windows VM" "VM gestoppt, aufgeräumt."
-      _refresh) &
+      notify-send "Windows VM" "VM gestoppt, aufgeräumt.") &
     '')
 
     (pkgs.writeShellScriptBin "vm-stop-waybar" ''
       VM="windows11"
       STATE_FILE="/tmp/vm-waybar-progress"
 
-      _refresh() { pkill -x -SIGRTMIN+2 waybar 2>/dev/null || true; }
-      _status()  { printf '%s' "$1" > "$STATE_FILE"; _refresh; }
-      _done()    { rm -f "$STATE_FILE"; _refresh; }
+      _status() { printf '%s' "$1" > "$STATE_FILE"; }
+      _done()   { rm -f "$STATE_FILE"; }
 
       pkill -f looking-glass-client 2>/dev/null
       kill "$(cat /tmp/vm-inhibit.pid 2>/dev/null)" 2>/dev/null
@@ -606,8 +620,8 @@ in
       [ -z "$CHOICE" ] && exit 0
       case "$CHOICE" in
         *Stoppen*)    (setsid vm-stop-waybar &) ;;
-        *Pausieren*)  vm pause; pkill -x -SIGRTMIN+2 waybar 2>/dev/null || true ;;
-        *Fortsetzen*) vm resume; pkill -x -SIGRTMIN+2 waybar 2>/dev/null || true ;;
+        *Pausieren*)  vm pause ;;
+        *Fortsetzen*) vm resume ;;
         *Starten*)    (setsid vm-start-waybar &) ;;
         *Fixcon*)     vm fixcon ;;
       esac
