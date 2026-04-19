@@ -23,5 +23,6 @@
     libreoffice-qt6-fresh
     gemini-cli
     qutebrowser
+    mission-center
   ];
 }
