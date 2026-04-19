@@ -95,10 +95,28 @@
       YELLOW='\033[1;33m'
       RESET='\033[0m'
 
+      UPDATE=0
+      if [ "''${1:-}" = "-u" ]; then
+        UPDATE=1
+        shift
+      fi
+
       MESSAGE="''${1:-update}"
       DATE=$(date '+%Y-%m-%d %H:%M')
       TIME=$(date '+%H:%M')
       LABEL=$(echo "$MESSAGE--$TIME" | tr ' ' '-' | LC_ALL=C sed 's/[^a-zA-Z0-9:_.-]/-/g')
+
+      if [ $UPDATE -eq 1 ]; then
+        echo ""
+        echo "┌─── flake update ───────────────────────────────"
+        if nix flake update /home/leonardn/nixos-config; then
+          echo -e "│ ''${GREEN}✓ flake.lock aktualisiert''${RESET}"
+        else
+          echo -e "│ ''${RED}✗ flake update fehlgeschlagen!''${RESET}"
+          exit 1
+        fi
+        echo "└────────────────────────────────────────────────"
+      fi
 
       echo ""
       echo "┌─── git ────────────────────────────────────────"
