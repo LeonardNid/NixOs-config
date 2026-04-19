@@ -274,7 +274,7 @@ in
 
       modules-left   = [ "niri/workspaces" "niri/window" ];
       modules-center = [ "clock" ];
-      modules-right  = [ "custom/mic" "pulseaudio" "network" "tray" "custom/power" ];
+      modules-right  = [ "custom/mic" "pulseaudio" "network" "custom/vm" "tray" "custom/power" ];
 
       "niri/workspaces" = {
         format = "{index}";
@@ -292,6 +292,14 @@ in
         interval    = "once";
         signal      = 1;
         on-click    = "mic-toggle";
+      };
+
+      "custom/vm" = {
+        exec        = "waybar-vm-status";
+        return-type = "json";
+        interval    = 5;
+        signal      = 2;
+        on-click    = "vm-menu";
       };
 
       "custom/power" = {
@@ -391,6 +399,7 @@ in
       #custom-mic,
       #pulseaudio,
       #network,
+      #custom-vm,
       #tray,
       #custom-power {
         background: rgba(49, 50, 68, 0.7);
@@ -409,6 +418,11 @@ in
       #network.disconnected { color: #6c7086; }
 
       #tray { padding: 2px 8px; }
+
+      #custom-vm              { color: #6c7086; }
+      #custom-vm.running      { color: #a6e3a1; }
+      #custom-vm.paused       { color: #f9e2af; background: rgba(249, 226, 175, 0.08); }
+      #custom-vm.running:hover { background: rgba(166, 227, 161, 0.12); }
 
       #custom-power {
         color: #f38ba8;
@@ -434,5 +448,64 @@ in
     polkit_gnome               # Polkit-Authentifizierungsagent
     nerd-fonts.jetbrains-mono  # Icons fuer Waybar und Mako
     playerctl                  # MPRIS Media Controls
+
+    (pkgs.writeShellScriptBin "waybar-vm-status" ''
+      VM="windows11"
+      STATE=$(sudo virsh domstate "$VM" 2>/dev/null | xargs 2>/dev/null)
+      case "$STATE" in
+        "running")
+          echo '{"text":"󰍹 läuft","class":"running","tooltip":"Windows VM läuft – klicken für Menü"}'
+          ;;
+        "paused")
+          echo '{"text":"󰍹 pause","class":"paused","tooltip":"Windows VM pausiert – klicken für Menü"}'
+          ;;
+        "shut off")
+          echo '{"text":"󰍹","class":"stopped","tooltip":"Windows VM aus – klicken zum Starten"}'
+          ;;
+        *)
+          echo '{"text":"󰍹","class":"stopped","tooltip":"Windows VM: Status unbekannt"}'
+          ;;
+      esac
+    '')
+
+    (pkgs.writeShellScriptBin "vm-menu" ''
+      VM="windows11"
+      STATE=$(sudo virsh domstate "$VM" 2>/dev/null | xargs 2>/dev/null)
+      case "$STATE" in
+        "running")
+          LINES=3
+          OPTS=$(printf "󰓛  Stoppen\n󰏤  Pausieren\n󰆁  Fixcon")
+          ;;
+        "paused")
+          LINES=2
+          OPTS=$(printf "▶  Fortsetzen\n󰓛  Stoppen")
+          ;;
+        *)
+          LINES=1
+          OPTS="▶  Starten"
+          ;;
+      esac
+      CHOICE=$(echo "$OPTS" | fuzzel --dmenu --width=22 --lines=$LINES --prompt="󰍹  ")
+      [ -z "$CHOICE" ] && exit 0
+      case "$CHOICE" in
+        *Stoppen*)
+          (kitty -e vm stop; pkill -SIGRTMIN+2 waybar 2>/dev/null || true) &
+          ;;
+        *Pausieren*)
+          vm pause
+          pkill -SIGRTMIN+2 waybar 2>/dev/null || true
+          ;;
+        *Fortsetzen*)
+          vm resume
+          pkill -SIGRTMIN+2 waybar 2>/dev/null || true
+          ;;
+        *Starten*)
+          (kitty -e vm start; pkill -SIGRTMIN+2 waybar 2>/dev/null || true) &
+          ;;
+        *Fixcon*)
+          vm fixcon
+          ;;
+      esac
+    '')
   ];
 }
