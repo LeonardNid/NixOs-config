@@ -7,6 +7,8 @@
     libnotify
     yazi
     helix
+    broot
+    ripgrep
   ];
 
   # Obsidian: --name setzt den Wayland app_id korrekt auf "Obsidian" statt "electron"
