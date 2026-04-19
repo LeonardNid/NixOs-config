@@ -1,1 +1,1 @@
-igpu:-sysfs-Frequenz-statt-fdinfo--waybar-restart-Befehl--19:37
+remove-igpu-waybar-modul--19:41

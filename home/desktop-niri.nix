@@ -274,7 +274,7 @@ in
 
       modules-left   = [ "niri/workspaces" "niri/window" ];
       modules-center = [ "clock" ];
-      modules-right  = [ "cpu" "memory" "custom/igpu" "custom/mic" "pulseaudio" "network" "custom/vm" "tray" "custom/power" ];
+      modules-right  = [ "cpu" "memory" "custom/mic" "pulseaudio" "network" "custom/vm" "tray" "custom/power" ];
 
       "niri/workspaces" = {
         format = "{index}";
@@ -296,12 +296,6 @@ in
         format         = "󰍛 {percentage}%";
         interval       = 3;
         tooltip-format = "{used:0.1f}G / {total:0.0f}G";
-      };
-
-      "custom/igpu" = {
-        exec        = "waybar-igpu-status";
-        return-type = "json";
-        interval    = 5;
       };
 
       "custom/mic" = {
@@ -415,7 +409,6 @@ in
       /* ── Rechte Module (Pills) ──────────────── */
       #cpu,
       #memory,
-      #custom-igpu,
       #custom-mic,
       #pulseaudio,
       #network,
@@ -428,9 +421,8 @@ in
         margin: 3px 2px;
       }
 
-      #cpu          { color: #cba6f7; }
-      #memory       { color: #cba6f7; }
-      #custom-igpu  { color: #cba6f7; }
+      #cpu    { color: #cba6f7; }
+      #memory { color: #cba6f7; }
 
       #custom-mic         { color: #a6e3a1; }
       #custom-mic.muted   { color: #f38ba8; background: rgba(243, 139, 168, 0.12); }
@@ -478,14 +470,6 @@ in
     polkit_gnome               # Polkit-Authentifizierungsagent
     nerd-fonts.jetbrains-mono  # Icons fuer Waybar und Mako
     playerctl                  # MPRIS Media Controls
-
-    (pkgs.writeShellScriptBin "waybar-igpu-status" ''
-      # GPU-Frequenz als % des Maximums (gleiche Methode wie Mission Center)
-      CUR=$(cat /sys/class/drm/card1/gt_cur_freq_mhz)
-      MAX=$(cat /sys/class/drm/card1/gt_boost_freq_mhz)
-      USAGE=$(( CUR * 100 / MAX ))
-      printf '{"text":"󰾲 %d%%","tooltip":"iGPU: %dMHz / %dMHz"}\n' "$USAGE" "$CUR" "$MAX"
-    '')
 
     (pkgs.writeShellScriptBin "waybar-vm-status" ''
       VM="windows11"
