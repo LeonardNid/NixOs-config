@@ -1,1 +1,1 @@
-taskbar--18:48
+waybar:-cpu--ram--igpu-stats--19:12

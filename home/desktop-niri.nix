@@ -274,7 +274,7 @@ in
 
       modules-left   = [ "niri/workspaces" "niri/window" ];
       modules-center = [ "clock" ];
-      modules-right  = [ "custom/mic" "pulseaudio" "network" "custom/vm" "tray" "custom/power" ];
+      modules-right  = [ "cpu" "memory" "custom/igpu" "custom/mic" "pulseaudio" "network" "custom/vm" "tray" "custom/power" ];
 
       "niri/workspaces" = {
         format = "{index}";
@@ -284,6 +284,24 @@ in
       "niri/window" = {
         format = "{title}";
         max-length = 50;
+      };
+
+      cpu = {
+        format   = "󰻠 {usage}%";
+        interval = 3;
+        tooltip  = false;
+      };
+
+      memory = {
+        format         = "󰍛 {percentage}%";
+        interval       = 3;
+        tooltip-format = "{used:0.1f}G / {total:0.0f}G";
+      };
+
+      "custom/igpu" = {
+        exec        = "waybar-igpu-status";
+        return-type = "json";
+        interval    = 5;
       };
 
       "custom/mic" = {
@@ -395,6 +413,9 @@ in
       }
 
       /* ── Rechte Module (Pills) ──────────────── */
+      #cpu,
+      #memory,
+      #custom-igpu,
       #custom-mic,
       #pulseaudio,
       #network,
@@ -406,6 +427,10 @@ in
         padding: 1px 10px;
         margin: 3px 2px;
       }
+
+      #cpu          { color: #cba6f7; }
+      #memory       { color: #cba6f7; }
+      #custom-igpu  { color: #cba6f7; }
 
       #custom-mic         { color: #a6e3a1; }
       #custom-mic.muted   { color: #f38ba8; background: rgba(243, 139, 168, 0.12); }
@@ -453,6 +478,13 @@ in
     polkit_gnome               # Polkit-Authentifizierungsagent
     nerd-fonts.jetbrains-mono  # Icons fuer Waybar und Mako
     playerctl                  # MPRIS Media Controls
+
+    (pkgs.writeShellScriptBin "waybar-igpu-status" ''
+      USAGE=$(${pkgs.intel-gpu-tools}/bin/intel_gpu_top -l -s 1000 2>/dev/null \
+        | awk 'NR==3{printf "%d", $7; exit}')
+      [ -z "$USAGE" ] && USAGE=0
+      printf '{"text":"󰾲 %d%%","tooltip":"iGPU Render: %d%%"}\n' "$USAGE" "$USAGE"
+    '')
 
     (pkgs.writeShellScriptBin "waybar-vm-status" ''
       VM="windows11"
