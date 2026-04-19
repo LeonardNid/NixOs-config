@@ -1,1 +1,1 @@
-vm-waybar:-setsid---timeout---logging--16:24
+fix:-pkill--x-waybar--substring-selbst-kill---16:29

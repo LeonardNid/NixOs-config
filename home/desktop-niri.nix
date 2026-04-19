@@ -488,7 +488,7 @@ in
       echo "=== $(date '+%H:%M:%S') START (PID $$) ===" >> "$LOG"
       exec 2>>"$LOG"
 
-      _refresh() { pkill -SIGRTMIN+2 waybar 2>/dev/null || true; }
+      _refresh() { pkill -x -SIGRTMIN+2 waybar 2>/dev/null || true; }
       _status()  { printf '%s' "$1" > "$STATE_FILE"; _refresh; }
       _done()    { rm -f "$STATE_FILE"; _refresh; }
 
@@ -552,7 +552,7 @@ in
       VM="windows11"
       STATE_FILE="/tmp/vm-waybar-progress"
 
-      _refresh() { pkill -SIGRTMIN+2 waybar 2>/dev/null || true; }
+      _refresh() { pkill -x -SIGRTMIN+2 waybar 2>/dev/null || true; }
       _status()  { printf '%s' "$1" > "$STATE_FILE"; _refresh; }
       _done()    { rm -f "$STATE_FILE"; _refresh; }
 
@@ -606,8 +606,8 @@ in
       [ -z "$CHOICE" ] && exit 0
       case "$CHOICE" in
         *Stoppen*)    (setsid vm-stop-waybar &) ;;
-        *Pausieren*)  vm pause; pkill -SIGRTMIN+2 waybar 2>/dev/null || true ;;
-        *Fortsetzen*) vm resume; pkill -SIGRTMIN+2 waybar 2>/dev/null || true ;;
+        *Pausieren*)  vm pause; pkill -x -SIGRTMIN+2 waybar 2>/dev/null || true ;;
+        *Fortsetzen*) vm resume; pkill -x -SIGRTMIN+2 waybar 2>/dev/null || true ;;
         *Starten*)    (setsid vm-start-waybar &) ;;
         *Fixcon*)     vm fixcon ;;
       esac
