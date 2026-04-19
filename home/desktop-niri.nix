@@ -480,7 +480,7 @@ in
     playerctl                  # MPRIS Media Controls
 
     (pkgs.writeShellScriptBin "waybar-igpu-status" ''
-      USAGE=$(${pkgs.intel-gpu-tools}/bin/intel_gpu_top -l -s 1000 2>/dev/null \
+      USAGE=$(timeout 3 ${pkgs.intel-gpu-tools}/bin/intel_gpu_top -l -s 1000 2>/dev/null \
         | awk 'NR==3{printf "%d", $7; exit}')
       [ -z "$USAGE" ] && USAGE=0
       printf '{"text":"󰾲 %d%%","tooltip":"iGPU Render: %d%%"}\n' "$USAGE" "$USAGE"
