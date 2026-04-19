@@ -1,1 +1,1 @@
-waybar:-cpu--ram--igpu-stats--19:12
+fix:-perf_event_paranoid-0-f--r-intel_gpu_top--19:14
