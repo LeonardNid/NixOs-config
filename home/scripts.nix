@@ -90,6 +90,11 @@
     '')
 
     (pkgs.writeShellScriptBin "rebuild" ''
+      RED='\033[1;31m'
+      GREEN='\033[1;32m'
+      YELLOW='\033[1;33m'
+      RESET='\033[0m'
+
       MESSAGE="''${1:-update}"
       DATE=$(date '+%Y-%m-%d %H:%M')
       TIME=$(date '+%H:%M')
@@ -99,7 +104,7 @@
       echo "┌─── git ────────────────────────────────────────"
 
       if ! mountpoint -q /boot; then
-        echo "│ ⚠ /boot nicht gemountet, mounte..."
+        echo -e "│ ''${YELLOW}⚠ /boot nicht gemountet, mounte...''${RESET}"
         sudo mount /boot
       fi
 
@@ -113,7 +118,7 @@
       if ! git pull --rebase origin main; then
         [ $STASHED -eq 1 ] && git stash pop
         echo "│"
-        echo "│ ✗ Rebase-Konflikt in:"
+        echo -e "│ ''${RED}✗ Rebase-Konflikt in:''${RESET}"
         git diff --name-only --diff-filter=U | sed 's/^/│   /'
         echo "│"
         git diff --diff-filter=U | sed 's/^/│ /'
@@ -125,10 +130,10 @@
         printf "│ > "
         read -r choice
         case $choice in
-          a) git rebase --abort; echo "│ Abgebrochen."; exit 1;;
+          a) git rebase --abort; echo -e "│ ''${YELLOW}Abgebrochen.''${RESET}"; exit 1;;
           s) git rebase --skip || exit 1;;
           m) echo "│ Löse den Konflikt, dann: git add . && git rebase --continue"; exit 1;;
-          *) echo "│ Unbekannte Eingabe, breche ab."; git rebase --abort; exit 1;;
+          *) echo -e "│ ''${RED}Unbekannte Eingabe, breche ab.''${RESET}"; git rebase --abort; exit 1;;
         esac
       fi
 
@@ -147,7 +152,19 @@
       echo "┌─── nixos-rebuild ──────────────────────────────"
       echo ""
 
-      sudo nixos-rebuild switch --flake /home/leonardn/nixos-config#$(hostname)
+      if sudo nixos-rebuild switch --flake /home/leonardn/nixos-config#$(hostname); then
+        echo ""
+        echo -e "''${GREEN}┌────────────────────────────────────────────────┐''${RESET}"
+        echo -e "''${GREEN}│  ✓ Build erfolgreich                           │''${RESET}"
+        echo -e "''${GREEN}└────────────────────────────────────────────────┘''${RESET}"
+      else
+        echo ""
+        echo -e "''${RED}┌────────────────────────────────────────────────┐''${RESET}"
+        echo -e "''${RED}│  ✗ Build fehlgeschlagen!                       │''${RESET}"
+        echo -e "''${RED}└────────────────────────────────────────────────┘''${RESET}"
+        echo ""
+        exit 1
+      fi
 
       echo ""
       echo "└────────────────────────────────────────────────"
@@ -162,7 +179,11 @@
 
       echo ""
       echo "┌─── git push ───────────────────────────────────"
-      git push
+      if git push; then
+        echo -e "│ ''${GREEN}✓ gepusht''${RESET}"
+      else
+        echo -e "│ ''${RED}✗ Push fehlgeschlagen!''${RESET}"
+      fi
       echo "└────────────────────────────────────────────────"
       echo ""
     '')
