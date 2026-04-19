@@ -1,1 +1,1 @@
-vm-waybar-progress-bar--16:10
+vm-waybar:-setsid---timeout---logging--16:24

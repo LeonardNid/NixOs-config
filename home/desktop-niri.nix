@@ -483,23 +483,33 @@ in
       VM="windows11"
       BOOT_DELAY=30
       STATE_FILE="/tmp/vm-waybar-progress"
+      LOG="/tmp/vm-start-waybar.log"
+
+      echo "=== $(date '+%H:%M:%S') START (PID $$) ===" >> "$LOG"
+      exec 2>>"$LOG"
 
       _refresh() { pkill -SIGRTMIN+2 waybar 2>/dev/null || true; }
       _status()  { printf '%s' "$1" > "$STATE_FILE"; _refresh; }
       _done()    { rm -f "$STATE_FILE"; _refresh; }
 
       _status '{"text":"󰍹 …","class":"progress","tooltip":"Festplatten unmounten..."}'
+      echo "$(date '+%H:%M:%S') unmount loop" >> "$LOG"
       for dev in /dev/sdb1 /dev/nvme0n1p1 /dev/nvme0n1p2 /dev/nvme0n1p3 /dev/nvme0n1p4; do
         if mountpoint -q "$(findmnt -n -o TARGET "$dev" 2>/dev/null)" 2>/dev/null; then
-          sudo umount "$dev"
+          echo "$(date '+%H:%M:%S') unmounting $dev" >> "$LOG"
+          timeout 5 sudo umount "$dev" 2>/dev/null || echo "$(date '+%H:%M:%S') umount $dev failed/busy" >> "$LOG"
         fi
       done
+      echo "$(date '+%H:%M:%S') unmount done" >> "$LOG"
 
       _status '{"text":"󰍹 …","class":"progress","tooltip":"VM startet..."}'
+      echo "$(date '+%H:%M:%S') virsh start" >> "$LOG"
       if ! sudo virsh start "$VM"; then
-        notify-send -u critical "Windows VM" "Fehler beim Starten!"
+        echo "$(date '+%H:%M:%S') virsh start FAILED" >> "$LOG"
+        notify-send -u critical "Windows VM" "Fehler beim Starten! Log: $LOG"
         _done; exit 1
       fi
+      echo "$(date '+%H:%M:%S') virsh start OK" >> "$LOG"
 
       sleep 0.5
       echo "init_linux_after_qemu_start" > /tmp/vm-toggle-kbd.fifo 2>/dev/null || true
@@ -595,10 +605,10 @@ in
       CHOICE=$(echo "$OPTS" | fuzzel --dmenu --width=22 --lines=$LINES --prompt="󰍹  ")
       [ -z "$CHOICE" ] && exit 0
       case "$CHOICE" in
-        *Stoppen*)    vm-stop-waybar & ;;
+        *Stoppen*)    (setsid vm-stop-waybar &) ;;
         *Pausieren*)  vm pause; pkill -SIGRTMIN+2 waybar 2>/dev/null || true ;;
         *Fortsetzen*) vm resume; pkill -SIGRTMIN+2 waybar 2>/dev/null || true ;;
-        *Starten*)    vm-start-waybar & ;;
+        *Starten*)    (setsid vm-start-waybar &) ;;
         *Fixcon*)     vm fixcon ;;
       esac
     '')
