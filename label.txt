@@ -1,1 +1,1 @@
-vm-waybar--16:03
+vm-waybar-progress-bar--16:10

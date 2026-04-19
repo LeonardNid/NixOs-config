@@ -422,7 +422,13 @@ in
       #custom-vm              { color: #6c7086; }
       #custom-vm.running      { color: #a6e3a1; }
       #custom-vm.paused       { color: #f9e2af; background: rgba(249, 226, 175, 0.08); }
-      #custom-vm.running:hover { background: rgba(166, 227, 161, 0.12); }
+      #custom-vm.progress     { color: #89b4fa; animation: vm-pulse 1s ease-in-out infinite alternate; }
+      #custom-vm.running:hover  { background: rgba(166, 227, 161, 0.12); }
+
+      @keyframes vm-pulse {
+        from { opacity: 1.0; }
+        to   { opacity: 0.5; }
+      }
 
       #custom-power {
         color: #f38ba8;
@@ -451,6 +457,11 @@ in
 
     (pkgs.writeShellScriptBin "waybar-vm-status" ''
       VM="windows11"
+      # In-progress state has priority (written by vm-start/stop-waybar)
+      if [ -f /tmp/vm-waybar-progress ]; then
+        cat /tmp/vm-waybar-progress
+        exit 0
+      fi
       STATE=$(sudo virsh domstate "$VM" 2>/dev/null | xargs 2>/dev/null)
       case "$STATE" in
         "running")
@@ -468,8 +479,104 @@ in
       esac
     '')
 
+    (pkgs.writeShellScriptBin "vm-start-waybar" ''
+      VM="windows11"
+      BOOT_DELAY=30
+      STATE_FILE="/tmp/vm-waybar-progress"
+
+      _refresh() { pkill -SIGRTMIN+2 waybar 2>/dev/null || true; }
+      _status()  { printf '%s' "$1" > "$STATE_FILE"; _refresh; }
+      _done()    { rm -f "$STATE_FILE"; _refresh; }
+
+      _status '{"text":"󰍹 …","class":"progress","tooltip":"Festplatten unmounten..."}'
+      for dev in /dev/sdb1 /dev/nvme0n1p1 /dev/nvme0n1p2 /dev/nvme0n1p3 /dev/nvme0n1p4; do
+        if mountpoint -q "$(findmnt -n -o TARGET "$dev" 2>/dev/null)" 2>/dev/null; then
+          sudo umount "$dev"
+        fi
+      done
+
+      _status '{"text":"󰍹 …","class":"progress","tooltip":"VM startet..."}'
+      if ! sudo virsh start "$VM"; then
+        notify-send -u critical "Windows VM" "Fehler beim Starten!"
+        _done; exit 1
+      fi
+
+      sleep 0.5
+      echo "init_linux_after_qemu_start" > /tmp/vm-toggle-kbd.fifo 2>/dev/null || true
+      sleep 2
+
+      systemd-inhibit --what=idle:sleep --who="Windows VM" --why="Gaming auf VM" sleep infinity &
+      echo $! > /tmp/vm-inhibit.pid
+
+      for i in $(seq $BOOT_DELAY -1 1); do
+        _status "{\"text\":\"󰍹 ''${i}s\",\"class\":\"progress\",\"tooltip\":\"Windows bootet... noch ''${i}s\"}"
+        sleep 1
+      done
+
+      _status '{"text":"󰍹 …","class":"progress","tooltip":"Looking Glass startet..."}'
+      niri msg action focus-monitor-left 2>/dev/null || true
+      sleep 0.3
+      looking-glass-client -F -f /dev/kvmfr0 \
+        win:size=2560x1440 win:dontUpscale=on \
+        input:captureOnFocus=no input:grabKeyboardOnFocus=no \
+        input:escapeKey=KEY_PAUSE \
+        win:requestActivation=no \
+        spice:enable=no \
+        > /tmp/looking-glass.log 2>&1 &
+
+      _done
+
+      # Background watcher: cleanup when VM stops
+      (while sudo virsh domstate "$VM" 2>/dev/null | grep -q "running"; do
+        sleep 5
+      done
+      echo "force_linux" > /tmp/vm-toggle-kbd.fifo 2>/dev/null || true
+      pkill -f looking-glass-client 2>/dev/null
+      kill "$(cat /tmp/vm-inhibit.pid 2>/dev/null)" 2>/dev/null
+      rm -f /tmp/vm-inhibit.pid
+      notify-send "Windows VM" "VM gestoppt, aufgeräumt."
+      _refresh) &
+    '')
+
+    (pkgs.writeShellScriptBin "vm-stop-waybar" ''
+      VM="windows11"
+      STATE_FILE="/tmp/vm-waybar-progress"
+
+      _refresh() { pkill -SIGRTMIN+2 waybar 2>/dev/null || true; }
+      _status()  { printf '%s' "$1" > "$STATE_FILE"; _refresh; }
+      _done()    { rm -f "$STATE_FILE"; _refresh; }
+
+      pkill -f looking-glass-client 2>/dev/null
+      kill "$(cat /tmp/vm-inhibit.pid 2>/dev/null)" 2>/dev/null
+      rm -f /tmp/vm-inhibit.pid
+
+      if sudo virsh domstate "$VM" 2>/dev/null | grep -q "running"; then
+        _status '{"text":"󰍹 …","class":"progress","tooltip":"VM fährt herunter..."}'
+        sudo virsh shutdown "$VM"
+
+        for i in $(seq 60 -1 1); do
+          if ! sudo virsh domstate "$VM" 2>/dev/null | grep -q "running"; then
+            break
+          fi
+          _status "{\"text\":\"󰍹 …\",\"class\":\"progress\",\"tooltip\":\"Shutdown... max ''${i}s\"}"
+          sleep 1
+        done
+
+        if sudo virsh domstate "$VM" 2>/dev/null | grep -q "running"; then
+          _status '{"text":"󰍹 …","class":"progress","tooltip":"Erzwinge Shutdown..."}'
+          sudo virsh destroy "$VM"
+          sleep 1
+        fi
+      fi
+
+      echo "force_linux" > /tmp/vm-toggle-kbd.fifo 2>/dev/null || true
+      _done
+    '')
+
     (pkgs.writeShellScriptBin "vm-menu" ''
       VM="windows11"
+      # Block clicks while an operation is already running
+      [ -f /tmp/vm-waybar-progress ] && exit 0
       STATE=$(sudo virsh domstate "$VM" 2>/dev/null | xargs 2>/dev/null)
       case "$STATE" in
         "running")
@@ -488,23 +595,11 @@ in
       CHOICE=$(echo "$OPTS" | fuzzel --dmenu --width=22 --lines=$LINES --prompt="󰍹  ")
       [ -z "$CHOICE" ] && exit 0
       case "$CHOICE" in
-        *Stoppen*)
-          (kitty -e vm stop; pkill -SIGRTMIN+2 waybar 2>/dev/null || true) &
-          ;;
-        *Pausieren*)
-          vm pause
-          pkill -SIGRTMIN+2 waybar 2>/dev/null || true
-          ;;
-        *Fortsetzen*)
-          vm resume
-          pkill -SIGRTMIN+2 waybar 2>/dev/null || true
-          ;;
-        *Starten*)
-          (kitty -e vm start; pkill -SIGRTMIN+2 waybar 2>/dev/null || true) &
-          ;;
-        *Fixcon*)
-          vm fixcon
-          ;;
+        *Stoppen*)    vm-stop-waybar & ;;
+        *Pausieren*)  vm pause; pkill -SIGRTMIN+2 waybar 2>/dev/null || true ;;
+        *Fortsetzen*) vm resume; pkill -SIGRTMIN+2 waybar 2>/dev/null || true ;;
+        *Starten*)    vm-start-waybar & ;;
+        *Fixcon*)     vm fixcon ;;
       esac
     '')
   ];
