@@ -480,29 +480,11 @@ in
     playerctl                  # MPRIS Media Controls
 
     (pkgs.writeShellScriptBin "waybar-igpu-status" ''
-      # Liest drm-engine-render aus /proc/*/fdinfo (gleiche Methode wie Mission Center)
-      # Delta zwischen zwei Aufrufen → kein root, kein intel_gpu_top, kein 1s-Wait
-      CACHE="/tmp/igpu-fdinfo-cache"
-      NOW=$(date +%s%N)
-
-      TOTAL=0
-      for f in /proc/[0-9]*/fdinfo/*; do
-        [ -r "$f" ] || continue
-        grep -q "drm-driver:.*i915" "$f" 2>/dev/null || continue
-        val=$(awk '/drm-engine-render:/{print $2}' "$f" 2>/dev/null)
-        [ -n "$val" ] && TOTAL=$((TOTAL + val))
-      done
-
-      USAGE=0
-      if [ -f "$CACHE" ]; then
-        read PREV_TIME PREV_TOTAL < "$CACHE" 2>/dev/null
-        DT=$((NOW - PREV_TIME))
-        DR=$((TOTAL - PREV_TOTAL))
-        [ "$DT" -gt 0 ] && USAGE=$(awk "BEGIN{u=int($DR/$DT*100); print (u>100)?100:(u<0)?0:u}")
-      fi
-
-      printf '%s %s\n' "$NOW" "$TOTAL" > "$CACHE"
-      printf '{"text":"󰾲 %d%%","tooltip":"iGPU Render: %d%%"}\n' "$USAGE" "$USAGE"
+      # GPU-Frequenz als % des Maximums (gleiche Methode wie Mission Center)
+      CUR=$(cat /sys/class/drm/card1/gt_cur_freq_mhz)
+      MAX=$(cat /sys/class/drm/card1/gt_boost_freq_mhz)
+      USAGE=$(( CUR * 100 / MAX ))
+      printf '{"text":"󰾲 %d%%","tooltip":"iGPU: %dMHz / %dMHz"}\n' "$USAGE" "$CUR" "$MAX"
     '')
 
     (pkgs.writeShellScriptBin "waybar-vm-status" ''
@@ -676,6 +658,12 @@ in
         *Starten*)    (setsid vm-start-waybar &) ;;
         *Fixcon*)     vm fixcon ;;
       esac
+    '')
+
+    (pkgs.writeShellScriptBin "waybar-restart" ''
+      pkill -x waybar 2>/dev/null
+      sleep 0.5
+      exec waybar
     '')
   ];
 }

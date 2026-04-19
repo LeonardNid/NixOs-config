@@ -1,1 +1,1 @@
-igpu:-fdinfo-statt-intel_gpu_top--stimmt-mit-Mission-Center---berein---19:33
+igpu:-sysfs-Frequenz-statt-fdinfo--waybar-restart-Befehl--19:37
