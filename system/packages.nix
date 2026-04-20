@@ -10,7 +10,7 @@
     wget
     nodejs
     vesktop
-    (vivaldi.override { commandLineArgs = "--password-store=kwallet6"; })
+    (vivaldi.override { commandLineArgs = "--password-store=kwallet6 --ozone-platform=wayland --enable-features=WaylandWindowDecorations"; })
     tailscale
     easyeffects
     obsidian
