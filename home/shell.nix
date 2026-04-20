@@ -8,7 +8,7 @@
     shellAliases = {
       ll = "ls -la";
       la = "ls -A";
-      nf = "fd . ~/Nextcloud | fzf | xargs -r xdg-open";
+      nf = ''file=$(fd . ~/Nextcloud | fzf) && xdg-open "$file"'';
     };
     initContent = ''
       eval "$(zoxide init zsh)"
