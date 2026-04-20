@@ -37,4 +37,8 @@
   ];
 
   services.printing.enable = true;
+
+  # File-Chooser-Dialog für Browser (Drucken/Speichern) und andere GTK-Apps
+  xdg.portal.extraPortals = [ pkgs.xdg-desktop-portal-gtk ];
+  xdg.portal.config.niri.default = [ "gnome" "gtk" ];
 }
