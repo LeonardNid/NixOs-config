@@ -10,6 +10,8 @@
     broot
     ripgrep
     btop
+    fzf
+    fd
   ];
 
   # Obsidian: --name setzt den Wayland app_id korrekt auf "Obsidian" statt "electron"

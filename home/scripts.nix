@@ -109,7 +109,7 @@
       if [ $UPDATE -eq 1 ]; then
         echo ""
         echo "┌─── flake update ───────────────────────────────"
-        if nix flake update /home/leonardn/nixos-config; then
+        if nix flake update --flake /home/leonardn/nixos-config; then
           echo -e "│ ''${GREEN}✓ flake.lock aktualisiert''${RESET}"
         else
           echo -e "│ ''${RED}✗ flake update fehlgeschlagen!''${RESET}"

@@ -8,6 +8,7 @@
     shellAliases = {
       ll = "ls -la";
       la = "ls -A";
+      nf = "fd . ~/Nextcloud | fzf | xargs -r xdg-open";
     };
     initContent = ''
       eval "$(zoxide init zsh)"
