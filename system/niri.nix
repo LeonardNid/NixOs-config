@@ -41,7 +41,9 @@
   # File-Chooser-Dialog für Browser (Drucken/Speichern) und andere GTK-Apps
   xdg.portal.extraPortals = [ pkgs.xdg-desktop-portal-gtk ];
   xdg.portal.config.niri = {
-    default = [ "gnome" "gtk" ];
-    "org.freedesktop.impl.portal.FileChooser" = [ "gtk" ];
+    default = [ "gtk" ];
+    "org.freedesktop.impl.portal.ScreenCast"     = [ "gnome" ];
+    "org.freedesktop.impl.portal.Screenshot"     = [ "gnome" ];
+    "org.freedesktop.impl.portal.RemoteDesktop"  = [ "gnome" ];
   };
 }
