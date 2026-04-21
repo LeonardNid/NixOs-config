@@ -95,6 +95,13 @@
       YELLOW='\033[1;33m'
       RESET='\033[0m'
 
+      # Git immer als echter User ausführen, auch wenn rebuild mit sudo aufgerufen wird
+      REAL_USER="''${SUDO_USER:-$USER}"
+      REPO="/home/leonardn/nixos-config"
+      if [ -n "$SUDO_USER" ]; then
+        git() { sudo -u "$REAL_USER" git "$@"; }
+      fi
+
       UPDATE=0
       if [ "''${1:-}" = "-u" ]; then
         UPDATE=1
@@ -109,7 +116,7 @@
       if [ $UPDATE -eq 1 ]; then
         echo ""
         echo "┌─── flake update ───────────────────────────────"
-        if nix flake update --flake /home/leonardn/nixos-config; then
+        if sudo -u "$REAL_USER" nix flake update --flake "$REPO"; then
           echo -e "│ ''${GREEN}✓ flake.lock aktualisiert''${RESET}"
         else
           echo -e "│ ''${RED}✗ flake update fehlgeschlagen!''${RESET}"
@@ -126,7 +133,7 @@
         sudo mount /boot
       fi
 
-      cd /home/leonardn/nixos-config
+      cd "$REPO"
       STASHED=0
       if ! git diff --quiet || ! git diff --cached --quiet; then
         git stash
@@ -157,7 +164,7 @@
 
       [ $STASHED -eq 1 ] && git stash pop
 
-      echo "$LABEL" > /home/leonardn/nixos-config/label.txt
+      echo "$LABEL" > "$REPO/label.txt"
       git add .
       if ! git diff --cached --quiet; then
         git commit -m "$MESSAGE ($DATE)"
@@ -170,7 +177,7 @@
       echo "┌─── nixos-rebuild ──────────────────────────────"
       echo ""
 
-      if sudo nixos-rebuild switch --flake /home/leonardn/nixos-config#$(hostname); then
+      if sudo nixos-rebuild switch --flake "$REPO#$(hostname)"; then
         echo ""
         echo -e "''${GREEN}┌────────────────────────────────────────────────┐''${RESET}"
         echo -e "''${GREEN}│  ✓ Build erfolgreich                           │''${RESET}"
