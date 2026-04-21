@@ -43,6 +43,7 @@ in
     }
 
     // Autostart
+    spawn-at-startup "qs" "-c" "noctalia-shell"
     spawn-at-startup "swaybg" "-i" "${wallpaper}" "-m" "fill"
     spawn-at-startup "wl-paste" "--watch" "cliphist" "store"
     spawn-at-startup "nm-applet" "--indicator"
