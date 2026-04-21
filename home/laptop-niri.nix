@@ -98,7 +98,7 @@ in
       // Apps
       Mod+T { spawn "kitty"; }
       Alt+Space { spawn "noctalia-shell" "ipc" "call" "launcher" "toggle"; }
-      Super+Alt+L { spawn "swaylock"; }
+      Super+Alt+L { spawn "noctalia-shell" "ipc" "call" "lockScreen" "lock"; }
       Mod+Q { close-window; }
 
       // Overview (niri native)
