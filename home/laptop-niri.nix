@@ -21,7 +21,7 @@ in
     }
 
     layout {
-      gaps 16
+      gaps 8
       center-focused-column "never"
       preset-column-widths {
         proportion 0.333
@@ -56,10 +56,17 @@ in
 
     screenshot-path "~/Pictures/Screenshots/Screenshot from %Y-%m-%d %H-%M-%S.png"
 
+    cursor {
+      xcursor-theme "catppuccin-latte-light-cursors"
+      xcursor-size 24
+    }
+
     prefer-no-csd
 
     environment {
       NIXOS_OZONE_WL "1"
+      XCURSOR_THEME "catppuccin-latte-light-cursors"
+      XCURSOR_SIZE "24"
     }
 
     // Window Rules
@@ -182,6 +189,13 @@ in
       Mod+Shift+P     { power-off-monitors; }
     }
   '';
+
+  home.pointerCursor = {
+    gtk.enable = true;
+    package    = pkgs.catppuccin-cursors.latteLight;
+    name       = "catppuccin-latte-light-cursors";
+    size       = 24;
+  };
 
   # Sperrbildschirm (Catppuccin Mocha)
   programs.swaylock = {
