@@ -114,15 +114,17 @@ in
       // Overview (niri native)
       Mod+O { toggle-overview; }
 
-      // Fokus (Pfeiltasten + Vim-Keys)
+      // Fokus (Pfeiltasten + Neo-Keys)
+      // Tastaturlayout: Neo (Deutsch) – statt HJKL wird SNRT verwendet
+      //   S = links, N = unten, R = oben, T = rechts
       Mod+Left  { focus-column-left; }
       Mod+Down  { focus-window-down; }
       Mod+Up    { focus-window-up; }
       Mod+Right { focus-column-right; }
-      Mod+H { focus-column-left; }
-      Mod+J { focus-window-down; }
-      Mod+K { focus-window-up; }
-      Mod+L { focus-column-right; }
+      Mod+S { focus-column-left; }
+      Mod+N { focus-window-down; }
+      Mod+R { focus-window-up; }
+      Mod+T { focus-column-right; }
 
       // Scrollen durch Columns/Workspaces mit Mausrad
       Mod+WheelScrollRight cooldown-ms=150 { focus-workspace-down; }
@@ -133,18 +135,24 @@ in
       // Monitor-Fokus
       Mod+Shift+Left  { focus-monitor-left; }
       Mod+Shift+Right { focus-monitor-right; }
-      Mod+Shift+H { focus-monitor-left; }
-      Mod+Shift+L { focus-monitor-right; }
+      Mod+Shift+S { focus-monitor-left; }
+      Mod+Shift+T { focus-monitor-right; }
+
+      // Fenster auf anderen Monitor verschieben
+      Mod+Shift+Ctrl+Left  { move-column-to-monitor-left; }
+      Mod+Shift+Ctrl+Right { move-column-to-monitor-right; }
+      Mod+Shift+Ctrl+S { move-column-to-monitor-left; }
+      Mod+Shift+Ctrl+T { move-column-to-monitor-right; }
 
       // Spalten/Fenster verschieben
       Mod+Ctrl+Left  { move-column-left; }
       Mod+Ctrl+Down  { move-window-down; }
       Mod+Ctrl+Up    { move-window-up; }
       Mod+Ctrl+Right { move-column-right; }
-      Mod+Ctrl+H { move-column-left; }
-      Mod+Ctrl+J { move-window-down; }
-      Mod+Ctrl+K { move-window-up; }
-      Mod+Ctrl+L { move-column-right; }
+      Mod+Ctrl+S { move-column-left; }
+      Mod+Ctrl+N { move-window-down; }
+      Mod+Ctrl+R { move-window-up; }
+      Mod+Ctrl+T { move-column-right; }
 
       // Erste/letzte Spalte
       Mod+Home { focus-column-first; }
