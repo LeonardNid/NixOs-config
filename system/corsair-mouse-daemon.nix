@@ -1,9 +1,6 @@
 { pkgs, ... }:
 
 {
-  # Corsair Darkstar Mouse Daemon:
-  # Grabbed Maus + Keyboard-Device, normalisiert Scroll-Events,
-  # und remappt Extra-Tasten auf Keyboard-Shortcuts.
   systemd.services.corsair-mouse-daemon = let
     python = pkgs.python3.withPackages (ps: [ ps.evdev ]);
   in {

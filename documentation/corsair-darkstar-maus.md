@@ -1,247 +1,303 @@
-# Corsair Darkstar Wireless - Maus-Setup unter NixOS
+# Corsair Darkstar Wireless — Maus-Setup unter NixOS
 
 ## Zusammenfassung
 
-Die Corsair Darkstar Wireless verbindet sich uber den **Corsair Slipstream Wireless USB Receiver** (USB `1b1c:1bdc`). Unter Linux hat die Maus zwei Hardware-Probleme beim Scrollen:
+Die Corsair Darkstar RGB Wireless hat unter Linux zwei Scroll-Probleme, beide
+**unterhalb** der Linux-Software-Schicht:
 
-1. **Encoder-Bounce**: Der Scroll-Encoder sendet kurze Gegensignale (Richtungsumkehr) innerhalb von 40-80ms nach echten Events
-2. **Verlorene Ticks bei schnellem Scrollen**: Der Encoder verpasst physische Rasten bei hoher Drehgeschwindigkeit (bestatigt durch evtest am Rohgerat)
+1. **Firmware-seitige Encoder-Rate-Limitierung** bei schnellem Scrollen: die
+   Maus verschluckt Ticks, bevor irgendein Linux-Code sie sieht.
+2. **Wireless-Bounces** am 2,4-GHz-Slipstream-Link: vereinzelte Richtungsumkehr-
+   Events ("Ghosts"), die nach echtem Scrollen auftauchen.
 
-Die Scroll-**Werte** selbst sind korrekt und standardkonform (`REL_WHEEL=±1`, `REL_WHEEL_HI_RES=±120` pro Raste) — identisch mit einer Logitech-Referenzmaus. Die fruhere Annahme von 10x-Werten war falsch.
+**Beide Probleme sind 2026-04-21 verifiziert und adressiert:**
 
-Ein Python-Service (`corsair-mouse-daemon`) fangt die rohen Events ab, filtert Encoder-Bounce, wendet Scroll-Beschleunigung an, remappt Extra-Tasten und gibt alles uber ein virtuelles Gerat (`CorsairFixed`) weiter.
+- Problem 1 wurde durch **Firmware-Update via iCUE** (einmalig in der
+  Windows-VM) deutlich entschärft. Die neue Firmware behandelt Encoder-Events
+  weniger aggressiv. Scroll fühlt sich nun "akzeptabel" an — nicht
+  Windows-perfekt, aber brauchbar. Settings sind on-board gespeichert und
+  bleiben unter Linux aktiv, ohne dass iCUE laufen muss.
+- Problem 2 wird vom Daemon abgefangen: `corsair-mouse-daemon-v2.py` filtert
+  einzelne Ghost-Events aus dem Wireless-Stream, emittiert saubere Scroll-
+  Events und remappt gleichzeitig die 8 Extra-Tasten.
 
-## Die Probleme im Detail
+Der Daemon erzeugt ein virtuelles Eingabegerät `CorsairFixed`, das unter
+`/dev/input/corsair-fixed` als Symlink verfügbar ist. Dieses wird sowohl vom
+Wayland-Compositor als Maus genutzt als auch von der Windows-VM per QEMU
+`input-linux` passthrough.
 
-### Encoder-Bounce (Richtungsumkehr)
+## Hardware-Fakten
 
-Bei schnellem Scrollen sendet der Encoder vereinzelte Events in die falsche Richtung:
+### USB-Topologie
 
-```
-evtest-Ausgabe (Corsair, schnelles Scrollen nach oben):
-469.630: REL_WHEEL_HI_RES = +120   ← echt (UP)
-469.712: REL_WHEEL_HI_RES = -120   ← BOUNCE (82ms spater, DOWN)
-469.733: REL_WHEEL_HI_RES = +120   ← zuruck zur echten Richtung (21ms)
-```
+Die Maus zeigt sich als zwei separate USB-Devices:
 
-Die Logitech-Referenzmaus (USB Optical Mouse, `046d:c077`) zeigt **keine** solchen Bounces.
-
-### Verlorene Encoder-Ticks
-
-Bei sehr schnellem Drehen registriert der Encoder nicht alle physischen Rasten. Dies passiert bereits auf Hardware/Firmware-Ebene — selbst `evtest` direkt am Rohgerat (`/dev/input/event8`) zeigt weniger Events als physisch ausgefuhrt.
-
-- USB Polling-Rate: `bInterval=1` = 1000Hz (Maximum, nicht der Engpass)
-- Firmware batcht teilweise: bei hoher Geschwindigkeit `REL_WHEEL=2, HI_RES=240` statt einzelner Events
-- Encoder-Hardware ist der limitierende Faktor
-
-### Vergleich mit Logitech-Referenzmaus
-
-| Eigenschaft | Logitech USB Optical | Corsair Darkstar |
+| Modus | Vendor:Product | Beschreibung |
 |---|---|---|
-| Werte pro Raste | `REL_WHEEL=±1, HI_RES=±120` | `REL_WHEEL=±1, HI_RES=±120` (identisch) |
-| Encoder-Bounce | Keine | Ja (40-80ms Gegensignale) |
-| Verlorene Ticks | Keine | Ja, bei sehr schnellem Scrollen |
-| REL_HWHEEL_HI_RES | Nein | Ja |
-| USB Polling | `bInterval=1` (1000Hz) | `bInterval=1` (1000Hz) |
+| Wireless | `0x1B1C:0x1BDC` | Corsair Slipstream Receiver (Dongle) |
+| Kabel | `0x1B1C:0x1BB2` | Darkstar direkt via USB-C |
 
-## Die Losung
+Wenn der Dongle steckt und das Kabel gleichzeitig eingestöpselt ist, sind
+**beide Pfade aktiv** — die Maus sendet dann über den aktuell gewählten
+Pfad (von der Maus-Firmware gesteuert).
 
-### Architektur
+### HID-Interfaces
+
+Der Slipstream-Receiver exponiert 6 HID-Interfaces:
+
+| Interface | Usage | Rolle |
+|---|---|---|
+| 0 | Maus | Wheel-Data, Buttons, X/Y. **Einzige Quelle für Scroll-Events.** |
+| 1, 2 | Vendor-specific (Usage Page 0xFF42) | iCUE-Command-Channel (Firmware-Update, Polling-Rate, Profile). Unter Linux ungenutzt. |
+| 3, 5 | Keyboard | Extra-Tasten als `KEY_1`..`KEY_8` (iCUE-Mapping, siehe unten). |
+| 4 | Zweite Maus (X/Y only) | Ungenutzt. |
+
+**USB-Polling:** `bInterval=1` → 1000 Hz auf allen Endpoints. Der Receiver
+ist **nicht** der Flaschenhals.
+
+### Wheel-Encoder
+
+- 8-bit signed Wheel (-127..127) im HID-Report, Kernel synthetisiert
+  `REL_WHEEL_HI_RES = REL_WHEEL * 120`
+- Pro physischer Rastung: normalerweise `REL_WHEEL=±1, REL_WHEEL_HI_RES=±120`
+- Bei schneller Drehung bündelt die Firmware gelegentlich: `REL_WHEEL=±2`
+- **Kein on-chip Resolution Multiplier, keine Hi-Res-Wheel-Usage** — der Wert
+  kommt nur über den Kernel-synthesizer, nicht von der Maus.
+
+## Die gemessenen Probleme
+
+### Firmware-Rate-Limitierung (vor iCUE-Firmware-Update)
+
+Kontrollierter Test mit `scripts/scroll-count-test.py` (User zählt gefühlte
+Rastungen mit, Script zählt HID-Events):
+
+| Scroll-Tempo | Gefühlt | HID-Events | Erfassung |
+|---|---|---|---|
+| Langsam (~1/s) | 20 | 20 | **100 %** |
+| Game (~10/s) | ~50 | 29 | **~58 %** |
+| Maximal | ~100 | 11 | **~11 %** |
+
+Bei Maximal-Tempo lag der dt-Abstand zwischen HID-Events bei ~400 ms — obwohl
+der User durchgehend drehte. Der Kernel hat diese Events nie gesehen, also
+**kann kein Linux-seitiger Filter das ausgleichen.** Die Events existieren
+schlicht nicht auf HID-Ebene.
+
+Nach iCUE-Firmware-Update fühlt sich das Scrollen deutlich besser an; die
+genaue Erfassungsrate wurde post-update nicht neu quantifiziert.
+
+### Wireless-Bounces
+
+Mit `scripts/bounce-test.py` (6 s schnelles Scrollen in eine Richtung):
+
+| Modus | Bounce-Rate (Gegenrichtung-Events) |
+|---|---|
+| Wireless (Slipstream-Dongle) | **27 %** |
+| Kabel | **11 %** |
+
+Kabel halbiert Ghosts, eliminiert sie aber nicht. Die meisten Ghosts kommen
+20–430 ms nach dem letzten echten Event. Das sind reine 2,4-GHz-Artefakte —
+der Encoder selbst ist sauber (im Kabel-Modus verifiziert).
+
+## Architektur
 
 ```
-Corsair Darkstar (Hardware)
-        |
-        v
-Slipstream Receiver (USB 1b1c:1bdc)
-  event8:  Maus (BTN_LEFT, BTN_RIGHT, BTN_SIDE, BTN_EXTRA, Scroll)
-  event11: Keyboard (Extra-Tasten via iCUE als KEY_1-KEY_8)
-        |
-        | (beide grabbed — exklusiv von corsair-mouse-daemon gelesen)
-        v
-corsair-mouse-daemon.py (Python evdev Service)
-  1. Bounce-Filter (DIR_CONFIRM):
-     - Einzelne Richtungsumkehr-Events werden gehalten
-     - Erst nach 2 aufeinanderfolgenden Events in neuer Richtung
-       wird Richtungswechsel akzeptiert
-     - Einzelne Bounces werden verworfen
-  2. Scroll-Beschleunigung (ACCEL):
-     - Kompensiert verlorene Encoder-Ticks bei schnellem Scrollen
-     - Lineare Rampe: 1.0x (langsam, dt>100ms) bis 3.0x (schnell, dt→0ms)
-  3. HI_RES-Forwarding:
-     - Emittiert REL_WHEEL_HI_RES + REL_WHEEL (beide)
-     - Compositor kann Smooth Scrolling nutzen
-  4. Button-Remap:
-     - Remappt Extra-Tasten auf Keyboard-Shortcuts/Modifier
-        |
-        v
-CorsairFixed (/dev/input/corsair-fixed) — virtuelles Gerat
-        |
-        +---> KDE Plasma / Hyprland (Wayland) — Smooth Scrolling + remappte Tasten
-        |
-        +---> Windows VM (QEMU evdev passthrough)
+Corsair Darkstar Wireless (Hardware)
+        │
+        │ (2,4-GHz-Slipstream-Link ODER USB-C-Kabel)
+        ▼
+Host-USB
+ ├── 0x1B1C:0x1BDC  Slipstream-Receiver  (6 HID-Interfaces)
+ └── 0x1B1C:0x1BB2  Darkstar (Kabel)     (nur aktiv wenn Kabel steckt)
+        │
+        │ evdev (beide vom Daemon grabbed, exklusiv)
+        ▼
+corsair-mouse-daemon-v2.py (systemd-Service)
+  1. Bounce-Filter:
+       - Same-direction → sofort durchlassen
+       - Einzelne Gegenrichtungs-Events → gepuffert (180 ms)
+       - Zweites Gegenrichtungs-Event → echter Reversal, beide geflusht
+       - Isolierter Ghost → verworfen
+  2. Optionale Acceleration (ACCEL_MAX=3.0):
+       - Dynamischer Faktor 1.0x–3.0x je nach dt zwischen Events
+       - Nur auf Same-Direction-Pfad angewendet
+  3. HI_RES-Emission:
+       - Sowohl REL_WHEEL_HI_RES als auch legacy REL_WHEEL
+       - Compositor kann Smooth-Scrolling nutzen
+  4. Button-Remap (BUTTON_MAP dict):
+       - KEY_1..KEY_8 von iCUE → Linux-Shortcuts / Modifier
+        │
+        ▼
+CorsairFixed (UInput virtuelles Gerät)
+  /dev/input/corsair-fixed  (via udev-Symlink, stabil trotz dynamischer event-Nr.)
+        │
+        ├─► Niri / KDE / Hyprland (Wayland-Compositor)
+        │
+        └─► Windows-VM (QEMU input-linux,evdev=/dev/input/corsair-fixed)
 ```
 
-### iCUE Konfiguration (Firmware)
+## iCUE-Konfiguration
 
-Die Extra-Tasten der Maus werden in iCUE (via Windows-VM + USB-Passthrough) auf Keyboard-Keys gemappt:
+iCUE läuft in einer Windows-VM. USB-Passthrough erfolgt per
+`vm/usb-passthrough.sh` (siehe unten). Settings werden **on-board gespeichert**
+und bleiben unter Linux aktiv, auch ohne laufendes iCUE.
 
-| Physische Taste | iCUE-Mapping | Hinweis |
-|----------------|-------------|---------|
-| Vorne oben | KEY_1 | "Simuliere Gedrueckthalten" AUS |
-| Vorne unten | KEY_2 | "Simuliere Gedrueckthalten" AUS |
-| Hinten oben | KEY_3 | "Simuliere Gedrueckthalten" AUS |
-| Hinten unten | KEY_4 | "Simuliere Gedrueckthalten" AUS |
-| DPI vorne | KEY_5 | "Simuliere Gedrueckthalten" AUS |
-| DPI hinten | KEY_6 | "Simuliere Gedrueckthalten" AUS |
-| Profil vorne | KEY_7 | "Simuliere Gedrueckthalten" AUS |
-| Profil hinten | KEY_8 | "Simuliere Gedrueckthalten" AUS |
+### Button-Mapping (in iCUE setzen)
 
-**Wichtig:** "Simuliere Gedrueckthalten" muss in iCUE AUSGESCHALTET sein, sonst sendet die Firmware sofort DOWN+UP statt korrektem Hold-Verhalten.
+| Physische Taste | iCUE sendet | Daemon remappt zu |
+|---|---|---|
+| Vorne oben | KEY_1 | _(derzeit nicht remappt)_ |
+| Vorne unten | KEY_2 | Super (LeftMeta) |
+| Hinten oben | KEY_3 | Super+Right |
+| Hinten unten | KEY_4 | Super+Left |
+| DPI vorne | KEY_5 | Mute (Audio), dann Micmute |
+| DPI hinten | KEY_6 | Micmute |
+| Profil vorne | KEY_7 | _(derzeit nicht remappt)_ |
+| Profil hinten | KEY_8 | _(derzeit nicht remappt)_ |
 
-### Button-Remapping
+**Wichtig:** "Simuliere Gedrückthalten" in iCUE **muss AUS** sein, sonst
+sendet die Firmware sofort KeyDown+KeyUp statt echtes Hold-Verhalten — damit
+funktioniert z. B. das Super-Hold auf "Vorne unten" nicht.
 
-Im Script `corsair-mouse-daemon.py` definiert als `BUTTON_MAP`:
+Die `BUTTON_MAP` im Daemon wird direkt im Python-Script gepflegt
+(`scripts/corsair-mouse-daemon-v2.py`). Action-Typen:
 
-```python
-BUTTON_MAP = {
-    ecodes.KEY_2: ecodes.KEY_LEFTMETA,  # Vorne unten -> Super
-    ecodes.KEY_5: [[ecodes.KEY_MUTE], [ecodes.KEY_LEFTMETA, ecodes.KEY_MUTE]],  # DPI vorne -> Mute, dann Super+Mute
-    ecodes.KEY_6: [ecodes.KEY_LEFTMETA, ecodes.KEY_MUTE],  # DPI hinten -> Super+Mute
-}
+| Typ | Bedeutung |
+|---|---|
+| `int` | Einzelne Taste, z. B. `ecodes.KEY_LEFTMETA` |
+| `[int, ...]` | Keyboard-Combo, Modifier zuerst |
+| `[[...], [...]]` | Makro: Sequenz von Combos, jeweils DOWN+UP auf Button-Down |
+| `None` | Taste komplett blockieren |
+
+### iCUE-Wartung (Firmware-Flash, Polling-Rate, On-Board-Profile)
+
+```bash
+# Dongle an Windows-VM durchreichen (stoppt den Daemon automatisch)
+./vm/usb-passthrough.sh attach wireless
+
+# ...in Windows: iCUE öffnen, gewünschte Änderungen vornehmen,
+#    explizit auf "Onboard Profile" speichern (nicht nur "Software Profile"),
+#    bei Firmware-Update den Anweisungen folgen.
+
+# Dongle zurück an den Host
+./vm/usb-passthrough.sh detach wireless
+sudo systemctl start corsair-mouse-daemon
 ```
 
-Unterstuetzte Action-Typen:
-- `int` — Einzelne Taste (z.B. `ecodes.KEY_LEFTMETA`)
-- `[int, ...]` — Keyboard-Combo, Modifier zuerst (z.B. `[ecodes.KEY_LEFTCTRL, ecodes.KEY_C]`)
-- `[[...], [...]]` — Macro: Sequenz von Combos, jede wird einzeln DOWN+UP gesendet
-- `None` — Taste blockieren
+**QEMU-Gotcha nach Daemon-Stop:** Wenn der Daemon gestoppt wird, während die
+VM läuft, verliert QEMU seinen FD auf `/dev/input/corsair-fixed`. Nach
+Daemon-Restart entsteht das Gerät zwar wieder, aber QEMU hält weiterhin den
+toten FD — Symptom: Scroll-Lock-VM-Toggle reagiert nicht mehr. **Lösung:**
+kompletter QEMU-Prozess-Neustart mit:
 
-### Beteiligte Dateien
+```bash
+sudo virsh shutdown windows11
+sudo virsh start windows11
+```
+
+`virsh reboot` reicht **nicht** — das ist nur ACPI-Reboot innerhalb von
+Windows, der QEMU-Prozess bleibt derselbe.
+
+## Beteiligte Dateien
 
 | Datei | Zweck |
-|-------|-------|
-| `scripts/corsair-mouse-daemon.py` | Python-Script: Scroll-Fix + Button-Remap |
-| `system/corsair-mouse-daemon.nix` | systemd-Service Definition |
+|---|---|
+| `scripts/corsair-mouse-daemon-v2.py` | Python-Daemon: Bounce-Filter + Button-Remap |
+| `scripts/corsair-mouse-daemon.py` | v1 (Legacy, nicht aktiv — aggressiverer DIR_CONFIRM-Filter) |
+| `system/corsair-mouse-daemon.nix` | systemd-Service-Definition (zeigt auf v2) |
 | `hosts/leonardn/default.nix` | Importiert das Nix-Modul |
+| `vm/usb-passthrough.sh` | Dongle temporär an die VM durchreichen |
+| `vm/windows11.xml` | QEMU `input-linux` passthrough für `/dev/input/corsair-fixed` |
 
-### systemd-Service
+## Diagnose-Skripte
 
-Definiert in `system/corsair-mouse-daemon.nix`:
+Alle Skripte benötigen, dass der Daemon gestoppt ist (sie grabben die Devices
+selbst). Nach dem Test den Daemon wieder starten.
 
-```nix
-systemd.services.corsair-mouse-daemon = let
-  python = pkgs.python3.withPackages (ps: [ ps.evdev ]);
-in {
-  description = "Corsair Darkstar Mouse Daemon (scroll fix + button remap)";
-  wantedBy = [ "multi-user.target" ];
-  after = [ "systemd-udev-settle.service" ];
-  serviceConfig = {
-    Type = "simple";
-    Restart = "always";
-    RestartSec = 3;
-    ExecStart = "${python}/bin/python3 ${../scripts/corsair-mouse-daemon.py}";
-  };
-};
-```
-
-Service-Befehle:
 ```bash
-systemctl status corsair-mouse-daemon   # Status pruefen
-sudo systemctl restart corsair-mouse-daemon  # Neustarten
-journalctl -u corsair-mouse-daemon      # Logs anzeigen
+sudo systemctl stop corsair-mouse-daemon
+# ...test...
+sudo systemctl start corsair-mouse-daemon
 ```
 
-### udev-Regel
+| Skript | Zweck |
+|---|---|
+| `scripts/scroll-count-test.py` | Live-Log jedes HID-Events mit Zähler + dt. Für Felt-vs-Measured-Vergleich. |
+| `scripts/bounce-test.py` | 6 s DOWN + 6 s UP, berechnet Bounce-Rate. Erkennt wired und wireless automatisch (filtert nach Wheel-Usage im Report-Descriptor). |
+| `scripts/double-scroll-test.py` | Loggt hidraw + Daemon-Output parallel mit Sequenz-IDs. Für Einzelfall-Debugging ("bei Event #247 hat's geflackert"). |
+| `scripts/discover-all-buttons.py` | Druckt alle Button-Events; nützlich beim Anpassen der `BUTTON_MAP` nach Firmware-Update. |
 
-Erstellt einen stabilen Symlink fur das virtuelle Gerat:
+Der Daemon selbst hat einen `--debug-scroll` Flag, der jedes Filter-Entscheidung
+live auf stderr loggt (FIRST / PASS / BUFFER / CONFIRM / BOUNCE / IDLE / DROP):
+
+```bash
+sudo systemctl stop corsair-mouse-daemon
+nix-shell -p 'python3.withPackages(ps: [ps.evdev])' --run \
+  "sudo python3 ~/nixos-config/scripts/corsair-mouse-daemon-v2.py --debug-scroll"
+```
+
+## Tuning-Parameter (v2)
+
+Im Script `scripts/corsair-mouse-daemon-v2.py`:
+
+| Parameter | Default | Beschreibung |
+|---|---|---|
+| `PENDING_MAX_MS` | `180` | Wie lange ein einzelnes Gegenrichtungs-Event gepuffert wird, bevor es als Ghost verworfen wird. Muss unter typischer Reversal-Kadenz liegen. |
+| `IDLE_RESET_MS` | `350` | Nach dieser Pause ohne Events wird der Richtungs-Status zurückgesetzt; der nächste Event passt in jede Richtung sofort durch. |
+| `ACCEL_MAX` | `3.0` | Maximaler Scroll-Multiplier bei dt→0. Seit dem Firmware-Update evtl. zu aggressiv — wenn Scrolling "sprunghaft" wirkt, auf `1.0` setzen (Acceleration aus). |
+| `ACCEL_WINDOW_MS` | `100` | Events mit dt unter diesem Wert erhalten Beschleunigung, linear skaliert. |
+| `HIRES_PER_STEP` | `120` | Standard Hi-Res-Wheel-Konvention (nicht ändern). |
+
+Legacy v1-Parameter (`DIR_CONFIRM`, `SPIKE_HOLD_MS`, `IDLE_RESET_MS=1000`)
+existieren nur noch in `corsair-mouse-daemon.py` und sind nicht mehr aktiv.
+
+## VM-Integration
+
+Die VM `windows11` nutzt das virtuelle Gerät via QEMU `input-linux`:
+
+```xml
+<qemu:arg value="input-linux,id=mouse,evdev=/dev/input/corsair-fixed"/>
+```
+
+Damit gehen Maus-Events **automatisch** an die VM, sobald QEMU im VM-Mode ist
+(gesteuert über Scroll-Lock auf dem Voyager-Keyboard via `vm-toggle-kbd.py`).
+Kein USB-Passthrough der Maus nötig im Regelbetrieb.
+
+Die `cgroup_device_acl` in der libvirtd-Konfiguration erlaubt Event-Nodes
+event0–event299, damit die dynamische Event-Nummer von CorsairFixed
+abgedeckt ist. Der udev-Regel-gesetzte Symlink macht den Pfad stabil:
 
 ```
 KERNEL=="event*", ATTRS{name}=="CorsairFixed", SYMLINK+="input/corsair-fixed", GROUP="kvm", MODE="0666", TAG+="uaccess"
 ```
 
-- `/dev/input/corsair-fixed` zeigt immer auf das CorsairFixed-Gerat (Event-Nummer ist dynamisch)
-- `MODE="0666"` damit QEMU (qemu-libvirtd User) das Gerat lesen kann
+Für iCUE-Maintenance (und nur dann) wird der **Dongle** als echtes
+USB-Device durchgereicht — siehe "iCUE-Wartung" oben.
 
-### Windows VM Integration
-
-Die VM `windows11` nutzt das korrigierte Gerat per QEMU evdev passthrough:
-
-```xml
-<qemu:arg value='input-linux,id=mouse,evdev=/dev/input/corsair-fixed'/>
-```
-
-Die `cgroup_device_acl` in der libvirtd-Konfiguration erlaubt event0-event299 um dynamische Event-Nummern des virtuellen Gerats abzudecken.
-
-### KDE Konfiguration
-
-In `~/.config/kcminputrc`:
-- Das originale Corsair-Gerat ist **deaktiviert** (`Enabled=false`)
-- `CorsairFixed` ist **aktiviert** mit angepasstem `ScrollFactor`
-
-## Tuning-Parameter
-
-Im Script `corsair-mouse-daemon.py`:
-
-| Parameter | Wert | Beschreibung |
-|-----------|------|--------------|
-| `DIR_CONFIRM` | `2` | Anzahl aufeinanderfolgender Events in neuer Richtung bevor Richtungswechsel akzeptiert wird. Hoher = aggressivere Bounce-Filterung, aber trager bei echten Richtungswechseln |
-| `IDLE_RESET_MS` | `200` | Nach dieser Pause (ms) wird Richtungsstatus zurueckgesetzt. Naechstes Event in beliebiger Richtung wird sofort akzeptiert |
-| `ACCEL_MAX` | `3.0` | Maximaler Scroll-Multiplikator bei hoechster Geschwindigkeit. Zu hoch = uebersteuert, zu niedrig = schnelles Scrollen fuhlt sich traege an |
-| `ACCEL_WINDOW_MS` | `100` | Events schneller als dies (ms) erhalten Beschleunigung. Daruber = 1.0x. Lineare Interpolation dazwischen |
-| `HIRES_PER_STEP` | `120` | Standard v120-Konvention (nicht andern) |
-
-Falls das Scrollen zu schnell/langsam ist: `ACCEL_MAX` und `ACCEL_WINDOW_MS` im Script anpassen, oder `ScrollFactor` in den Desktop-Einstellungen.
-
-## Debugging
-
-```bash
-# Service-Logs anzeigen:
-journalctl -u corsair-mouse-daemon -f
-
-# Debug-Modus (zeigt PASS/HOLD/CONFIRM/accel fuer jedes Scroll-Event):
-sudo systemctl stop corsair-mouse-daemon
-nix-shell -p 'python3.withPackages(ps: [ps.evdev])' --run \
-  "sudo python3 ~/nixos-config/scripts/corsair-mouse-daemon.py --debug-scroll"
-
-# Events vom korrigierten virtuellen Gerat anzeigen:
-nix-shell -p evtest --run "sudo evtest /dev/input/corsair-fixed"
-
-# Rohe Events direkt von der Hardware (Daemon muss gestoppt sein):
-nix-shell -p evtest --run "sudo evtest /dev/input/event8"
-
-# Alle Maustasten entdecken (Service muss gestoppt sein):
-sudo systemctl stop corsair-mouse-daemon
-nix-shell -p 'python3.withPackages(ps: [ps.evdev])' --run \
-  "sudo python3 ~/nixos-config/scripts/corsair-mouse-daemon.py --discover"
-
-# Pruefen ob das virtuelle Gerat existiert:
-cat /proc/bus/input/devices | grep -A5 CorsairFixed
-
-# Pruefen ob der Symlink existiert:
-ls -la /dev/input/corsair-fixed
-```
-
-## Was nicht funktioniert hat
+## Historisches: Was nicht funktioniert hat
 
 | Ansatz | Ergebnis |
-|--------|----------|
-| `ckb-next` | Erkennt Darkstar uber Slipstream nicht (Issue ckb-next#1078) |
-| iCUE (Windows VM) | Keine Scroll-Einstellungen fur Darkstar verfugbar |
-| libinput Quirks (`AttrEventCode=-REL_WHEEL_HI_RES`) | Teilweise besser, aber Richtungsumkehr blieb |
-| `evsieve` (Hi-Res blockieren) | Deutliche Verbesserung, aber kann Werte nicht skalieren |
-| KDE `ScrollFactor` allein | Hilft bei Geschwindigkeit, nicht bei Richtungsumkehr |
-| Separates virtuelles Keyboard fuer Remaps | Modifier funktionieren nicht Cross-Device unter Wayland |
-| iCUE "Simuliere Gedrueckthalten" AN | Sendet sofort DOWN+UP, Hold funktioniert nicht |
-| Zeitbasierte Debounce (DEBOUNCE_MS) | Unzuverlassig — Bounce-Timing variiert zu stark (40-80ms), echte Richtungswechsel werden falschlicherweise geblockt |
-| Scroll-Werte durch 10 teilen (CORSAIR_SCROLL_DIVISOR) | Falsch — Werte sind bereits korrekt (±1/±120), Divisor hat Scrollen verschlechtert |
-| Diskrete Beschleunigungsstufen (2x/3x Schwellenwerte) | Inkonsistent — kleine dt-Schwankungen verursachen Spruenge zwischen Stufen |
+|---|---|
+| `ckb-next` | Erkennt Darkstar via Slipstream nicht (ckb-next#1078). |
+| libinput-Quirks (`AttrEventCode=-REL_WHEEL_HI_RES`) | Teilweise besser, aber Richtungsumkehr blieb. |
+| `evsieve` (Hi-Res blockieren) | Deutlich besser, aber kann Werte nicht skalieren. |
+| KDE `ScrollFactor` allein | Hilft bei Geschwindigkeit, nicht bei Richtungsumkehr. |
+| Separates virtuelles Keyboard für Remaps | Modifier funktionieren nicht cross-device unter Wayland. |
+| iCUE "Simuliere Gedrückthalten" AN | Sendet sofort DOWN+UP, Hold funktioniert nicht. |
+| Zeitbasierter Debounce (Linux-seitig) | Unzuverlässig — Bounce-Timing variiert zu stark (20–430 ms), echte Reversals werden geblockt. |
+| v1-Filter (`DIR_CONFIRM=2`, `IDLE_RESET_MS=1000`) | Ersetzt durch v2 (Single-Bounce-Absorber, kürzerer Idle-Reset). |
+| Scroll-Werte skalieren (CORSAIR_SCROLL_DIVISOR) | Falsch — Werte sind bereits ±1/±120, Divisor verschlechtert das Scrollen. |
+| Hidraw-basierter Daemon | Unnötig — iface 0 ist bit-identisch zu evdev für Wheel-Daten. |
+| Niri als Ursache verdächtigt | Widerlegt — das Bottleneck liegt vor dem Daemon (auf Firmware-Ebene). |
+| **iCUE → keine Scroll-Einstellungen verfügbar** | **Widerlegt 2026-04-21** — Firmware-Update via iCUE hat das Scroll-Problem deutlich entschärft. |
 
-## Erkenntnisse aus evtest-Vergleich (2026-04-03)
+## Wenn das Scroll-Problem zurückkommt
 
-Direktvergleich Corsair Darkstar vs Logitech USB Optical Mouse (`046d:c077`):
-
-- Beide senden identische Scroll-Werte: `REL_WHEEL=±1, HI_RES=±120`
-- Corsair hat Encoder-Bounce (einzelne Gegensignale 40-80ms nach echtem Event)
-- Corsair verliert Encoder-Ticks bei sehr schnellem Scrollen (auch in evtest am Rohgerat sichtbar)
-- USB-Polling bei beiden 1000Hz — kein Bottleneck
-- Logitech hat keines dieser Probleme
+1. Zuerst: Firmware in iCUE neu flashen (Settings sind sonst flüchtig, falls
+   ein Reset passiert ist).
+2. Falls Firmware-Flash nicht hilft: iCUE ff42-Protokoll reverse-engineeren.
+   Mit `usbmon` + Wireshark in der Windows-VM den Traffic während eines
+   Polling-Rate-Change oder Firmware-Update aufzeichnen (iface 1 oder 2,
+   Usage Page 0xFF42). Pakete replay beim Daemon-Start. Mehrere Stunden
+   Aufwand, bisher nicht nötig gewesen.
+3. `ckb-next` / `OpenRGB` prüfen, ob dort inzwischen Darkstar-Support
+   existiert, den man übernehmen könnte.
