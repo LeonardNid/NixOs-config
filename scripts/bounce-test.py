@@ -20,18 +20,21 @@ import select
 import struct
 
 VENDOR = 0x1B1C
-PRODUCT = 0x1BDC
+# Any Corsair product — Slipstream receiver (0x1BDC) in wireless mode,
+# Darkstar direct (0x1BB2) in wired mode, or other SKUs. We filter by
+# wheel usage in the report descriptor, not by product id.
 
 
 def find_wheel_hidraw():
     base = "/sys/class/hidraw"
+    candidates = []
     for name in sorted(os.listdir(base), key=lambda s: int(s[6:])):
         uevent_path = f"{base}/{name}/device/uevent"
         if not os.path.isfile(uevent_path):
             continue
         with open(uevent_path) as f:
             data = f.read()
-        if f"{VENDOR:08X}:{PRODUCT:08X}" not in data.upper():
+        if f"{VENDOR:08X}:" not in data.upper():
             continue
         rd_path = f"{base}/{name}/device/report_descriptor"
         try:
@@ -39,9 +42,21 @@ def find_wheel_hidraw():
                 rd = f.read()
         except OSError:
             continue
-        if b"\x09\x38" in rd:  # Wheel usage
-            return f"/dev/{name}"
-    return None
+        if b"\x09\x38" in rd:  # Wheel usage in Generic Desktop
+            product = None
+            for line in data.splitlines():
+                if line.startswith("HID_ID="):
+                    parts = line.split(":")
+                    if len(parts) >= 3:
+                        product = parts[2].strip().upper()
+                        break
+            candidates.append((f"/dev/{name}", product))
+    if not candidates:
+        return None
+    if len(candidates) > 1:
+        print(f"Multiple wheel hidraws found: {candidates}", file=sys.stderr)
+        print(f"Using first: {candidates[0][0]}", file=sys.stderr)
+    return candidates[0][0]
 
 
 def collect(path, duration):
