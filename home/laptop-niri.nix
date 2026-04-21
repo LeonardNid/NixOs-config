@@ -43,8 +43,6 @@ in
     }
 
     // Autostart
-    spawn-at-startup "waybar"
-    spawn-at-startup "mako"
     spawn-at-startup "swaybg" "-i" "${wallpaper}" "-m" "fill"
     spawn-at-startup "wl-paste" "--watch" "cliphist" "store"
     spawn-at-startup "nm-applet" "--indicator"
@@ -234,25 +232,12 @@ in
     ];
   };
 
-  # Benachrichtigungen (Catppuccin Mocha)
-  services.mako = {
-    enable = true;
-    settings = {
-      default-timeout  = 5000;
-      background-color = "#1e1e2ecc";
-      text-color       = "#cdd6f4";
-      border-color     = "#89b4fa";
-      border-radius    = 8;
-      width            = 360;
-      margin           = "12";
-      padding          = "12";
-      font             = "JetBrainsMono Nerd Font 11";
-    };
-  };
+  # Noctalia Shell (ersetzt Waybar + Mako)
+  programs.noctalia-shell.enable = true;
 
-  # Status-Leiste mit nativen niri-Modulen
+  # Status-Leiste (deaktiviert, durch Noctalia ersetzt)
   programs.waybar = {
-    enable = true;
+    enable = false;
     settings = [{
       layer    = "top";
       position = "top";

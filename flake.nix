@@ -2,8 +2,11 @@
   description = "NixOS Konfiguration - leonardn";
 
   nixConfig = {
-    extra-substituters = [ "https://niri.cachix.org" ];
-    extra-trusted-public-keys = [ "niri.cachix.org-1:Wv0OmO7PsuocRKzfDoJ3mulSl7Z6oezYhGhR+3W2964=" ];
+    extra-substituters = [ "https://niri.cachix.org" "https://noctalia.cachix.org" ];
+    extra-trusted-public-keys = [
+      "niri.cachix.org-1:Wv0OmO7PsuocRKzfDoJ3mulSl7Z6oezYhGhR+3W2964="
+      "noctalia.cachix.org-1:pCOR47nnMEo5thcxNDtzWpOxNFQsBRglJzxWPp3dkU4="
+    ];
   };
 
   inputs = {
@@ -25,9 +28,13 @@
       url = "github:youwen5/zen-browser-flake";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    noctalia = {
+      url = "github:noctalia-dev/noctalia-shell";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
-  outputs = { self, nixpkgs, claude-code-nix, home-manager, mango, niri-flake, zen-browser, ... }:
+  outputs = { self, nixpkgs, claude-code-nix, home-manager, mango, niri-flake, zen-browser, noctalia, ... }:
   let
     homeManagerModules = [
       home-manager.nixosModules.home-manager
@@ -59,7 +66,7 @@
       modules = [
         ./hosts/laptop
         mango.nixosModules.mango
-        { home-manager.sharedModules = [ mango.hmModules.mango ]; }
+        { home-manager.sharedModules = [ mango.hmModules.mango noctalia.homeModules.default ]; }
         niri-flake.nixosModules.niri
       ] ++ homeManagerModules;
     };
