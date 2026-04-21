@@ -244,10 +244,14 @@ in
     settings = [{
       layer    = "top";
       position = "top";
-      height   = 34;
+      height   = 36;
+      "margin-top"   = 5;
+      "margin-left"  = 8;
+      "margin-right" = 8;
 
       modules-left   = [ "niri/workspaces" "niri/window" ];
-      modules-right  = [ "clock" "pulseaudio" "network" "battery" "tray" ];
+      modules-center = [ "clock" ];
+      modules-right  = [ "cpu" "memory" "custom/mic" "pulseaudio" "network" "battery" "tray" "custom/power" ];
 
       "niri/workspaces" = {
         format = "{index}";
@@ -259,22 +263,48 @@ in
         max-length = 50;
       };
 
+      cpu = {
+        format   = "󰻠 {usage}%";
+        interval = 3;
+        tooltip  = false;
+      };
+
+      memory = {
+        format         = "󰍛 {percentage}%";
+        interval       = 3;
+        tooltip-format = "{used:0.1f}G / {total:0.0f}G";
+      };
+
+      "custom/mic" = {
+        exec        = "waybar-mic-status";
+        return-type = "json";
+        interval    = "once";
+        signal      = 1;
+        on-click    = "mic-toggle";
+      };
+
+      "custom/power" = {
+        format   = "󰐥";
+        on-click = "power-menu";
+        tooltip  = false;
+      };
+
       clock = {
-        format         = " {:%H:%M  %a %d.%m.%Y}";
+        format         = " {:%H:%M  %a %d.%m}";
         tooltip-format = "<big>{:%B %Y}</big>\n<tt>{calendar}</tt>";
       };
 
       battery = {
         states          = { warning = 30; critical = 15; };
         format          = "{icon} {capacity}%";
-        format-charging = " {capacity}%";
-        format-icons    = [ " " " " " " " " " " ];
+        format-charging = "󰂄 {capacity}%";
+        format-icons    = [ "󰁺" "󰁻" "󰁼" "󰁽" "󰁾" "󰁿" "󰂀" "󰂁" "󰂂" "󰁹" ];
         tooltip-format  = "{timeTo}";
       };
 
       network = {
-        format-wifi         = " {essid}";
-        format-ethernet     = " Ethernet";
+        format-wifi         = "󰤨 {essid}";
+        format-ethernet     = "󰈀 Ethernet";
         format-disconnected = "󰤮 offline";
         tooltip-format      = "{ifname}: {ipaddr}  {signalStrength}%";
         on-click            = "nm-connection-editor";
@@ -288,65 +318,114 @@ in
       };
 
       tray = {
-        icon-size = 18;
-        spacing   = 8;
+        icon-size = 16;
+        spacing   = 6;
       };
     }];
 
     style = ''
       * {
-        font-family: "JetBrainsMono Nerd Font", "Noto Sans", monospace;
+        font-family: "JetBrainsMono Nerd Font", monospace;
         font-size: 13px;
         min-height: 0;
+        border: none;
+        border-radius: 0;
       }
 
       window#waybar {
-        background-color: rgba(30, 30, 46, 0.92);
+        background-color: rgba(30, 30, 46, 0.88);
         color: #cdd6f4;
-        border-bottom: 2px solid rgba(137, 180, 250, 0.4);
+        border-radius: 12px;
+      }
+
+      /* ── Workspaces ─────────────────────────── */
+      #workspaces {
+        margin: 3px 0 3px 4px;
+        padding: 0 3px;
+        background: rgba(49, 50, 68, 0.7);
+        border-radius: 10px;
       }
 
       #workspaces button {
-        padding: 2px 8px;
+        padding: 1px 9px;
         color: #6c7086;
-        border-radius: 4px;
+        border-radius: 8px;
         margin: 2px 2px;
+        background: transparent;
+        transition: all 0.15s ease-in-out;
       }
 
+      #workspaces button.active,
       #workspaces button.focused {
-        color: #89b4fa;
-        background: rgba(137, 180, 250, 0.15);
+        color: #1e1e2e;
+        background: #89b4fa;
       }
 
-      #workspaces button.active {
-        color: #89b4fa;
-        background: rgba(137, 180, 250, 0.15);
+      #workspaces button:hover {
+        color: #cdd6f4;
+        background: rgba(137, 180, 250, 0.2);
       }
 
+      /* ── Window title ───────────────────────── */
       #window {
-        padding: 2px 14px;
-        color: #a6adc8;
+        color: #7f849c;
         font-style: italic;
+        padding: 0 12px;
       }
 
+      /* ── Clock ──────────────────────────────── */
       #clock {
-        padding: 2px 14px;
+        background: rgba(137, 180, 250, 0.12);
+        border: 1px solid rgba(137, 180, 250, 0.25);
         color: #cdd6f4;
+        font-weight: bold;
+        padding: 1px 16px;
+        border-radius: 10px;
+        margin: 3px 0;
       }
 
-      #battery,
-      #network,
+      /* ── Rechte Module (Pills) ──────────────── */
+      #cpu,
+      #memory,
+      #custom-mic,
       #pulseaudio,
-      #tray {
-        padding: 2px 10px;
-        color: #cdd6f4;
+      #network,
+      #battery,
+      #tray,
+      #custom-power {
+        background: rgba(49, 50, 68, 0.7);
+        border-radius: 10px;
+        padding: 1px 10px;
+        margin: 3px 2px;
       }
 
-      #battery.warning { color: #f9e2af; }
-      #battery.critical { color: #f38ba8; }
-      #battery.critical:not(.charging) {
-        background: rgba(243, 139, 168, 0.15);
-        border-radius: 4px;
+      #cpu    { color: #cba6f7; }
+      #memory { color: #cba6f7; }
+
+      #custom-mic         { color: #a6e3a1; }
+      #custom-mic.muted   { color: #f38ba8; background: rgba(243, 139, 168, 0.12); }
+
+      #pulseaudio         { color: #89b4fa; }
+      #pulseaudio.muted   { color: #f38ba8; background: rgba(243, 139, 168, 0.12); }
+
+      #network            { color: #89dceb; }
+      #network.disconnected { color: #6c7086; }
+
+      #battery            { color: #a6e3a1; }
+      #battery.warning    { color: #f9e2af; }
+      #battery.critical   { color: #f38ba8; background: rgba(243, 139, 168, 0.12); }
+
+      #tray { padding: 2px 8px; }
+
+      #custom-power {
+        color: #f38ba8;
+        background: rgba(243, 139, 168, 0.1);
+        padding: 1px 12px;
+        margin-right: 4px;
+      }
+
+      #custom-power:hover {
+        background: rgba(243, 139, 168, 0.25);
       }
     '';
   };

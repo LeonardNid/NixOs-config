@@ -1,1 +1,1 @@
-waybar-und-cursor--10:34
+waybar-laptop-floating-pill-style--10:37
