@@ -92,6 +92,18 @@ in
       match app-id=r#"firefox$"# title="^Picture-in-Picture$"
       open-floating true
     }
+    window-rule {
+      match app-id="^code$"
+      open-maximized true
+    }
+    window-rule {
+      match app-id="^zen$"
+      open-maximized true
+    }
+    window-rule {
+      match app-id="^obsidian$"
+      open-maximized true
+    }
 
     binds {
       // Apps

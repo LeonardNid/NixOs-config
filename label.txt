@@ -1,1 +1,1 @@
-waybar-laptop-floating-pill-style--10:37
+open-maximized-for-vscode-zen-obsidian--10:46
