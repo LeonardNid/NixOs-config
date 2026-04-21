@@ -17,7 +17,9 @@ in
         tap
         natural-scroll
       }
-      mouse {}
+      mouse {
+        focus-on-hover
+      }
     }
 
     layout {
