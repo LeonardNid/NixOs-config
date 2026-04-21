@@ -17,9 +17,7 @@ in
         tap
         natural-scroll
       }
-      mouse {
-        focus-on-hover
-      }
+      focus-follows-mouse max-scroll-amount="25%"
     }
 
     layout {
