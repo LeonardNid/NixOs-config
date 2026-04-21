@@ -44,8 +44,7 @@ in
     }
 
     // Autostart
-    spawn-at-startup "waybar"
-    spawn-at-startup "mako"
+    spawn-at-startup "noctalia-shell"
     spawn-at-startup "swaybg" "-i" "${wallpaper}" "-m" "fill"
     spawn-at-startup "wl-paste" "--watch" "cliphist" "store"
     spawn-at-startup "nm-applet" "--indicator"
@@ -108,8 +107,8 @@ in
     binds {
       // Apps
       Mod+T { spawn "kitty"; }
-      Alt+Space { spawn "fuzzel"; }
-      Super+Alt+L { spawn "swaylock"; }
+      Alt+Space { spawn "noctalia-shell" "ipc" "call" "launcher" "toggle"; }
+      Super+Alt+L { spawn "noctalia-shell" "ipc" "call" "lockScreen" "lock"; }
       Mod+Q { close-window; }
 
       // Overview (niri native)
@@ -258,9 +257,9 @@ in
     ];
   };
 
-  # Benachrichtigungen (Catppuccin Mocha)
+  # Benachrichtigungen (Catppuccin Mocha) — deaktiviert, Noctalia übernimmt
   services.mako = {
-    enable = true;
+    enable = false;
     settings = {
       default-timeout  = 5000;
       background-color = "#1e1e2ecc";
@@ -274,9 +273,11 @@ in
     };
   };
 
-  # Status-Leiste mit nativen niri-Modulen
+  programs.noctalia-shell.enable = true;
+
+  # Status-Leiste mit nativen niri-Modulen — deaktiviert, Noctalia übernimmt
   programs.waybar = {
-    enable = true;
+    enable = false;
     settings = [{
       layer    = "top";
       position = "top";

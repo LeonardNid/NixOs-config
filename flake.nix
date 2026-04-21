@@ -56,6 +56,7 @@
       specialArgs = { inherit self; };
       modules = [
         ./hosts/leonardn
+        { home-manager.sharedModules = [ noctalia.homeModules.default ]; }
         niri-flake.nixosModules.niri
       ] ++ homeManagerModules;
     };
