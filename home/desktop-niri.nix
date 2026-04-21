@@ -106,7 +106,7 @@ in
 
     binds {
       // Apps
-      Mod+T { spawn "kitty"; }
+      Mod+Return { spawn "kitty"; }
       Alt+Space { spawn "noctalia-shell" "ipc" "call" "launcher" "toggle"; }
       Super+Alt+L { spawn "noctalia-shell" "ipc" "call" "lockScreen" "lock"; }
       Mod+Q { close-window; }
@@ -189,7 +189,7 @@ in
       Mod+Ctrl+9 { move-column-to-workspace 9; }
 
       // Fensterverwaltung
-      Mod+R       { switch-preset-column-width; }
+      Mod+W       { switch-preset-column-width; }
       Mod+F       { maximize-column; }
       Mod+Shift+F { fullscreen-window; }
       Mod+C       { center-column; }
