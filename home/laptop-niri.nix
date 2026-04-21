@@ -97,7 +97,7 @@ in
     binds {
       // Apps
       Mod+T { spawn "kitty"; }
-      Alt+Space { spawn "fuzzel"; }
+      Alt+Space { spawn "noctalia-shell" "ipc" "call" "launcher" "toggle"; }
       Super+Alt+L { spawn "swaylock"; }
       Mod+Q { close-window; }
 
