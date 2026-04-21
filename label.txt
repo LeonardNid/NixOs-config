@@ -1,1 +1,1 @@
-focus-follow-mouse--10:11
+focus-follow-mouse--10:15
