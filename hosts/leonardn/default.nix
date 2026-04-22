@@ -44,7 +44,7 @@ in
     MatchBus=usb
     MatchVendor=0x248A
     MatchProduct=0x8278
-    MatchDevType=touchpad
+    MatchUdevType=touchpad
     AttrInputProp=-INPUT_PROP_BUTTONPAD
   '';
 
