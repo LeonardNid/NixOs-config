@@ -27,6 +27,14 @@ in
 
   networking.hostName = "leonardn";
 
+  # AmazonBasics Touchpad: Mouse-Interface (event6) in eigene libinput-Gruppe,
+  # damit die physischen Tasten unabhängig vom Touchpad-Interface verarbeitet werden.
+  # Ohne das ignoriert libinput event6's BTN_LEFT/BTN_RIGHT (beide in group9).
+  services.udev.extraRules = ''
+    ATTRS{idVendor}=="248a", ATTRS{idProduct}=="8278", SUBSYSTEM=="input", ENV{ID_USB_INTERFACE_NUM}=="00", ENV{LIBINPUT_DEVICE_GROUP}="amazon-touchpad-mouse"
+    ATTRS{idVendor}=="248a", ATTRS{idProduct}=="8278", SUBSYSTEM=="input", ENV{ID_USB_INTERFACE_NUM}=="01", ENV{LIBINPUT_DEVICE_GROUP}="amazon-touchpad-surface"
+  '';
+
   # Desktop: auto-login (kein Passwort beim Booten)
   services.displayManager.autoLogin.enable = true;
   services.displayManager.autoLogin.user = "leonardn";
