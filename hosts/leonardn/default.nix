@@ -44,7 +44,8 @@ in
     MatchBus=usb
     MatchVendor=0x248A
     MatchProduct=0x8278
-    AttrInputPropDisable=INPUT_PROP_BUTTONPAD
+    MatchDevType=touchpad
+    AttrInputProp=-INPUT_PROP_BUTTONPAD
   '';
 
   # Desktop: auto-login (kein Passwort beim Booten)
