@@ -8,8 +8,6 @@ the original. Single-finger taps that start inside a configured hotspot
 rectangle are swallowed (no BTN_LEFT, no cursor move) and replaced by
 a keyboard combo on a separate virtual keyboard device.
 
-Current hotspot: top-left 20% x 20% -> Super+O (niri toggle-overview).
-
 Runs as a systemd service, started once at boot. If the touchpad is not
 present or disappears (unplug), the daemon idles and retries until it
 comes back. No udev-triggered restart needed.
@@ -27,26 +25,49 @@ TOUCHPAD_NAME = "Telink amazonbasics_touchpad Touchpad"
 # Touchpad axis ranges (verified via evtest; firmware-fixed).
 X_MAX, Y_MAX = 1973, 1458
 
-# Hotspot: top-left, 20% x 20% (~3 cm x 2.3 cm at 13 units/mm).
-HOTSPOT_X = (0, int(X_MAX * 0.2))
-HOTSPOT_Y = (0, int(Y_MAX * 0.2))
-
-# Tap classifier. If the finger is up within TAP_MAX_MS and never moved
-# farther than TAP_MAX_DIST from its start, it's a tap; otherwise it's a
-# drag/hold and we forward the buffered events normally.
+# Tap classifier: finger must lift within TAP_MAX_MS and never move more
+# than TAP_MAX_DIST units (~2.3 mm) from the start position.
 TAP_MAX_MS = 180
-TAP_MAX_DIST = 30  # touchpad units, ~2.3 mm
+TAP_MAX_DIST = 30
 
-HOTSPOT_KEYS = [E.KEY_LEFTMETA, E.KEY_O]
+# ---------------------------------------------------------------------------
+# Hotspot configuration — add/remove entries here, nothing else needs to change.
+#
+# Each entry:
+#   "x": (x_min, x_max)  — touchpad X range (0–1973, left→right)
+#   "y": (y_min, y_max)  — touchpad Y range (0–1458, top→bottom)
+#   "keys": [key, ...]   — keys pressed simultaneously on a tap
+#
+# Percentage helpers: int(X_MAX * 0.20) = left 20% boundary, etc.
+# ---------------------------------------------------------------------------
+HOTSPOTS = [
+    {   # top-left 20% × 20% → Super+O (niri toggle-overview)
+        "x": (0,                  int(X_MAX * 0.20)),
+        "y": (0,                  int(Y_MAX * 0.20)),
+        "keys": [E.KEY_LEFTMETA, E.KEY_O],
+    },
+    {   # top-right 20% × 20% → Alt+Space (app launcher)
+        "x": (int(X_MAX * 0.80), X_MAX),
+        "y": (0,                  int(Y_MAX * 0.20)),
+        "keys": [E.KEY_LEFTALT, E.KEY_SPACE],
+    },
+]
+# ---------------------------------------------------------------------------
 
 INPUT_PROPS = [E.INPUT_PROP_POINTER, E.INPUT_PROP_BUTTONPAD]
-
-# How often to poll for the device when it's absent (unplugged).
 DEVICE_POLL_SEC = 2.0
 
 
 def log(msg):
     print(msg, file=sys.stderr, flush=True)
+
+
+def find_hotspot(x, y):
+    """Return the first matching hotspot dict for (x, y), or None."""
+    for h in HOTSPOTS:
+        if h["x"][0] <= x <= h["x"][1] and h["y"][0] <= y <= h["y"][1]:
+            return h
+    return None
 
 
 def find_touchpad():
@@ -85,8 +106,11 @@ def make_virtual_touchpad(source):
 
 
 def make_virtual_keyboard():
+    all_keys = set()
+    for h in HOTSPOTS:
+        all_keys.update(h["keys"])
     return UInput(
-        {E.EV_KEY: HOTSPOT_KEYS},
+        {E.EV_KEY: list(all_keys)},
         name="AmazonBasics Touchpad Hotspot Keys",
         vendor=0x248A, product=0x8279,
     )
@@ -108,6 +132,7 @@ def run_once(touchpad):
     current_y = 0
 
     state_buffering = False
+    active_hotspot = None
     buffer_pkts = []
     touch_start_time = 0.0
     start_x = 0
@@ -116,11 +141,11 @@ def run_once(touchpad):
 
     packet = []
 
-    def emit_super_o():
-        for k in HOTSPOT_KEYS:
+    def emit_combo(keys):
+        for k in keys:
             vkbd.write(E.EV_KEY, k, 1)
         vkbd.syn()
-        for k in reversed(HOTSPOT_KEYS):
+        for k in reversed(keys):
             vkbd.write(E.EV_KEY, k, 0)
         vkbd.syn()
 
@@ -175,9 +200,10 @@ def run_once(touchpad):
                                 multi_touch = True
 
                     if session_start and not state_buffering:
-                        if (HOTSPOT_X[0] <= current_x <= HOTSPOT_X[1]
-                                and HOTSPOT_Y[0] <= current_y <= HOTSPOT_Y[1]):
+                        hit = find_hotspot(current_x, current_y)
+                        if hit is not None:
                             state_buffering = True
+                            active_hotspot = hit
                             touch_start_time = time.monotonic()
                             start_x = current_x
                             start_y = current_y
@@ -207,10 +233,12 @@ def run_once(touchpad):
                         if commit == "swallow":
                             buffer_pkts.clear()
                             state_buffering = False
-                            emit_super_o()
+                            emit_combo(active_hotspot["keys"])
+                            active_hotspot = None
                         elif commit == "flush":
                             flush_buffer()
                             state_buffering = False
+                            active_hotspot = None
                     else:
                         forward_packet(pkt)
             else:
@@ -219,6 +247,7 @@ def run_once(touchpad):
                     if dt_ms > TAP_MAX_MS:
                         flush_buffer()
                         state_buffering = False
+                        active_hotspot = None
     finally:
         try: touchpad.ungrab()
         except OSError: pass
@@ -239,8 +268,6 @@ def main():
                 run_once(touchpad)
             except OSError as e:
                 log(f"device error: {e}")
-            # Small delay before re-scanning, in case the device is still
-            # disappearing from sysfs.
             time.sleep(1.0)
     except KeyboardInterrupt:
         log("stopping")

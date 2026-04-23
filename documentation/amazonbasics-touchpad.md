@@ -1,7 +1,7 @@
 # AmazonBasics USB-Touchpad — Physischer Klick unter NixOS
 
-**Stand: 2026-04-22 — PAUSE, offen. Kein NixOS-Deployment. Alles bisher
-nur in `/tmp/*.py` Testscripten.**
+**Stand: 2026-04-23 — Hotspot-Daemon deployed, physischer Button final als
+unmöglich verworfen (ohne Windows-Reverse-Engineering).**
 
 ## Problem
 
@@ -10,138 +10,34 @@ USB-Touchpad "AmazonBasics" (Telink-Chipset, `VID:PID = 248A:8278`) ist ein
 man hört und spürt einen Klick. Unter Linux kommt dieser physische Klick
 aber **nicht** als Button-Event an. Unter Windows funktioniert er problemlos.
 
-Aktuelle Workarounds in der niri-Config (`home/desktop-niri.nix`):
+## Was deployed ist
+
+### Hotspot-Daemon (aktiv)
+
+- `scripts/amazonbasics-touchpad-daemon.py` — Python-Daemon
+- `system/amazonbasics-touchpad-daemon.nix` — systemd-Unit
+- Importiert in `hosts/leonardn/default.nix`
+
+**Funktionsweise:** Das Touchpad-evdev wird exklusiv gegrabbed (`EVIOCGRAB`)
+und 1:1 auf ein virtuelles uinput-Touchpad gespiegelt — libinput sieht das
+virtuelle Gerät und behandelt es wie das Original. Einziger Unterschied:
+**Ein-Finger-Taps, die innerhalb eines definierten Hotspot-Rechtecks
+starten, werden geschluckt** (kein BTN_LEFT, kein Cursor-Move) und durch
+einen Tastatur-Combo auf einem separaten virtuellen Keyboard-Device
+ersetzt.
+
+**Aktueller Hotspot:** Oben links 20% × 20% der Padfläche → `Super+O`
+(niri `toggle-overview`).
+
+Tap-Klassifizierung: Finger muss innerhalb `TAP_MAX_MS=180` wieder weg sein
+und sich nie weiter als `TAP_MAX_DIST=30` Einheiten (~2.3 mm) bewegt haben.
+Sonst Pass-through als normale Geste. Multi-Finger im Hotspot → immer
+pass-through.
+
+### niri-Touchpad-Config (`home/desktop-niri.nix`)
 
 ```
 touchpad {
-  tap            // tap-to-click als Ersatz für fehlenden phys. Klick
-  natural-scroll
-}
-```
-
-## Was die Untersuchung herausgefunden hat
-
-### Die zwei Firmware-Modi
-
-Das Touchpad hat zwei USB-HID-Interfaces:
-
-- **iface 0** — HID Boot-Mouse (Standard-Maus-Report, 4 Byte: `btn, dx, dy, wheel`)
-- **iface 1** — HID Touchpad / Digitizer (Windows Precision Touchpad, PTP)
-
-Beide lassen sich per USB-Control-Transfer `SET_PROTOCOL`
-(`bmRequestType=0x21, bRequest=0x0B`) zwischen **Boot** (wValue=0) und
-**Report** (wValue=1) umschalten.
-
-**Die Firmware hat einen globalen Mode-Switch** (empirisch bestätigt, siehe
-Tests unten):
-
-| Zustand | iface0 sendet | iface1 sendet |
-|---|---|---|
-| Beide in **BOOT** | Boot-Mouse-Reports inkl. Klick-Bit | nichts |
-| Mindestens eins in **REPORT** | nichts | PTP Multi-Touch-Reports |
-
-Das heißt: **entweder** Boot-Mouse (mit phys. Klick, ohne Multi-Touch)
-**oder** PTP (mit Multi-Touch, ohne phys. Klick). Kein gleichzeitig.
-
-### Warum Windows es kann
-
-Windows bleibt im PTP-Mode, extrahiert aber das **Klick-Bit aus den
-PTP-Reports selbst**. Das Linux-`hid-multitouch`-Modul scheint dieses
-Bit entweder nicht zu parsen oder es als reinen Contact-Confidence-Wert
-zu verwerfen. Nicht verifiziert — das ist die aktuelle Arbeitshypothese
-(siehe "Nächste Schritte" unten).
-
-### Default-Verhalten unter Linux
-
-- Kernel bindet beim Einstecken `usbhid` an beide Interfaces.
-- `usbhid` + `hid-multitouch` lassen iface1 im REPORT-Mode (PTP).
-- iface0 bleibt default-mäßig in REPORT und ist damit **stumm** (globaler
-  Mode-Switch auf PTP-Seite).
-- Ergebnis: Multi-Touch/Scroll/Gesten/Tap funktionieren, phys. Klick nicht.
-
-## Tests durchgeführt
-
-Alle Test-Scripts liegen in `/tmp/*.py` und nutzen `pyusb`. Laufen mit:
-
-```
-nix-shell -p 'python3.withPackages (ps: [ ps.pyusb ])' --run 'sudo $(which python3) /tmp/<script>.py'
-```
-
-Wichtig: vor dem Claimen des Interfaces muss `usbhid` per sysfs unbound
-werden (`/sys/bus/usb/drivers/usbhid/unbind` mit `1-3:1.0` bzw. `1-3:1.1`),
-sonst `Resource busy` bei Control-Transfers.
-
-### Test 1: `/tmp/reset-and-test.py`
-
-USB-Reset, dann beide Interfaces in BOOT, beide lesen.
-→ Ergebnis: iface0 sendet Boot-Mouse, iface1 stumm.
-
-### Test 2: `/tmp/explore-boot-both.py`
-
-30 Sekunden Capture, beide Interfaces in BOOT, User macht:
-Klick, 1-Finger-Bewegung, 2-Finger-Scroll, 2-Finger-Tap, 3-Finger-Tap, Pinch.
-
-**Ergebnis:**
-- iface0: **305 Reports**, alle 4 Bytes, Format `[btn, dx, dy, wheel]`
-  - Klick: `01 00 00 00` (16 Reports mit btn=0x01)
-  - 1-Finger-Bewegung: `00 XX YY 00` (289 Reports ohne Klick)
-  - **Wheel-Byte war durchgehend 0** — auch bei aktivem 2-Finger-Scroll
-  - Nur BTN_LEFT — kein BTN_RIGHT (0x02), kein BTN_MIDDLE (0x04)
-- iface1: **0 Reports** (boot-keyboard auf einem Touchpad macht keinen Sinn)
-
-### Test 3: `/tmp/only-iface0.py`
-
-iface0 in BOOT, iface1 **unangetastet** (bleibt REPORT, hid-multitouch bleibt
-gebunden). User drückt 20 Sekunden mehrfach den Klick.
-
-**Ergebnis: 0 Reports auf iface0.** → Bestätigt globalen Mode-Switch:
-sobald iface1 in REPORT ist, ist iface0 stumm, unabhängig davon wer iface1
-steuert.
-
-### Test 4: `/tmp/iface1-boot.py`
-
-Beide in BOOT, beide 15 Sekunden lesen, Samples drucken.
-→ Gleiches Ergebnis wie Test 2 in kürzerer Form.
-
-### Test 5: `/tmp/amazon-daemon.py` (funktionierender Prototyp)
-
-Beide Interfaces unbinden → beide in BOOT-Mode → iface1 release (aber **nicht**
-rebinden zu usbhid, weil der Rebind ein `SET_PROTOCOL=REPORT` auslöst und
-damit iface0 global stumm schaltet) → Loop auf iface0, Parse `[btn,dx,dy,wheel]`,
-Emit an uinput als `BTN_LEFT/RIGHT/MIDDLE` + `REL_X/Y/WHEEL`.
-
-**Ergebnis: funktioniert.** Physischer Klick kommt als `BTN_LEFT` beim
-Compositor an, Cursor-Bewegung funktioniert über den Daemon.
-
-**Verlust gegenüber aktuellem Setup:**
-- ❌ 2-Finger-Scroll (wheel-byte immer 0)
-- ❌ Tap-to-Click (Firmware detektiert Taps nur im PTP-Mode)
-- ❌ Right-click, Middle-click (Firmware sendet nur btn=0x01)
-- ❌ Multi-Finger-Gesten (3-Finger-Swipe usw.)
-- ❌ Pinch / Zoom
-
-## Trade-off
-
-| Option | Phys. Klick | Scroll | Tap | Gesten | Pinch |
-|---|---|---|---|---|---|
-| **Aktuell (REPORT / hid-multitouch)** | ❌ | ✅ | ✅ | ✅ | ✅ |
-| **Daemon (beide BOOT)** | ✅ | ❌ | ❌ | ❌ | ❌ |
-
-Boot-Mode-Daemon ist für dieses Touchpad **netto schlechter** als der aktuelle
-Zustand. Nicht deployen.
-
-## Status der NixOS-Config
-
-### Was geändert wurde
-
-`home/desktop-niri.nix` — touchpad-Block umgeschrieben (altes `click-method
-"button-areas"` entfernt, weil sinnlos wenn kein Klick-Bit ankommt):
-
-```
-touchpad {
-  // AmazonBasics Touchpad: Firmware sendet das Click-Bit nicht an den Host,
-  // deshalb funktionieren "physische" Klicks nicht. Tap-to-Click ist der
-  // einzige funktionierende Click-Weg (1 Finger = L, 2 Finger = R, 3 Finger = M).
   tap
   natural-scroll
   scroll-factor 1.0
@@ -149,72 +45,135 @@ touchpad {
 }
 ```
 
-**Hinweis:** Der Kommentar stimmt inhaltlich **nicht mehr exakt**. Korrekter
-wäre: "die Firmware schickt das Klick-Bit nur im Boot-Mode, nicht im
-PTP-Mode den `hid-multitouch` nutzt." Sollte bei der nächsten
-Bearbeitung angepasst werden — oder komplett entfernt werden wenn wir
-das Problem anders lösen.
+Tap-to-Click bleibt der primäre Ersatz für den fehlenden physischen Klick.
+Der Hotspot-Daemon ist **zusätzlich** — er deaktiviert Tap in seinem
+Bereich und mapped ihn stattdessen auf die Tastenkombi.
 
-### Was temporär entfernt und nicht wieder eingefügt wurde
+## Was die Untersuchung endgültig festgestellt hat
 
-`hosts/leonardn/default.nix` — `hardware.uinput.enable = true;` und die
-zugehörige udev-Rule wurden rausgenommen (war für den Daemon-Prototyp
-gedacht, dann verworfen). Muss **nicht** wieder rein solange wir keinen
-Daemon deployen.
+### Die zwei Firmware-Modi (globaler Mode-Switch)
 
-### Was neu erstellt werden müsste (falls Daemon doch deployed wird)
+Das Touchpad hat zwei USB-HID-Interfaces:
 
-1. `system/amazonbasics-touchpad-daemon.py` — basierend auf
-   `/tmp/amazon-daemon.py`, aber mit Reconnect-Handling,
-   sauberem Logging, systemd-Integration.
-2. `system/amazonbasics-touchpad-daemon.nix` — analog zu
-   `system/corsair-mouse-daemon.nix`: systemd-Unit, Dependency auf
-   `hardware.uinput.enable`, udev-Rule für Restart bei Plug-In.
-3. Import in `hosts/leonardn/default.nix` (nur Desktop).
-4. `hardware.uinput.enable = true;` + uinput-udev-Rule wieder rein.
+- **iface 0** — HID Boot-Mouse (Standard-Maus-Report, 4 Byte: `btn, dx, dy, wheel`)
+- **iface 1** — HID Touchpad / Digitizer (Windows Precision Touchpad, PTP)
 
-**Aktuell alles das nicht gemacht** — würden Multi-Touch opfern.
+Die Firmware hat einen **globalen Mode-Switch**:
 
-## Nächste Schritte (offen)
+| Zustand | iface0 sendet | iface1 sendet |
+|---|---|---|
+| Beide in **BOOT** | Boot-Mouse-Reports inkl. Klick-Bit | nichts |
+| Mindestens eins in **REPORT** | nichts | PTP Multi-Touch-Reports |
 
-**Hypothese "dritter Weg"**: Im PTP-Mode bleiben (hid-multitouch macht
-Multi-Touch wie bisher), **aber parallel** die rohen PTP-Reports von iface1
-mitlesen (via hidraw oder indem wir `hid-multitouch` rauskicken und selbst
-parsen) und das **Klick-Bit aus dem PTP-Report extrahieren**.
+**Entweder** Boot-Mouse (mit phys. Klick, ohne Multi-Touch) **oder** PTP
+(mit Multi-Touch, ohne phys. Klick). Nicht gleichzeitig.
 
-Der Windows-Treiber macht genau das. Wenn im PTP-Report tatsächlich ein
-Button-Bit steht (was bei Windows Precision Touchpads üblich ist — Byte
-mit Confidence/Tip-Switch/Button-Bits pro Contact), können wir:
+### Das PTP-Button-Bit existiert, wird aber nie gesetzt
 
-- Multi-Touch via `hid-multitouch` **komplett behalten**
-- Klicks via eigenen Daemon aus denselben PTP-Reports rausholen und als
-  BTN_LEFT an uinput schicken
+Der HID-Report-Descriptor von iface1 (gelesen aus
+`/sys/bus/hid/devices/0003:248A:8278.0007/report_descriptor`) deklariert
+am Ende jedes PTP-Reports ein **Button-1-Feld**:
 
-**Herausforderung**: Wenn wir iface1 von `hid-multitouch` unbinden um es
-selbst zu lesen, verschwinden alle anderen Touch-Events aus dem System.
-Also müsste unser Daemon dann den **gesamten** PTP-Parse übernehmen (nicht
-nur Klick extrahieren) — oder wir nutzen hidraw parallel (iface1 bleibt
-von `hid-multitouch` gebunden, wir lesen via `/dev/hidrawN` read-only mit).
-Letzteres ist der sauberere Weg.
+```
+Report ID 0x04, 30 Byte:
+  Byte 0:      Report ID
+  Bytes 1-25:  5× Finger-Struct (Confidence/TipSwitch/ContactID + X + Y)
+  Bytes 26-27: Scan Time (16-bit LE)
+  Byte 28:     Contact Count
+  Byte 29:     Button 1 (Bit 0) + 7 Bit Padding  ← soll das Klick-Bit sein
+```
 
-### Konkreter Plan wenn wir weitermachen
+**Empirischer Test** (`/tmp/hidraw-button2.py`, 15s, 1407 PTP-Reports
+durchgängig mitgelesen auf `/dev/hidraw6`, Finger permanent aufliegend,
+Druckphasen variiert):
 
-1. `lsusb -v` / `/dev/hidraw*` identifizieren — welche hidraw-Node ist iface1?
-2. Kurzer Test: `cat /dev/hidrawN | xxd` während Klick + Gesten — sehen wir
-   PTP-Reports? Haben die ein Button-Bit?
-3. Falls ja: PTP-Descriptor parsen (`usbhid-dump` oder direkt aus dem
-   Report-Descriptor) um genaue Bit-Position zu finden.
-4. Mini-Daemon: `hidraw` read + uinput emit BTN_LEFT/RIGHT nur für den
-   Button. Kein Cursor, kein Scroll — `hid-multitouch` macht den Rest.
+- Phase "locker aufliegen":  byte29 = 0x00
+- Phase "mechanisch drücken": byte29 = 0x00
+- Phase "loslassen":           byte29 = 0x00
 
-Das wäre ein **klar besserer** Deal als der Boot-Mode-Daemon.
+Byte 29 bleibt **in 100% der Reports 0x00**, unabhängig vom mechanischen
+Drücken. Die Firmware deklariert das Button-Bit im Descriptor, setzt es
+aber niemals. Das ist kein Linux-Parsing-Artefakt — wir lesen die rohen
+USB-Reports.
+
+### Warum Windows es trotzdem kann
+
+Unbekannt. Mögliche Erklärungen:
+
+1. Windows schickt eine proprietäre SET_FEATURE/SET_REPORT-Sequenz die die
+   Button-Reports freischaltet (bei manchen Telink-/Chinesen-Chipsets
+   üblich).
+2. Windows nutzt einen anderen Report (Feature-Report oder eine andere
+   Report-ID) die bei uns nicht auftaucht.
+3. Windows setzt ein Bit in einem Konfigurations-Register via Control-Transfer.
+
+Zur Klärung wäre eine Windows-USB-Capture (Wireshark + usbmon in VM)
+nötig. **Nicht gemacht**.
+
+## Historische Tests (zur Nachvollziehbarkeit)
+
+Alle Test-Scripts liegen in `/tmp/*.py`.
+
+| Test | Ergebnis |
+|---|---|
+| `/tmp/reset-and-test.py` — beide iface in BOOT | iface0 sendet Boot-Mouse inkl. Klick, iface1 stumm |
+| `/tmp/explore-boot-both.py` — 30s Capture beider iface in BOOT | 305 Mouse-Reports iface0, 0 auf iface1. Wheel-Byte **immer 0** (auch bei 2-Finger-Scroll), nur BTN_LEFT (kein Right/Middle) |
+| `/tmp/only-iface0.py` — iface0 BOOT, iface1 unangetastet (REPORT) | 0 Reports auf iface0 — bestätigt globalen Mode-Switch |
+| `/tmp/amazon-daemon.py` — Boot-Mode-Daemon Prototyp | Funktioniert: BTN_LEFT + Cursor kommen. **Verliert** Scroll, Tap, Right/Middle, Gesten, Pinch → netto schlechter |
+| `/tmp/iface0-mouse-probe.py` — iface0 in REPORT lesen während iface1 PTP | 0 Reports (global mode switch) |
+| `/tmp/hidraw-button2.py` — PTP-Byte-29 tracken unter wechselndem Druck | byte29 bleibt 0x00, 100% |
+
+## Trade-off-Tabelle (endgültig)
+
+| Option | Phys. Klick | Scroll | Tap | Gesten | Pinch | Hotspot |
+|---|---|---|---|---|---|---|
+| Default (hid-multitouch) | ❌ | ✅ | ✅ | ✅ | ✅ | ❌ |
+| Boot-Mode-Daemon | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| **Hotspot-Daemon (deployed)** | ❌ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| PTP-byte29-Parsing | nicht möglich (Firmware setzt Bit nie) |
+
+## Offene Optionen (nicht deployed)
+
+### Windows-Reverse-Engineering
+
+Der einzig verbleibende Weg zum physischen Button. Wäre:
+
+1. Windows in VM mit USB-Passthrough des Touchpads.
+2. `usbmon` oder Wireshark `usbpcap` beim ersten Einstecken mitschneiden.
+3. Sequenz der Control-Transfers + Feature-Reports analysieren.
+4. Reproduzieren auf Linux (pyusb Control-Transfer vor `hid-multitouch`-Bind).
+5. Erneut `/tmp/hidraw-button2.py` ausführen — ändert sich byte 29 jetzt?
+
+Unsicher ob erfolgreich. Aufwand: mehrere Stunden + VM mit USB-Passthrough
+aufsetzen.
+
+### Hotspot-Erweiterungen
+
+Das Daemon-Konstrukt ist generisch — zusätzliche Hotspots sind trivial:
+
+- Mehrere Rechtecke mit unterschiedlichen Key-Combos
+- Randbereiche (z.B. rechte Kante für Scroll-Gesten-Override)
+- Drag-Erkennung (Tap+Hold → Keyboard modifier)
+
+Alles in `scripts/amazonbasics-touchpad-daemon.py`, keine Config-Änderungen
+außerhalb des Python-Files nötig (danach `rebuild`).
 
 ## Referenzen / Files
 
-- Test-Scripts: `/tmp/explore-boot-both.py`, `/tmp/only-iface0.py`,
-  `/tmp/iface1-boot.py`, `/tmp/reset-and-test.py`, `/tmp/amazon-daemon.py`
-- Existierendes Daemon-Pattern: `system/corsair-mouse-daemon.nix`
-  (+ `documentation/corsair-darkstar-maus.md`)
-- niri-touchpad-Config: `home/desktop-niri.nix`
-- Device: `lsusb` → `248a:8278 AmazonBasics ...`
-- Kernel-Treiber: `usbhid` → `hid-multitouch` (iface1)
+- **Produktion:** `scripts/amazonbasics-touchpad-daemon.py`,
+  `system/amazonbasics-touchpad-daemon.nix`,
+  Import in `hosts/leonardn/default.nix`
+- **niri-touchpad-Config:** `home/desktop-niri.nix`
+- **Verwandtes Daemon-Pattern:** `system/corsair-mouse-daemon.nix`
+- **Test-Scripts:** `/tmp/explore-boot-both.py`, `/tmp/only-iface0.py`,
+  `/tmp/iface1-boot.py`, `/tmp/reset-and-test.py`, `/tmp/amazon-daemon.py`,
+  `/tmp/hidraw-button.py`, `/tmp/hidraw-button2.py`, `/tmp/hidraw-diff.py`,
+  `/tmp/hidraw-click-probe.py`, `/tmp/iface0-mouse-probe.py`
+- **Device:** `lsusb` → `248a:8278 AmazonBasics ...`
+- **Kernel-Treiber:** `usbhid` → `hid-multitouch` (iface1)
+- **Touchpad-Geometrie:** X 0-1973, Y 0-1458, Auflösung 13 Einheiten/mm
+  (~15.2 cm × 11.2 cm)
+- **HID-Devices (Enumeration ändert sich je Reconnect):**
+  - iface0 evdev: per Name "Telink amazonbasics_touchpad Mouse"
+  - iface1 evdev: per Name "Telink amazonbasics_touchpad Touchpad"
+  - iface0/iface1 hidraw: über `/sys/class/hidraw/*/device` → `0003:248A:8278.xxxx`

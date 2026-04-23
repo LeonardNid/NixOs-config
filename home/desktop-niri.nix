@@ -19,9 +19,10 @@ in
         scroll-factor 1.5      // Scroll-Geschwindigkeit: 0.5 = halb so schnell, 2.0 = doppelt
       }
       touchpad {
-        // AmazonBasics Touchpad: Firmware sendet das Click-Bit nicht an den Host,
-        // deshalb funktionieren "physische" Klicks nicht. Tap-to-Click ist der
-        // einzige funktionierende Click-Weg (1 Finger = L, 2 Finger = R, 3 Finger = M).
+        // AmazonBasics Touchpad: Firmware schickt das Click-Bit nur im Boot-
+        // Mode, im PTP-Mode (den hid-multitouch nutzt) nie — daher kein phys.
+        // Klick. Tap-to-Click ist der Ersatz (1 Finger = L, 2 = R, 3 = M).
+        // Siehe documentation/amazonbasics-touchpad.md.
         tap
         natural-scroll
         scroll-factor 1.0
