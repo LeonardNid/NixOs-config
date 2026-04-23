@@ -44,12 +44,12 @@ HOTSPOTS = [
     {   # top-left 20% × 20% → Super+O (niri toggle-overview)
         "x": (0,                  int(X_MAX * 0.20)),
         "y": (0,                  int(Y_MAX * 0.20)),
-        "keys": [E.KEY_LEFTMETA, E.KEY_O],
+        "keys": [E.KEY_LEFTALT, E.KEY_SPACE],
     },
     {   # top-right 20% × 20% → Alt+Space (app launcher)
         "x": (int(X_MAX * 0.80), X_MAX),
         "y": (0,                  int(Y_MAX * 0.20)),
-        "keys": [E.KEY_LEFTALT, E.KEY_SPACE],
+        "keys": [E.KEY_LEFTMETA, E.KEY_O],
     },
     {   # bottom-middle-left 20% × 10% → Arrow left
         "x": (int(X_MAX * 0.80), int(X_MAX * 0.90)),
