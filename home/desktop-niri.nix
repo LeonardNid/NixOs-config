@@ -25,7 +25,7 @@ in
         // Siehe documentation/amazonbasics-touchpad.md.
         tap
         natural-scroll
-        drag false
+        drag-lock
         scroll-factor 0.8
         accel-speed 0.2
       }
