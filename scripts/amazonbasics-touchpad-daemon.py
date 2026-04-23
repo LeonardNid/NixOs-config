@@ -51,6 +51,16 @@ HOTSPOTS = [
         "y": (0,                  int(Y_MAX * 0.20)),
         "keys": [E.KEY_LEFTALT, E.KEY_SPACE],
     },
+    {   # bottom-middle-left 20% × 10% → Arrow left
+        "x": (int(X_MAX * 0.30), int(X_MAX * 0.50)),
+        "y": (int(Y_MAX * 0.90), Y_MAX),
+        "keys": [E.KEY_LEFT],
+    },
+    {   # bottom-middle-right 20% × 10% → Arrow right
+        "x": (int(X_MAX * 0.50), int(X_MAX * 0.80)),
+        "y": (int(Y_MAX * 0.90), Y_MAX),
+        "keys": [E.KEY_RIGHT],
+    },
 ]
 # ---------------------------------------------------------------------------
 
