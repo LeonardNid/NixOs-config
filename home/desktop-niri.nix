@@ -19,6 +19,9 @@ in
         scroll-factor 1.5      // Scroll-Geschwindigkeit: 0.5 = halb so schnell, 2.0 = doppelt
       }
       touchpad {
+        // AmazonBasics Touchpad: Firmware sendet das Click-Bit nicht an den Host,
+        // deshalb funktionieren "physische" Klicks nicht. Tap-to-Click ist der
+        // einzige funktionierende Click-Weg (1 Finger = L, 2 Finger = R, 3 Finger = M).
         tap
         natural-scroll
         scroll-factor 1.0
