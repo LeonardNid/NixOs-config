@@ -25,8 +25,9 @@ in
         // Siehe documentation/amazonbasics-touchpad.md.
         tap
         natural-scroll
-        scroll-factor 1.0
-        accel-speed 0.0
+        drag false
+        scroll-factor 0.8
+        accel-speed 0.2
       }
       focus-follows-mouse max-scroll-amount="25%"
     }
