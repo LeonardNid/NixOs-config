@@ -256,6 +256,7 @@ in
 
   programs.kitty = {
     enable = true;
+    theme = "Catppuccin-Mocha";
     settings.confirm_os_window_close = 0;
   };
 
