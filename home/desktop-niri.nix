@@ -241,7 +241,7 @@ in
       XF86AudioNext { spawn "playerctl" "next"; }
 
       // Session
-      Mod+Shift+E     { quit; }
+      Mod+Shift+D     { quit; }
       Mod+Shift+Slash { show-hotkey-overlay; }
       Mod+Shift+P     { power-off-monitors; }
     }

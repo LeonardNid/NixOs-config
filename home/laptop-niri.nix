@@ -202,7 +202,7 @@ in
       XF86MonBrightnessDown allow-when-locked=true { spawn "brightnessctl" "--class=backlight" "set" "10%-"; }
 
       // Session
-      Mod+Shift+E     { quit; }
+      Mod+Shift+D     { quit; }
       Mod+Shift+Slash { show-hotkey-overlay; }
       Mod+Shift+P     { power-off-monitors; }
     }
