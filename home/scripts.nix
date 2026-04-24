@@ -124,7 +124,7 @@
         ln -sf "$f" "$target"
       done
 
-      dolphin "$STAGING" &
+      setsid dolphin "$STAGING" &
       sleep 0.5
       wtype -M ctrl a -m ctrl
     '')
