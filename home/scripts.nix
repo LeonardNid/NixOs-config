@@ -102,7 +102,7 @@
         sed "s|$NC_DIR/||" |
         fzf --multi \
             --prompt="  Nextcloud > " \
-            --preview='bat --color=always --style=numbers -- "$NC_DIR/{}" 2>/dev/null || file -- "$NC_DIR/{}"' \
+            --preview='bat --color=always --style=numbers -- "$NC_DIR/{}"' \
             --preview-window=right:50%:wrap \
             --bind=tab:toggle+down \
             --bind=shift-tab:toggle+up
