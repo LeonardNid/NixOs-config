@@ -12,6 +12,8 @@
     btop
     fzf
     fd
+    bat
+    eza
   ];
 
   # Obsidian: --name setzt den Wayland app_id korrekt auf "Obsidian" statt "electron"

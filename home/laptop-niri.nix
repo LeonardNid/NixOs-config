@@ -93,12 +93,17 @@ in
       match app-id="^zen$"
       open-maximized true
     }
+    window-rule {
+      match app-id="^kitty$" title="^nc-pick$"
+      open-floating true
+    }
 
 
     binds {
       // Apps
       Mod+T { spawn "kitty"; }
       Mod+E { spawn "dolphin"; }
+      Mod+Shift+E { spawn "kitty" "--override" "initial_window_width=1100" "--override" "initial_window_height=700" "--title" "nc-pick" "-e" "nc-pick"; }
       Alt+Space { spawn "noctalia-shell" "ipc" "call" "launcher" "toggle"; }
       Super+Alt+L { spawn "noctalia-shell" "ipc" "call" "lockScreen" "lock"; }
       Mod+Q { close-window; }

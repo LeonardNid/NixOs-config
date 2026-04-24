@@ -9,6 +9,9 @@
       ll = "ls -la";
       la = "ls -A";
       nf = ''file=$(fd . ~/Nextcloud | fzf) && xdg-open "$file"'';
+      e = "eza";
+      ea = "eza -A";
+      c = "clear";
     };
     initContent = ''
       eval "$(zoxide init zsh)"

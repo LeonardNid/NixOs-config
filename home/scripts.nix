@@ -89,6 +89,44 @@
       pkill -SIGRTMIN+1 waybar 2>/dev/null || true
     '')
 
+    (pkgs.writeShellScriptBin "nc-pick" ''
+      NC_DIR="$HOME/Nextcloud"
+      STAGING="$HOME/.cache/nc-pick"
+      export NC_DIR
+
+      rm -rf "$STAGING"
+      mkdir -p "$STAGING"
+
+      mapfile -t selected < <(
+        fd . "$NC_DIR" -t f --follow |
+        sed "s|$NC_DIR/||" |
+        fzf --multi \
+            --prompt="  Nextcloud > " \
+            --preview='bat --color=always --style=numbers -- "$NC_DIR/{}" 2>/dev/null || file -- "$NC_DIR/{}"' \
+            --preview-window=right:50%:wrap \
+            --bind=tab:toggle+down \
+            --bind=shift-tab:toggle+up
+      )
+
+      [ ''${#selected[@]} -eq 0 ] && exit 0
+
+      for f in "''${selected[@]}"; do
+        name=$(basename "$f")
+        target="$STAGING/$name"
+        if [ -L "$target" ] || [ -e "$target" ]; then
+          i=1
+          base="''${name%.*}"
+          ext="''${name##*.}"
+          [ "$base" = "$ext" ] && ext=""
+          while [ -e "$STAGING/''${base}_''${i}''${ext:+.}''${ext}" ]; do i=$((i+1)); done
+          target="$STAGING/''${base}_''${i}''${ext:+.}''${ext}"
+        fi
+        ln -sf "$NC_DIR/$f" "$target"
+      done
+
+      dolphin "$STAGING"
+    '')
+
     (pkgs.writeShellScriptBin "rebuild" ''
       RED='\033[1;31m'
       GREEN='\033[1;32m'
