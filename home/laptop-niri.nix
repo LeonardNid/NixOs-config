@@ -70,6 +70,10 @@ in
 
     // Window Rules
     window-rule {
+      match app-id="^org\\.kde\\.dolphin$"
+      open-floating true
+    }
+    window-rule {
       match app-id="^pavucontrol$"
       open-floating true
     }
