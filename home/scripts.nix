@@ -92,17 +92,17 @@
     (pkgs.writeShellScriptBin "nc-pick" ''
       NC_DIR="$HOME/Nextcloud"
       STAGING="$HOME/.cache/nc-pick"
-      export NC_DIR
 
       rm -rf "$STAGING"
       mkdir -p "$STAGING"
 
       mapfile -t selected < <(
         fd . "$NC_DIR" -t f --follow |
-        sed "s|$NC_DIR/||" |
         fzf --multi \
             --prompt="  Nextcloud > " \
-            --preview='bat --color=always --style=numbers -- "$NC_DIR/{}"' \
+            --delimiter "/" \
+            --with-nth "4.." \
+            --preview='bat --color=always --style=numbers -- {}' \
             --preview-window=right:50%:wrap \
             --bind=tab:toggle+down \
             --bind=shift-tab:toggle+up
@@ -121,7 +121,7 @@
           while [ -e "$STAGING/''${base}_''${i}''${ext:+.}''${ext}" ]; do i=$((i+1)); done
           target="$STAGING/''${base}_''${i}''${ext:+.}''${ext}"
         fi
-        ln -sf "$NC_DIR/$f" "$target"
+        ln -sf "$f" "$target"
       done
 
       dolphin "$STAGING"
