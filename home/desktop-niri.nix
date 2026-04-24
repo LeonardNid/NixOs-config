@@ -108,6 +108,10 @@ in
       open-floating true
     }
     window-rule {
+      geometry-corner-radius 8;
+      clip-to-geometry true;
+    }
+    window-rule {
       match app-id="^code$"
       open-maximized true
     }
