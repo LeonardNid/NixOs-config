@@ -34,6 +34,7 @@ in
 
   # Home-Module: desktop-spezifisch
   home-manager.users.leonardn = {
+    _module.args.keyboardLayout = "neo";
     imports = [ ]
       ++ lib.optional (desktop == "niri") ../../home/desktop-niri.nix;
   };

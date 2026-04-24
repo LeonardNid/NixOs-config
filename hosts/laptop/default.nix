@@ -30,6 +30,7 @@ in
 
   # Home-Module: gemeinsam + desktop-spezifisch
   home-manager.users.leonardn = {
+    _module.args.keyboardLayout = "qwertz";
     imports = [ ../../home/nextcloud.nix ]   # immer: Nextcloud
       ++ lib.optional (desktop == "kde")      ../../home/laptop-kde.nix
       ++ lib.optional (desktop == "hyprland") ../../home/laptop-hyprland.nix
