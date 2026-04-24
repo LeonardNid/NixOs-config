@@ -13,6 +13,7 @@
     fzf
     fd
     bat
+    wtype
     eza
   ];
 

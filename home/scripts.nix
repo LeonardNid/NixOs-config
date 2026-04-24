@@ -124,7 +124,9 @@
         ln -sf "$f" "$target"
       done
 
-      dolphin "$STAGING"
+      dolphin "$STAGING" &
+      sleep 0.5
+      wtype -M ctrl a -m ctrl
     '')
 
     (pkgs.writeShellScriptBin "rebuild" ''
