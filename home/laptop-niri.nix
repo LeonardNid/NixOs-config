@@ -93,10 +93,7 @@ in
       match app-id="^zen$"
       open-maximized true
     }
-    window-rule {
-      match app-id="^obsidian$"
-      open-maximized true
-    }
+
 
     binds {
       // Apps
