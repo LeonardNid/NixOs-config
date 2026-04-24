@@ -90,16 +90,19 @@
     '')
 
     (pkgs.writeShellScriptBin "nc-pick" ''
-      NC_DIR="$HOME/Nextcloud"
+      NC_DIR="$HOME"
       STAGING="$HOME/.cache/nc-pick"
 
       rm -rf "$STAGING"
       mkdir -p "$STAGING"
 
       mapfile -t selected < <(
-        fd . "$NC_DIR" -t f --follow |
+        fd . "$NC_DIR" -t f --follow \
+            --exclude 'node_modules' \
+            --exclude 'target' \
+            --exclude '.git' |
         fzf --multi \
-            --prompt="  Nextcloud > " \
+            --prompt="  ~ > " \
             --delimiter "/" \
             --with-nth "4.." \
             --preview='bat --color=always --style=numbers -- {}' \
