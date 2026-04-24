@@ -128,7 +128,7 @@ in
       Mod+Shift+E { spawn "kitty" "--override" "initial_window_width=1100" "--override" "initial_window_height=700" "--title" "nc-pick" "-e" "nc-pick"; }
       Alt+Space { spawn "noctalia-shell" "ipc" "call" "launcher" "toggle"; }
       Super+Alt+L { spawn "noctalia-shell" "ipc" "call" "lockScreen" "lock"; }
-      Mod+Q { close-window; }
+      Mod+I { close-window; }
 
       // Overview (niri native)
       Mod+O { toggle-overview; }
