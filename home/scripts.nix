@@ -100,7 +100,8 @@
         fd . "$NC_DIR" -t f --follow \
             --exclude 'node_modules' \
             --exclude 'target' \
-            --exclude '.git' |
+            --exclude '.git' \
+            -0 | xargs -0 stat -c '%Y %n' | sort -rn | cut -d' ' -f2- |
         fzf --multi \
             --prompt="  ~ > " \
             --delimiter "/" \
