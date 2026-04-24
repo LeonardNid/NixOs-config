@@ -122,6 +122,7 @@ in
     binds {
       // Apps
       Mod+Return { spawn "kitty"; }
+      Mod+E { spawn "dolphin"; }
       Alt+Space { spawn "noctalia-shell" "ipc" "call" "launcher" "toggle"; }
       Super+Alt+L { spawn "noctalia-shell" "ipc" "call" "lockScreen" "lock"; }
       Mod+Q { close-window; }
