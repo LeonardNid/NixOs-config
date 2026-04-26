@@ -19,7 +19,7 @@
     vlc
     zoxide
     drawing
-    gimp2-with-plugins
+    # gimp
     libreoffice-qt6-fresh
     gemini-cli
     qutebrowser
