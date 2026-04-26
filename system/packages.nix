@@ -24,5 +24,6 @@
     gemini-cli
     qutebrowser
     mission-center
+    signal-desktop
   ];
 }
