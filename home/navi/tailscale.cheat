@@ -1,0 +1,32 @@
+% tailscale
+
+# Verbundene Geräte anzeigen
+tailscale status
+
+# Datei an Gerät senden
+tailscale file cp <datei> <gerät>:
+
+# Datei an bestimmten Pfad auf Gerät senden
+tailscale file cp <datei> <gerät>:/home/<user>/
+
+# Mehrere Dateien senden (Glob oder Liste)
+tailscale file cp <datei> <gerät>:
+
+# Gesendete Dateien empfangen (in aktuelles Verzeichnis)
+tailscale file get .
+
+# Gesendete Dateien empfangen (in Downloads)
+tailscale file get ~/Downloads/
+
+# Gerät pingen
+tailscale ping <gerät>
+
+# SSH zu Gerät
+ssh <user>@<gerät>.tail6bb5cd.ts.net
+
+# Eigene Tailscale-IP anzeigen
+tailscale ip
+
+$ gerät: tailscale status --json | jq -r '.Peer[] | .HostName'
+$ datei: find ~ -maxdepth 4 -type f 2>/dev/null | sed "s|$HOME/|~/|"
+$ user: echo -e "leonardn\nroot"
