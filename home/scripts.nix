@@ -90,12 +90,16 @@
     '')
 
     (pkgs.writeShellScriptBin "vesktop-toggle" ''
-      # Finde alle Audio-Ausgabe-Streams von Vesktop/Discord und wechsle den Mute-Status.
-      # Nutzt pw-dump und jq, um die Node-IDs der Streams zu finden.
-      NODES=$(pw-dump | ${pkgs.jq}/bin/jq '.[] | select(.type == "PipeWire:Interface:Node" and .info.props."media.class" == "Stream/Output/Audio") | select((.info.props."application.name" // "") | test("(?i)vesktop|discord|webrtc")) | .id')
+      # Finde den AudioService-Prozess von Vesktop und schalte ihn über wpctl stumm.
+      # Da Electron-Apps den Audio-Stream über einen separaten Utility-Prozess laufen lassen,
+      # suchen wir genau diesen Prozess, um alle zugehörigen Audio-Nodes auf einmal zu muten.
       
-      for id in $NODES; do
-        wpctl set-mute "$id" toggle
+      AUDIO_PIDS=$(pgrep -f "utility-sub-type=audio.mojom.AudioService")
+      
+      for pid in $AUDIO_PIDS; do
+        if ps -p "$pid" -o args= | grep -q -i "vesktop"; then
+          wpctl set-mute -p "$pid" toggle
+        fi
       done
     '')
 
