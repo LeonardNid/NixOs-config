@@ -86,6 +86,10 @@ in
       open-floating true
     }
     window-rule {
+      geometry-corner-radius 8;
+      clip-to-geometry true;
+    }
+    window-rule {
       match app-id="^code$"
       open-maximized true
     }
@@ -435,9 +439,14 @@ in
     '';
   };
 
+  programs.kitty = {
+    enable = true;
+    themeFile = "Catppuccin-Mocha";
+    settings.confirm_os_window_close = 0;
+  };
+
   # Pakete
   home.packages = with pkgs; [
-    kitty                      # Terminal
     fuzzel                     # App-Launcher (niri default)
     kdePackages.dolphin        # File manager
     cliphist                   # Clipboard-Historie
