@@ -1,1 +1,1 @@
-kitty-theme--10:42
+fix:-patch-OVMF-BIOS-vendor-BOCHS-----ALASKA-for-EAC--18:42

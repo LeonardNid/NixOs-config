@@ -8,7 +8,36 @@
   <os>
     <type arch="x86_64" machine="pc-q35-9.2">hvm</type>
     <loader readonly="yes" secure="yes" type="pflash">/run/libvirt/nix-ovmf/edk2-x86_64-secure-code.fd</loader>
+    <smbios mode="sysinfo"/>
   </os>
+
+  <sysinfo type="smbios">
+    <bios>
+      <entry name="vendor">American Megatrends International, LLC.</entry>
+      <entry name="date">11/14/2023</entry>
+      <entry name="release">1.8</entry>
+    </bios>
+    <system>
+      <entry name="manufacturer">ASUS</entry>
+      <entry name="product">ROG STRIX Z790-E GAMING WIFI</entry>
+      <entry name="version">1.0</entry>
+      <entry name="serial">To Be Filled By O.E.M.</entry>
+      <entry name="family">To Be Filled By O.E.M.</entry>
+    </system>
+    <baseBoard>
+      <entry name="manufacturer">ASUSTeK COMPUTER INC.</entry>
+      <entry name="product">ROG STRIX Z790-E GAMING WIFI</entry>
+      <entry name="version">Rev 1.xx</entry>
+      <entry name="serial">To Be Filled By O.E.M.</entry>
+    </baseBoard>
+    <chassis>
+      <entry name="manufacturer">Default string</entry>
+      <entry name="version">Default string</entry>
+      <entry name="serial">Default string</entry>
+      <entry name="asset">Default string</entry>
+      <entry name="sku">Default string</entry>
+    </chassis>
+  </sysinfo>
 
   <features>
     <acpi/>
@@ -17,7 +46,7 @@
       <relaxed state="on"/>
       <vapic state="on"/>
       <spinlocks state="on" retries="8191"/>
-      <vendor_id state="on" value="randomid"/>
+      <vendor_id state="on" value="GenuineIntel"/>
     </hyperv>
     <kvm>
       <hidden state="on"/>
@@ -92,7 +121,7 @@
     <!-- Netzwerk -->
     <interface type="network">
       <source network="default"/>
-      <model type="virtio"/>
+      <model type="e1000e"/>
     </interface>
 
     <!-- USB Controller -->

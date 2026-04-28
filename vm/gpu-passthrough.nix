@@ -1,6 +1,25 @@
 { config, pkgs, ... }:
 
 let
+  # OVMF binary patchen: "BOCHS " → "ALASKA", "BXPC" → "AMI "
+  # OVMF (EDK2) kodiert diese Strings hart in die Firmware — libvirt sysinfo überschreibt das nicht.
+  # EAC und andere Anti-Cheats prüfen den BIOS-Vendor über SMBIOS Type 0.
+  patchedOvmf = pkgs.runCommand "ovmf-patched" {
+    nativeBuildInputs = [ pkgs.python3 ];
+  } ''
+    cp -r ${pkgs.OVMFFull.fd}/ $out
+    chmod -R +w $out
+    python3 -c "
+import glob
+for f in glob.glob('$out/**/*.fd', recursive=True):
+    data = open(f, 'rb').read()
+    if b'BOCHS' in data:
+        data = data.replace(b'BOCHS ', b'ALASKA')
+        data = data.replace(b'BXPC', b'AMI ')
+        open(f, 'wb').write(data)
+"
+  '';
+
   vmToggleKbd = pkgs.python3.withPackages (ps: [ ps.evdev ]);
   controllerXml = pkgs.writeText "dualsense-hostdev.xml" ''
     <hostdev mode="subsystem" type="usb" managed="yes">
@@ -33,6 +52,7 @@ in
   # Virtualisierung
   virtualisation.libvirtd = {
     enable = true;
+    qemu.ovmf.packages = [ patchedOvmf ];
     qemu.swtpm.enable = true;
     onBoot = "ignore";
     qemu.verbatimConfig = let
