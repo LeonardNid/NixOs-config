@@ -90,15 +90,28 @@
     '')
 
     (pkgs.writeShellScriptBin "vesktop-toggle" ''
-      # Finde den AudioService-Prozess von Vesktop und schalte ihn über wpctl stumm.
-      # Da Electron-Apps den Audio-Stream über einen separaten Utility-Prozess laufen lassen,
-      # suchen wir genau diesen Prozess, um alle zugehörigen Audio-Nodes auf einmal zu muten.
-      
+      # Finde den AudioService-Prozess von Vesktop.
       AUDIO_PIDS=$(pgrep -f "utility-sub-type=audio.mojom.AudioService")
       
       for pid in $AUDIO_PIDS; do
         if ps -p "$pid" -o args= | grep -q -i "vesktop"; then
-          wpctl set-mute -p "$pid" toggle
+          # Finde alle PipeWire-Nodes für diesen Prozess
+          NODES=$(pw-dump | ${pkgs.jq}/bin/jq -r --argjson pid "$pid" '.[] | select(.type == "PipeWire:Interface:Node") | select(.info.props."application.process.id" == $pid) | .id')
+          
+          if [ -n "$NODES" ]; then
+            # Zustand des ersten Nodes bestimmen
+            FIRST_NODE=$(echo "$NODES" | head -n 1)
+            if wpctl get-volume "$FIRST_NODE" | grep -q "MUTED"; then
+              TARGET=0
+            else
+              TARGET=1
+            fi
+            
+            # Alle Nodes auf den Zielzustand setzen
+            for id in $NODES; do
+              wpctl set-mute "$id" "$TARGET"
+            done
+          fi
         fi
       done
     '')
