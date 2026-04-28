@@ -89,6 +89,16 @@
       pkill -SIGRTMIN+1 waybar 2>/dev/null || true
     '')
 
+    (pkgs.writeShellScriptBin "vesktop-toggle" ''
+      # Finde alle Audio-Ausgabe-Streams von Vesktop/Discord und wechsle den Mute-Status.
+      # Nutzt pw-dump und jq, um die Node-IDs der Streams zu finden.
+      NODES=$(pw-dump | ${pkgs.jq}/bin/jq '.[] | select(.type == "PipeWire:Interface:Node" and .info.props."media.class" == "Stream/Output/Audio") | select((.info.props."application.name" // "") | test("(?i)vesktop|discord|webrtc")) | .id')
+      
+      for id in $NODES; do
+        wpctl set-mute "$id" toggle
+      done
+    '')
+
     (pkgs.writeShellScriptBin "nc-pick" ''
       NC_DIR="$HOME"
       STAGING="$HOME/.cache/nc-pick"

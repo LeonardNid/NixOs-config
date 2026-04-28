@@ -235,7 +235,7 @@ in
       XF86AudioLowerVolume allow-when-locked=true { spawn "wpctl" "set-volume" "@DEFAULT_AUDIO_SINK@" "0.1-"; }
       XF86AudioMute        allow-when-locked=true { spawn "wpctl" "set-mute" "@DEFAULT_AUDIO_SINK@" "toggle"; }
       XF86AudioMicMute     allow-when-locked=true { spawn "mic-toggle"; }
-      F24                  allow-when-locked=true { spawn "sh" "-c" "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle; mic-toggle"; }
+      F24                  allow-when-locked=true { spawn "sh" "-c" "vesktop-toggle; mic-toggle"; }
 
       // Mediaplayer
       XF86AudioPlay { spawn "playerctl" "play-pause"; }

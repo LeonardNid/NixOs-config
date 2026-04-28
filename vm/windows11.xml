@@ -44,12 +44,6 @@
     <acpi/>
     <apic/>
     <smm state="on"/>
-    <hyperv mode="custom">
-      <relaxed state="on"/>
-      <vapic state="on"/>
-      <spinlocks state="on" retries="8191"/>
-      <vendor_id state="on" value="GenuineIntel"/>
-    </hyperv>
     <kvm>
       <hidden state="on"/>
     </kvm>
@@ -66,7 +60,6 @@
     <timer name="rtc" tickpolicy="catchup"/>
     <timer name="pit" tickpolicy="delay"/>
     <timer name="hpet" present="no"/>
-    <timer name="hypervclock" present="yes"/>
   </clock>
 
   <on_poweroff>destroy</on_poweroff>
