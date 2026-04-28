@@ -1,1 +1,1 @@
-fix:-OVMF-BOCHS-Patch-via-activation-script--Intel-MAC--18:49
+fix:-OVMF-VARS-template-via-OVMF.fd--explicit-nvram-path--18:55

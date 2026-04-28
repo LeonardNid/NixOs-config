@@ -102,6 +102,8 @@ in
   # libvirt sysinfo überschreibt den Firmware-Vendor nicht — nur ein Binary-Patch wirkt.
   system.activationScripts.patchOvmf.text = ''
     mkdir -p /var/lib/libvirt/ovmf
+
+    # CODE: aus QEMU kopieren und BOCHS-Strings patchen
     install -m644 ${pkgs.qemu}/share/qemu/edk2-x86_64-secure-code.fd \
       /var/lib/libvirt/ovmf/edk2-x86_64-secure-code.fd
     ${pkgs.python3}/bin/python3 -c "
@@ -111,5 +113,11 @@ data = data.replace(b'BOCHS ', b'ALASKA')
 data = data.replace(b'BXPC', b'AMI ')
 open(f, 'wb').write(data)
 "
+
+    # VARS-Template: QEMU hat kein x86_64 vars-file, OVMFFull wird genutzt.
+    # Nur beim ersten Mal kopieren — danach enthält die Datei VM-UEFI-Zustand.
+    if [ ! -f /var/lib/libvirt/ovmf/OVMF_VARS.fd ]; then
+      install -m644 ${pkgs.OVMF.fd}/FV/OVMF_VARS.fd /var/lib/libvirt/ovmf/OVMF_VARS.fd
+    fi
   '';
 }
