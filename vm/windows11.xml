@@ -7,7 +7,7 @@
 
   <os>
     <type arch="x86_64" machine="pc-q35-9.2">hvm</type>
-    <loader readonly="yes" secure="yes" type="pflash">/run/libvirt/nix-ovmf/edk2-x86_64-secure-code.fd</loader>
+    <loader readonly="yes" secure="yes" type="pflash">/var/lib/libvirt/ovmf/edk2-x86_64-secure-code.fd</loader>
     <smbios mode="sysinfo"/>
   </os>
 
@@ -118,8 +118,9 @@
       <readonly/>
     </disk>
 
-    <!-- Netzwerk -->
+    <!-- Netzwerk: Intel e1000e mit Intel-OUI MAC (kein QEMU 52:54:00-Präfix) -->
     <interface type="network">
+      <mac address="b4:96:91:4a:f3:c2"/>
       <source network="default"/>
       <model type="e1000e"/>
     </interface>

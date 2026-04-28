@@ -1,1 +1,1 @@
-fix:-patch-OVMF-BIOS-vendor-BOCHS-----ALASKA-for-EAC--18:42
+fix:-OVMF-BOCHS-Patch-via-activation-script--Intel-MAC--18:49
