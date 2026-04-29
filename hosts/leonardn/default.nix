@@ -29,6 +29,13 @@ in
 
   networking.hostName = "leonardn";
 
+  # Windows-NVMe (ntfs3, Automount bei Zugriff, wird vor VM-Start unmounted)
+  fileSystems."/mnt/nvme" = {
+    device = "/dev/nvme0n1p3";
+    fsType = "ntfs3";
+    options = [ "uid=1000" "gid=100" "umask=0022" "nofail" "noauto" "x-systemd.automount" ];
+  };
+
   # Desktop: auto-login (kein Passwort beim Booten)
   services.displayManager.autoLogin.enable = true;
   services.displayManager.autoLogin.user = "leonardn";
