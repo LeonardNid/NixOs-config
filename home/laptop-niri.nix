@@ -64,6 +64,7 @@ in
 
     environment {
       NIXOS_OZONE_WL "1"
+      QT_QPA_PLATFORM "wayland"
       XCURSOR_THEME "catppuccin-latte-light-cursors"
       XCURSOR_SIZE "24"
     }

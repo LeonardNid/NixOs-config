@@ -1,1 +1,1 @@
-noctalia:-nautilus-icon-alias-f--r-lowercase-app-id-lookup--10:51
+laptop-niri:-QT_QPA_PLATFORM-wayland-f--r-zapzap--10:56
