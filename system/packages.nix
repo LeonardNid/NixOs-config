@@ -17,6 +17,8 @@
     zapzap
     mpv
     vlc
+    imv
+    kdePackages.ark
     zoxide
     drawing
     # gimp
