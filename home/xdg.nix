@@ -62,19 +62,19 @@
       "text/csv"                = "org.kde.kate.desktop";
 
       # LibreOffice – Textdokumente
-      "application/msword"                                                     = "libreoffice-writer.desktop";
-      "application/vnd.openxmlformats-officedocument.wordprocessingml.document" = "libreoffice-writer.desktop";
-      "application/vnd.oasis.opendocument.text"                                = "libreoffice-writer.desktop";
+      "application/msword"                                                     = "writer.desktop";
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document" = "writer.desktop";
+      "application/vnd.oasis.opendocument.text"                                = "writer.desktop";
 
       # LibreOffice – Tabellen
-      "application/vnd.ms-excel"                                               = "libreoffice-calc.desktop";
-      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"      = "libreoffice-calc.desktop";
-      "application/vnd.oasis.opendocument.spreadsheet"                         = "libreoffice-calc.desktop";
+      "application/vnd.ms-excel"                                               = "calc.desktop";
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"      = "calc.desktop";
+      "application/vnd.oasis.opendocument.spreadsheet"                         = "calc.desktop";
 
       # LibreOffice – Präsentationen
-      "application/vnd.ms-powerpoint"                                          = "libreoffice-impress.desktop";
-      "application/vnd.openxmlformats-officedocument.presentationml.presentation" = "libreoffice-impress.desktop";
-      "application/vnd.oasis.opendocument.presentation"                        = "libreoffice-impress.desktop";
+      "application/vnd.ms-powerpoint"                                          = "impress.desktop";
+      "application/vnd.openxmlformats-officedocument.presentationml.presentation" = "impress.desktop";
+      "application/vnd.oasis.opendocument.presentation"                        = "impress.desktop";
 
       # Archive
       "application/zip"         = "org.kde.ark.desktop";
