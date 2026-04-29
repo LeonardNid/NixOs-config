@@ -27,7 +27,7 @@ let
 in
 {
   # IOMMU aktivieren; GPU dynamisch per libvirt managed=yes an vfio-pci gebunden
-  boot.kernelParams = [ "intel_iommu=on,sm_on" "iommu=pt" "random.trust_cpu=on" ];
+  boot.kernelParams = [ "intel_iommu=on,sm_on" "iommu=pt" "random.trust_cpu=on" "i915.force_probe=a780" ];
   boot.blacklistedKernelModules = [ "nouveau" "nvidiafb" ];
 
   # Virtualisierung

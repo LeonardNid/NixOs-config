@@ -1,1 +1,1 @@
-nvme-windows-partition-als--mnt-nvme-automount--17:04
+fix:-nvidia-prime-offload---i915.force_probe-a780-f--r-niri-kompatibilit--t--17:56
