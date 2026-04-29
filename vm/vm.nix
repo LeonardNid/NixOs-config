@@ -36,7 +36,7 @@ in
           USB_MISSING=0
           check_usb() {
             local vid="$1" pid="$2" name="$3"
-            if lsusb -d "$vid:$pid" > /dev/null 2>&1; then
+            if ${pkgs.usbutils}/bin/lsusb -d "$vid:$pid" > /dev/null 2>&1; then
               echo "  [OK]    $name ($vid:$pid)"
             else
               echo "  [FEHLT] $name ($vid:$pid)"
