@@ -26,8 +26,8 @@ let
   '';
 in
 {
-  # IOMMU und GPU Passthrough (statisch an vfio-pci gebunden)
-  boot.kernelParams = [ "intel_iommu=on,sm_on" "iommu=pt" "vfio-pci.ids=10de:2206,10de:1aef" "random.trust_cpu=on" ];
+  # IOMMU aktivieren; GPU dynamisch per libvirt managed=yes an vfio-pci gebunden
+  boot.kernelParams = [ "intel_iommu=on,sm_on" "iommu=pt" "random.trust_cpu=on" ];
   boot.blacklistedKernelModules = [ "nouveau" "nvidiafb" ];
 
   # Virtualisierung
@@ -50,7 +50,7 @@ in
 
   # Looking Glass (KVMFR Kernel Modul für shared memory)
   boot.extraModulePackages = [ config.boot.kernelPackages.kvmfr ];
-  boot.kernelModules = [ "kvmfr" ];
+  boot.kernelModules = [ "kvmfr" "vfio" "vfio_iommu_type1" "vfio_pci" ];
   boot.extraModprobeConfig = ''
     options kvmfr static_size_mb=128
   '';

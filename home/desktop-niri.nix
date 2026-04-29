@@ -510,6 +510,9 @@ in
 
   # Pakete
   home.packages = with pkgs; [
+    heroic                     # Epic/GOG Games Launcher (Rocket League via Proton)
+    protonup-qt                # Proton-GE-Builds verwalten
+    mangohud                   # FPS/GPU-Overlay (Shift+F12)
     fuzzel                     # App-Launcher
     nautilus                   # File manager
     cliphist                   # Clipboard-Historie

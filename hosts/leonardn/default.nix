@@ -12,6 +12,7 @@ in
     ./hardware-configuration.nix
     ../../system/boot.nix
     ../../system/hardware.nix
+    ../../system/nvidia.nix
     ../../vm/gpu-passthrough.nix
     ../../system/corsair-mouse-daemon.nix
     ../../system/amazonbasics-touchpad-daemon.nix

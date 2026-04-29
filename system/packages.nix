@@ -3,7 +3,13 @@
 {
   programs.firefox.enable = true;
 
-  programs.steam.enable = true;
+  programs.steam = {
+    enable = true;
+    remotePlay.openFirewall = true;
+    extraCompatPackages = with pkgs; [ proton-ge-bin ];
+  };
+  programs.gamemode.enable = true;
+  programs.gamescope.enable = true;
 
   environment.systemPackages = with pkgs; [
     neovim
