@@ -1,1 +1,1 @@
-laptop-niri:-QT_QPA_PLATFORM-wayland-f--r-zapzap--10:56
+fix:-vm-start-pr--ft-USB-Ger--te-und-bricht-bei-Fehler-ab--13:10

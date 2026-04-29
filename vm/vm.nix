@@ -31,6 +31,26 @@ in
         start)
           echo "=== VM starten ==="
 
+          # USB-Geräte prüfen
+          echo "USB-Geräte prüfen..."
+          USB_MISSING=0
+          check_usb() {
+            local vid="$1" pid="$2" name="$3"
+            if lsusb -d "$vid:$pid" > /dev/null 2>&1; then
+              echo "  [OK]    $name ($vid:$pid)"
+            else
+              echo "  [FEHLT] $name ($vid:$pid)"
+              USB_MISSING=1
+            fi
+          }
+          check_usb "054c" "0ce6" "Sony DualSense Controller"
+          check_usb "16d0" "12f7" "Azeron Keypad"
+          if [ "$USB_MISSING" = 1 ]; then
+            echo ""
+            echo "Fehler: Nicht alle USB-Geräte angeschlossen. VM wird nicht gestartet."
+            exit 1
+          fi
+
           # Festplatten unmounten (ignoriere Fehler falls nicht gemountet)
           echo "Festplatten unmounten..."
           for dev in /dev/sdb1 /dev/nvme0n1p1 /dev/nvme0n1p2 /dev/nvme0n1p3 /dev/nvme0n1p4; do
@@ -41,7 +61,11 @@ in
 
           # VM starten
           echo "VM starten..."
-          sudo virsh start "$VM_NAME"
+          if ! sudo virsh start "$VM_NAME"; then
+            echo ""
+            echo "Fehler: VM konnte nicht gestartet werden."
+            exit 1
+          fi
 
           # QEMU kurz Zeit geben zum Starten und Greifen der Inputs
           sleep 0.5
