@@ -1,1 +1,1 @@
-xdg:-fix-libreoffice-desktop-names--10:33
+file-manager:-dolphin-----nautilus--ark-----file-roller--10:37

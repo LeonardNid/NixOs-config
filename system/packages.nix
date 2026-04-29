@@ -18,7 +18,7 @@
     mpv
     vlc
     imv
-    kdePackages.ark
+    file-roller
     zoxide
     drawing
     # gimp

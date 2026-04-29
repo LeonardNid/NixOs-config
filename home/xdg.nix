@@ -77,14 +77,14 @@
       "application/vnd.oasis.opendocument.presentation"                        = "impress.desktop";
 
       # Archive
-      "application/zip"         = "org.kde.ark.desktop";
-      "application/x-tar"       = "org.kde.ark.desktop";
-      "application/gzip"        = "org.kde.ark.desktop";
-      "application/x-bzip2"     = "org.kde.ark.desktop";
-      "application/x-xz"        = "org.kde.ark.desktop";
-      "application/x-7z-compressed" = "org.kde.ark.desktop";
-      "application/x-rar"       = "org.kde.ark.desktop";
-      "application/x-zstd"      = "org.kde.ark.desktop";
+      "application/zip"         = "org.gnome.FileRoller.desktop";
+      "application/x-tar"       = "org.gnome.FileRoller.desktop";
+      "application/gzip"        = "org.gnome.FileRoller.desktop";
+      "application/x-bzip2"     = "org.gnome.FileRoller.desktop";
+      "application/x-xz"        = "org.gnome.FileRoller.desktop";
+      "application/x-7z-compressed" = "org.gnome.FileRoller.desktop";
+      "application/x-rar"       = "org.gnome.FileRoller.desktop";
+      "application/x-zstd"      = "org.gnome.FileRoller.desktop";
     };
   };
 }

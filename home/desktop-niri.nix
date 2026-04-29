@@ -92,7 +92,7 @@ in
 
     // Window Rules
     window-rule {
-      match app-id="^org\\.kde\\.dolphin$"
+      match app-id="^org\\.gnome\\.Nautilus$"
       open-floating true
     }
     window-rule {
@@ -128,7 +128,7 @@ in
     binds {
       // Apps
       Mod+Return { spawn "kitty"; }
-      Mod+E { spawn "dolphin"; }
+      Mod+E { spawn "nautilus"; }
       Mod+Shift+E { spawn "kitty" "--override" "initial_window_width=1100" "--override" "initial_window_height=700" "--title" "nc-pick" "-e" "nc-pick"; }
       Alt+Space { spawn "noctalia-shell" "ipc" "call" "launcher" "toggle"; }
       Super+Alt+L { spawn "noctalia-shell" "ipc" "call" "lockScreen" "lock"; }
@@ -507,7 +507,7 @@ in
   # Pakete
   home.packages = with pkgs; [
     fuzzel                     # App-Launcher
-    kdePackages.dolphin        # File manager
+    nautilus                   # File manager
     cliphist                   # Clipboard-Historie
     swaybg                     # Wallpaper-Daemon
     pavucontrol                # Lautstaerke-Mixer GUI
