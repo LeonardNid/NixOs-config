@@ -445,6 +445,10 @@ in
     settings.confirm_os_window_close = 0;
   };
 
+  # Lowercase icon-alias damit Noctalia org.gnome.nautilus (lowercased app-id) findet
+  home.file.".local/share/icons/hicolor/scalable/apps/org.gnome.nautilus.svg".source =
+    "${pkgs.nautilus}/share/icons/hicolor/scalable/apps/org.gnome.Nautilus.svg";
+
   # Pakete
   home.packages = with pkgs; [
     fuzzel                     # App-Launcher (niri default)
