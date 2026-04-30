@@ -501,19 +501,96 @@ Dies wurde über eine Kombination aus `udev`-Regel und systemd-Service (`vm-cont
 
 ---
 
-## 9. Dynamische GPU-Zuweisung (nicht funktionsfähig)
+## 9. Dynamische GPU-Zuweisung (in Arbeit)
 
-Wir haben versucht, die NVIDIA GPU dynamisch zwischen Linux und VM zu wechseln
-(NVIDIA-Treiber auf Linux, bei VM-Start an vfio-pci übergeben). **Das funktioniert aktuell nicht stabil:**
+### Ziel
 
-- **NVIDIA Open Kernel Module + KWin Wayland**: `GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT` — KWin
-  crasht beim Erstellen von OpenGL-Framebuffern auf der NVIDIA GPU (intermittent)
-- **NVIDIA Proprietary Kernel Module**: Kernel-OOPS in `_nv000582kms` bei `nv_drm_framebuffer_create`
-- **Multi-GPU KWin**: SDDM und User-Session konkurrieren um DRM-Devices (`Device already taken`)
-- **nvidia_drm entladen**: Module haben >40 Referenzen wenn KWin läuft, `modprobe -r` hängt
+Beliebig zwischen Rocket League nativ (NVIDIA PRIME Offload) und Windows-VM (GPU Passthrough) wechseln — ohne Reboot.
 
-**Status**: Wir nutzen weiterhin statisches vfio-pci Binding + Looking Glass. Dynamische Zuweisung
-könnte mit zukünftigen NVIDIA-Treiber- oder KDE-Updates funktionieren.
+### Ausgangslage (2026-04-30)
+
+- Rocket League läuft nativ via PRIME Offload (nvidia Treiber geladen, Intel iGPU treibt Displays)
+- Windows-VM benötigt GPU exklusiv via vfio-pci
+- Die GPU muss dafür beim VM-Start von nvidia getrennt und an vfio-pci gebunden werden
+
+### Was funktioniert
+
+- `virsh nodedev-detach pci_0000_01_00_0` löst den nvidia-Treiber vom PCI-Device (GPU wird treiberlos)
+- dmesg zeigt: `[drm] [nvidia-drm] Removing device` → nvidia-drm gibt die GPU frei
+- Warnung `NVRM: Attempting to remove device 0000:01:00.0 with non-zero usage count!` erscheint,
+  aber das Detach **selbst gelingt** (nvidia ist von 0000:01:00.0 getrennt)
+
+### Das eigentliche Problem: nvidia_drm hat Kernel-interne Referenzen
+
+`modprobe -r nvidia_drm` schlägt fehl mit Refcount = 3, auch wenn:
+- SDDM gestoppt wurde
+- niri gestoppt wurde
+- `fuser -k /dev/dri/card1 /dev/nvidia*` alle User-Prozesse gekillt hat
+
+Das liegt **nicht** an User-Prozessen. Der Linux DRM-Kern hält nach der Registrierung von
+`/dev/dri/card1` eigene Kernel-interne Referenzen (Ref 1: DRM Device Registration,
+Ref 2: nvidia_modeset Abhängigkeit, Ref 3: ggf. fbdev via `nvidia-drm.fbdev=1`).
+Diese sind ohne vollständiges Entladen des Treibers nicht auflösbar.
+
+```
+nvidia_drm            147456  3          ← 3 Kernel-interne Refs, keine User-Prozesse
+nvidia_modeset       1818624  3 nvidia_drm
+nvidia_uvm           2375680  0
+nvidia              105803776  40 nvidia_uvm,nvidia_drm,nvidia_modeset
+```
+
+### Chronologie der Versuche
+
+| Ansatz | Ergebnis |
+|---|---|
+| `managed='yes'` libvirt XML (ursprünglich) | Hängt >1 Minute beim Detach |
+| `vfio-pci.ids` Kernel-Param entfernen (Session 1) | VM funktioniert, aber RL broken |
+| libvirt `prepare/begin` Hook via `environment.etc` | Hook wird **nie aufgerufen**: libvirt validiert `managed='no'` Devices **vor** dem Hook |
+| Manueller sysfs-Unbind `echo > driver/unbind` | Pfad-Auflösung schlägt fehl in `sh` (Symlink-Problem), GPU wird treiberlos ohne vfio-pci-Bind |
+| `virsh nodedev-detach` (offizieller Weg) | Detach gelingt (GPU treiberlos), aber vfio-pci-Bind schlägt fehl wenn nvidia noch interne Refs hat |
+| `modprobe -r nvidia_drm` nach SDDM-Stop | Schlägt fehl — DRM-Kern hält 3 Refs die **nicht** von User-Prozessen stammen |
+| `fuser -k nvidia-devices` nach SDDM-Stop | Ohne Wirkung — keine User-Prozesse mehr nach SDDM-Stop, Refs sind Kernel-intern |
+
+### Aktuelle Konfiguration (vm/vm.nix, libvirt-hooks.nix)
+
+Der aktuelle Code versucht:
+1. SDDM stoppen → `fuser -k` → `modprobe -r nvidia_drm` → `virsh nodedev-detach` → VM starten
+2. Bei VM-Stop: `virsh nodedev-reattach` → `modprobe nvidia_drm` → SDDM starten
+
+Scheitert an Schritt `modprobe -r nvidia_drm` (Kernel-interne Refs).
+
+### Nächste Ansätze (noch nicht versucht)
+
+1. **`rmmod -f nvidia_drm` (Force-Unload)**: Überschreibt den Refcount, riskant aber möglicherweise
+   funktional wenn keine aktiven Render-Operationen laufen.
+
+2. **`nvidia-drm.fbdev=0` Kernel-Param**: Könnte eine der 3 Refs reduzieren (fbdev-Ref entfernen).
+   Nicht ausreichend allein (Refs 1+2 bleiben), aber als Teil einer Kombination nützlich.
+
+3. **nvidia Open-Source Kernel Module (`hardware.nvidia.open = true`)**: Das Open-Module verhält sich
+   möglicherweise anders beim Hot-Unbind (anderes Ref-Counting). Nicht getestet.
+
+4. **`virsh nodedev-detach` ohne vorheriges `modprobe -r`**: Das Detach selbst gelingt auch ohne
+   Modul-Entladen. Das Problem ist nur das anschließende `virsh start` mit `managed='no'` XML —
+   libvirt erwartet das Device schon auf vfio-pci. Lösung: `managed='yes'` behalten damit libvirt
+   die vfio-pci-Bindung selbst erledigt, ABER mit Hook der vorher den sauberen Zustand herstellt.
+
+5. **Statisches vfio-pci zurück + "RL-Modus" Toggle**: GPU beim Boot an vfio-pci, für RL-Sessions
+   manuelle Freigabe per Script. Nachteil: VM-Passthrough und RL nicht gleichzeitig möglich.
+
+### Recovery wenn GPU treiberlos ist
+
+```bash
+# GPU zurück an nvidia (benötigt nvidia-Modulstack bereits geladen)
+sudo virsh nodedev-reattach pci_0000_01_00_0
+# Falls das nicht klappt:
+echo "nvidia" | sudo tee /sys/bus/pci/devices/0000:01:00.0/driver_override
+echo "0000:01:00.0" | sudo tee /sys/bus/pci/drivers/nvidia/bind
+# Notfalls: Reboot
+```
+
+**Wenn GPU nach VM-Session treiberlos bleibt:** nvidia-smi zeigt "No devices found" → Reboot erforderlich.
+Das passiert wenn der Rebind-Schritt in `vm stop` / `release/end` Hook fehlgeschlagen ist.
 
 ---
 
