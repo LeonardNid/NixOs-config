@@ -124,7 +124,7 @@
     <controller type="usb" model="qemu-xhci" ports="15"/>
 
     <!-- RTX 3080 GPU -->
-    <hostdev mode="subsystem" type="pci" managed="yes">
+    <hostdev mode="subsystem" type="pci" managed="no">
       <source>
         <address domain="0x0000" bus="0x01" slot="0x00" function="0x0"/>
       </source>
@@ -132,7 +132,7 @@
     </hostdev>
 
     <!-- RTX 3080 Audio -->
-    <hostdev mode="subsystem" type="pci" managed="yes">
+    <hostdev mode="subsystem" type="pci" managed="no">
       <source>
         <address domain="0x0000" bus="0x01" slot="0x00" function="0x1"/>
       </source>

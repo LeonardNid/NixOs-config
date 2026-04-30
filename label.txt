@@ -1,1 +1,1 @@
-fix:-lsusb-vollst--ndiger-Pfad-in-vm-script--usbutils---20:56
+feat:-GPU-hot-swap-hook-f--r-VM-RL-Wechsel-ohne-Reboot--07:12
