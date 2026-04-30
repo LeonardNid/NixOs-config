@@ -41,16 +41,7 @@ let
     done
     sleep 2
 
-    log "Phase 2: nvidia-Module entladen"
-    modprobe -r nvidia_drm nvidia_modeset nvidia_uvm nvidia 2>/dev/null
-    if lsmod | grep -q "^nvidia "; then
-      log "lsmod nvidia noch aktiv:"
-      lsmod | grep nvidia | logger -t vm-start
-      abort "nvidia-Modul nicht entladbar"
-    fi
-    log "nvidia-Module OK"
-
-    log "Phase 3: GPU an vfio-pci"
+    log "Phase 2→3: GPU an vfio-pci (nvidia-Module bleiben geladen, nur PCI-Device wandert)"
     "$VIRSH" nodedev-detach pci_0000_01_00_0 || abort "GPU-Detach fehlgeschlagen"
     "$VIRSH" nodedev-detach pci_0000_01_00_1 2>/dev/null || true
     log "GPU-Detach OK"
@@ -109,10 +100,9 @@ let
     systemctl stop display-manager
     sleep 2
 
-    log "Phase 9: GPU zurück an nvidia"
+    log "Phase 9: GPU zurück an nvidia (Module waren nie entladen)"
     "$VIRSH" nodedev-reattach pci_0000_01_00_1 2>/dev/null || true
     "$VIRSH" nodedev-reattach pci_0000_01_00_0 || log "WARN: GPU-Reattach fehlgeschlagen"
-    modprobe nvidia_modeset nvidia_drm || log "WARN: nvidia-Module nicht ladbar"
 
     log "Phase 10: SDDM starten (niri mit nvidia)"
     systemctl start display-manager
