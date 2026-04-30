@@ -1,1 +1,1 @@
-fix:-gpuvm-Specialisation-nutzt-modesetting-statt-nvidia--GPU-auf-vfio-pci---21:08
+fix:-looking-glass-log-redirect-entfernt--niri-spawn-f--ngt-LG-stdout-nicht-ein---21:13

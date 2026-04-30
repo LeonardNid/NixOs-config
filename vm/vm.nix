@@ -60,7 +60,7 @@ let
           input:escapeKey=KEY_PAUSE \
           win:requestActivation=no \
           spice:enable=no \
-          >> /tmp/looking-glass.log 2>&1
+          > /dev/null 2>&1
       log "Looking Glass gestartet"
     else
       log "WARN: kein niri-Socket, Looking Glass nicht gestartet"
