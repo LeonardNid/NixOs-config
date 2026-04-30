@@ -317,34 +317,46 @@ networking.firewall.allowedUDPPorts = [ 4010 ];
 
 ## 5. VM starten & stoppen
 
+### Voraussetzung: gpuvm-Modus
+
+Die VM benötigt exklusiven GPU-Zugriff via vfio-pci. Dafür muss zuerst in den
+**gpuvm-Modus** gewechselt werden (siehe Section 9). Im gpulinux-Modus startet `vm start`
+mit einer Fehlermeldung.
+
 ### `vm` Script (empfohlen)
 
-Das `vm` Script (in `home.nix` definiert) automatisiert den gesamten Ablauf:
-
 ```bash
-vm start    # Festplatten unmounten → VM starten → Looking Glass starten
+vm start    # GPU-Check → USB-Check → Festplatten unmounten → VM starten → Looking Glass
 vm stop     # Looking Glass beenden → VM herunterfahren (max 60s, dann force)
+vm pause    # VM einfrieren (Looking Glass beenden)
+vm resume   # VM fortsetzen (Looking Glass neu starten)
 vm status   # Zeigt ob VM läuft
+vm fixcon   # DualSense Controller neu verbinden (hot-reconnect)
 ```
 
 **Was `vm start` macht:**
-1. Unmountet `/dev/sdb1` und `/dev/nvme0n1p*` (falls gemountet)
-2. Startet die VM via `virsh start`
-3. Wartet 2 Sekunden für KVMFR-Initialisierung
-4. Startet Looking Glass Client im Hintergrund
+1. Prüft ob GPU auf `vfio-pci` (gpuvm-Modus) — bricht ab wenn nicht
+2. Prüft ob DualSense und Azeron Keypad angeschlossen sind
+3. Unmountet `/dev/sdb1` und `/dev/nvme0n1p*` (falls gemountet)
+4. Startet die VM via `virsh start` (GPU war bereits beim Boot an vfio-pci gebunden)
+5. Zeigt Fortschrittsbalken (30s) während Windows bootet
+6. Startet Looking Glass Client
+7. Background-Watcher: räumt automatisch auf wenn VM stoppt
 
 **Was `vm stop` macht:**
 1. Beendet Looking Glass Client
 2. Schickt ACPI-Shutdown an die VM
 3. Wartet max 60 Sekunden auf sauberes Herunterfahren
 4. Falls VM nicht reagiert: erzwingt Shutdown via `virsh destroy`
+5. GPU bleibt auf vfio-pci bis zum nächsten Reboot
 
 ### Manuell (falls nötig)
 
 ```bash
-# VM starten
+# VM starten (nur im gpuvm-Modus)
 sudo virsh start windows11
-looking-glass-client -f /dev/kvmfr0 win:size=2560x1440 win:dontUpscale=on spice:enable=no
+looking-glass-client -F -f /dev/kvmfr0 win:size=2560x1440 win:dontUpscale=on \
+  input:captureOnFocus=no input:grabKeyboardOnFocus=no spice:enable=no
 
 # VM sauber herunterfahren
 sudo virsh shutdown windows11
@@ -363,7 +375,7 @@ Die VM startet nur manuell über `vm start` oder `virsh start`.
 ```bash
 sudo virsh destroy windows11          # Falls läuft
 sudo virsh undefine windows11 --nvram # --nvram ist Pflicht (UEFI)
-sudo virsh define /home/leonardn/windows11.xml
+sudo virsh define /home/leonardn/nixos-config/vm/windows11.xml
 sudo virsh start windows11
 ```
 
@@ -501,96 +513,127 @@ Dies wurde über eine Kombination aus `udev`-Regel und systemd-Service (`vm-cont
 
 ---
 
-## 9. Dynamische GPU-Zuweisung (in Arbeit)
+## 9. GPU-Modus-Switch (gpulinux ↔ gpuvm)
 
-### Ziel
+### Übersicht
 
-Beliebig zwischen Rocket League nativ (NVIDIA PRIME Offload) und Windows-VM (GPU Passthrough) wechseln — ohne Reboot.
+Das System hat zwei stabile Boot-Modi für die GPU:
 
-### Ausgangslage (2026-04-30)
+| Modus | GPU-Treiber | Verwendung |
+|---|---|---|
+| **gpulinux** (Standard) | nvidia (PRIME Offload) | Rocket League nativ, normaler Desktop |
+| **gpuvm** | vfio-pci (Passthrough) | Windows VM mit GPU |
 
-- Rocket League läuft nativ via PRIME Offload (nvidia Treiber geladen, Intel iGPU treibt Displays)
-- Windows-VM benötigt GPU exklusiv via vfio-pci
-- Die GPU muss dafür beim VM-Start von nvidia getrennt und an vfio-pci gebunden werden
+Der Wechsel erfordert einen Reboot. Hot-Swap (ohne Reboot) wurde intensiv untersucht und ist
+nicht realisierbar: `nvidia_drm` hält 3 kernel-interne DRM-Referenzen, die sich nicht
+entladen lassen solange der Treiber aktiv ist — auch nicht nach SDDM-Stop oder fuser-kill.
 
-### Was funktioniert
+### Funktionsweise (NixOS Specialisation)
 
-- `virsh nodedev-detach pci_0000_01_00_0` löst den nvidia-Treiber vom PCI-Device (GPU wird treiberlos)
-- dmesg zeigt: `[drm] [nvidia-drm] Removing device` → nvidia-drm gibt die GPU frei
-- Warnung `NVRM: Attempting to remove device 0000:01:00.0 with non-zero usage count!` erscheint,
-  aber das Detach **selbst gelingt** (nvidia ist von 0000:01:00.0 getrennt)
+In `hosts/leonardn/default.nix` ist eine NixOS-Specialisation `gpuvm` definiert:
 
-### Das eigentliche Problem: nvidia_drm hat Kernel-interne Referenzen
-
-`modprobe -r nvidia_drm` schlägt fehl mit Refcount = 3, auch wenn:
-- SDDM gestoppt wurde
-- niri gestoppt wurde
-- `fuser -k /dev/dri/card1 /dev/nvidia*` alle User-Prozesse gekillt hat
-
-Das liegt **nicht** an User-Prozessen. Der Linux DRM-Kern hält nach der Registrierung von
-`/dev/dri/card1` eigene Kernel-interne Referenzen (Ref 1: DRM Device Registration,
-Ref 2: nvidia_modeset Abhängigkeit, Ref 3: ggf. fbdev via `nvidia-drm.fbdev=1`).
-Diese sind ohne vollständiges Entladen des Treibers nicht auflösbar.
-
-```
-nvidia_drm            147456  3          ← 3 Kernel-interne Refs, keine User-Prozesse
-nvidia_modeset       1818624  3 nvidia_drm
-nvidia_uvm           2375680  0
-nvidia              105803776  40 nvidia_uvm,nvidia_drm,nvidia_modeset
+```nix
+specialisation.gpuvm.configuration = {
+  system.nixos.tags = [ "gpuvm" ];
+  boot.kernelParams = lib.mkForce [
+    "intel_iommu=on,sm_on" "iommu=pt" "random.trust_cpu=on"
+    "i915.force_probe=a780"
+    "vfio-pci.ids=10de:2206,10de:1aef"  # RTX 3080 + Audio → vfio-pci beim Boot
+    "gpu_mode=vm"                         # Erkennungs-Marker für Scripts
+  ];
+  services.xserver.videoDrivers = lib.mkForce [ "modesetting" ];  # kein nvidia nötig
+  hardware.nvidia.prime.offload.enable = lib.mkForce false;
+  hardware.nvidia.prime.offload.enableOffloadCmd = lib.mkForce false;
+};
 ```
 
-### Chronologie der Versuche
+**Warum das funktioniert:** `vfio-pci.ids` bindet die GPU im Kernel-Early-Boot an vfio-pci,
+noch bevor der nvidia-Treiber in Stage 2 geladen wird. Es gibt keinen hängenden
+`remove()`-Callback und kein Refcount-Problem — der Treiber sieht die GPU gar nicht erst.
 
-| Ansatz | Ergebnis |
-|---|---|
-| `managed='yes'` libvirt XML (ursprünglich) | Hängt >1 Minute beim Detach |
-| `vfio-pci.ids` Kernel-Param entfernen (Session 1) | VM funktioniert, aber RL broken |
-| libvirt `prepare/begin` Hook via `environment.etc` | Hook wird **nie aufgerufen**: libvirt validiert `managed='no'` Devices **vor** dem Hook |
-| Manueller sysfs-Unbind `echo > driver/unbind` | Pfad-Auflösung schlägt fehl in `sh` (Symlink-Problem), GPU wird treiberlos ohne vfio-pci-Bind |
-| `virsh nodedev-detach` (offizieller Weg) | Detach gelingt (GPU treiberlos), aber vfio-pci-Bind schlägt fehl wenn nvidia noch interne Refs hat |
-| `modprobe -r nvidia_drm` nach SDDM-Stop | Schlägt fehl — DRM-Kern hält 3 Refs die **nicht** von User-Prozessen stammen |
-| `fuser -k nvidia-devices` nach SDDM-Stop | Ohne Wirkung — keine User-Prozesse mehr nach SDDM-Stop, Refs sind Kernel-intern |
+Im gpuvm-Modus zeigt `readlink /sys/bus/pci/devices/0000:01:00.0/driver` → `vfio-pci`.
+libvirt erkennt das bei `virsh start` und startet QEMU direkt ohne weiteres Binding.
 
-### Aktuelle Konfiguration (vm/vm.nix, libvirt-hooks.nix)
-
-Der aktuelle Code versucht:
-1. SDDM stoppen → `fuser -k` → `modprobe -r nvidia_drm` → `virsh nodedev-detach` → VM starten
-2. Bei VM-Stop: `virsh nodedev-reattach` → `modprobe nvidia_drm` → SDDM starten
-
-Scheitert an Schritt `modprobe -r nvidia_drm` (Kernel-interne Refs).
-
-### Nächste Ansätze (noch nicht versucht)
-
-1. **`rmmod -f nvidia_drm` (Force-Unload)**: Überschreibt den Refcount, riskant aber möglicherweise
-   funktional wenn keine aktiven Render-Operationen laufen.
-
-2. **`nvidia-drm.fbdev=0` Kernel-Param**: Könnte eine der 3 Refs reduzieren (fbdev-Ref entfernen).
-   Nicht ausreichend allein (Refs 1+2 bleiben), aber als Teil einer Kombination nützlich.
-
-3. **nvidia Open-Source Kernel Module (`hardware.nvidia.open = true`)**: Das Open-Module verhält sich
-   möglicherweise anders beim Hot-Unbind (anderes Ref-Counting). Nicht getestet.
-
-4. **`virsh nodedev-detach` ohne vorheriges `modprobe -r`**: Das Detach selbst gelingt auch ohne
-   Modul-Entladen. Das Problem ist nur das anschließende `virsh start` mit `managed='no'` XML —
-   libvirt erwartet das Device schon auf vfio-pci. Lösung: `managed='yes'` behalten damit libvirt
-   die vfio-pci-Bindung selbst erledigt, ABER mit Hook der vorher den sauberen Zustand herstellt.
-
-5. **Statisches vfio-pci zurück + "RL-Modus" Toggle**: GPU beim Boot an vfio-pci, für RL-Sessions
-   manuelle Freigabe per Script. Nachteil: VM-Passthrough und RL nicht gleichzeitig möglich.
-
-### Recovery wenn GPU treiberlos ist
+### Scripts
 
 ```bash
-# GPU zurück an nvidia (benötigt nvidia-Modulstack bereits geladen)
-sudo virsh nodedev-reattach pci_0000_01_00_0
-# Falls das nicht klappt:
-echo "nvidia" | sudo tee /sys/bus/pci/devices/0000:01:00.0/driver_override
-echo "0000:01:00.0" | sudo tee /sys/bus/pci/drivers/nvidia/bind
-# Notfalls: Reboot
+# Aktuellen Modus anzeigen
+gpu-status
+
+# Modus wechseln (Auto-Toggle, oder explizit: vm | linux)
+gpu-switch-reboot
+gpu-switch-reboot vm
+gpu-switch-reboot linux
 ```
 
-**Wenn GPU nach VM-Session treiberlos bleibt:** nvidia-smi zeigt "No devices found" → Reboot erforderlich.
-Das passiert wenn der Rebind-Schritt in `vm stop` / `release/end` Hook fehlgeschlagen ist.
+**`gpu-switch-reboot vm`** sucht den gpuvm-Bootentry in `/boot/loader/entries/`
+und setzt ihn via `bootctl set-oneshot` als einmaligen Next-Boot-Entry. Der nächste Reboot
+bootet automatisch in die gpuvm-Specialisation, danach kehrt der Bootloader zum Standard
+(gpulinux) zurück.
+
+**`gpu-switch-reboot linux`** führt einfach `reboot` aus — der Standard-Bootentry
+ist immer gpulinux.
+
+### Vollständiger Workflow
+
+```
+# → VM spielen:
+gpu-switch-reboot vm    # setzt One-Shot-Boot + rebootet
+# [Reboot in gpuvm-Specialisation]
+vm start                # VM startet sofort (GPU bereits auf vfio-pci)
+
+# → Rocket League spielen:
+gpu-switch-reboot linux # rebootet in Standard-Modus
+# [Reboot in gpulinux]
+# Heroic/RL starten
+```
+
+### Sicherheitsprüfungen
+
+**`vm start` im falschen Modus:**
+```
+Fehler: GPU ist auf 'nvidia', nicht vfio-pci.
+Lösung: 'gpu-switch-reboot' ausführen → Reboot → dann 'vm start'
+```
+
+**Heroic/Rocket League im falschen Modus:**
+Beim Start von Heroic (aus dem Launcher oder Terminal) erscheint eine `notify-send`-Warnung:
+```
+Falscher GPU-Modus
+Du bist im gpuvm-Modus! Rocket League braucht gpulinux.
+Ausführen: gpu-switch-reboot linux
+```
+Implementiert via Heroic-Wrapper-Script (`home/desktop-niri.nix`) + `xdg.desktopEntries`-Override.
+
+### libvirt-Hook (release/end)
+
+Der Hook in `vm/libvirt-hooks.nix` läuft nach VM-Stop. Im gpuvm-Modus tut er nichts
+(GPU bleibt auf vfio-pci für weitere VM-Sessions ohne Reboot). Im gpulinux-Modus würde er
+GPU an nvidia zurückbinden — dieser Pfad ist aber derzeit nie aktiv.
+
+```bash
+if grep -q 'gpu_mode=vm' /proc/cmdline; then
+  # GPU bleibt auf vfio-pci
+  exit 0
+fi
+# Sonst: Rebind an nvidia (für künftigen Hot-Swap-Modus)
+```
+
+### Warum kein Hot-Swap?
+
+Untersucht und verworfen. `nvidia_drm` hat Refcount=3 (DRM-Device-Registration ×2 +
+fbdev-Konsole). Diese Refs sind kernel-intern und können nicht durch User-Prozess-Kill
+oder SDDM-Stop aufgelöst werden. `virsh nodedev-detach` hängt deshalb in `remove()`.
+
+Getestete Ansätze die alle scheiterten:
+
+| Ansatz | Problem |
+|---|---|
+| `modprobe -r nvidia_drm` nach SDDM-Stop | Refcount=3, kernel-intern, nicht entladbar |
+| `virsh nodedev-detach` direkt | Hängt in `remove()` wegen DRM-Refs |
+| `nvidia-drm.fbdev=0` Kernel-Param | NixOS überschreibt mit `fbdev=1` (Treiber ≥545) |
+| `hardware.nvidia.open = true` | Refcount bleibt 3, Verhalten identisch |
+| SDDM-Stop vor Detach | Verschlimmert das Hängen (DRM-State halb aufgeräumt) |
 
 ---
 

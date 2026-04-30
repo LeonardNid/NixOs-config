@@ -1,1 +1,1 @@
-feat:-Heroic-GPU-Modus-Warnung--gpuvm-Check-via-Wrapper---Desktop-Entry---22:00
+docs:-GPU-Switch---VM-Workflow-vollst--ndig-dokumentiert--22:11

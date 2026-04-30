@@ -409,6 +409,33 @@ grep -c "VK_SUBOPTIMAL_KHR" ~/.local/state/Heroic/logs/games/Sugar_legendary/lau
 
 ---
 
+## GPU-Modus-Switch (Rocket League ↔ Windows VM)
+
+Rocket League und die Windows VM nutzen beide die RTX 3080, können aber nicht gleichzeitig
+laufen. Der Wechsel erfolgt per `gpu-switch-reboot` (Reboot erforderlich, Hot-Swap nicht möglich).
+
+```bash
+# → Rocket League spielen (Standard nach jedem Reboot):
+gpu-status              # zeigt: gpulinux (PRIME Offload)
+# Heroic starten, RL spielen
+
+# → Windows VM spielen:
+gpu-switch-reboot vm    # setzt One-Shot-Boot + rebootet
+# Nach Reboot: gpu-status zeigt gpuvm
+vm start
+
+# → Zurück zu Rocket League:
+gpu-switch-reboot linux # rebootet in Standard-Modus
+```
+
+**Sicherheitswarnung:** Wenn Heroic im gpuvm-Modus gestartet wird, erscheint eine
+`notify-send`-Warnung. Heroic läuft trotzdem, aber Rocket League kann nicht auf die GPU
+zugreifen (RTX 3080 ist unter vfio-pci).
+
+Details zum GPU-Modus-System: `documentation/VM-SETUP.md` Section 9.
+
+---
+
 ## Aktueller Stand
 
 **Funktioniert:**
@@ -418,14 +445,14 @@ grep -c "VK_SUBOPTIMAL_KHR" ~/.local/state/Heroic/logs/games/Sugar_legendary/lau
 - DualSense Controller via USB vollständig funktionsfähig (Buttons, Rumble, Touchpad)
 - Heroic, GE-Proton, EAC Runtime, BattlEye Runtime aktiv
 - i915 auf Intel UHD 770, PRIME-Offload konfiguriert
+- GPU-Modus-Switch via `gpu-switch-reboot` (gpulinux ↔ gpuvm)
 
 **Bekannte Einschränkungen:**
 - MangoHud `Shift+F12` Overlay-Toggle funktioniert nicht (Wine-Wayland-Kontext) → Heroic FPS-Counter als Ersatz
 - `DXVK_CONFIG_FILE` Env-Var wird beim Ändern via Heroic-UI zurückgesetzt → ggf. manuell neu eintragen
-- VM-Switching (libvirt GPU-Detach) noch nicht getestet
+- GPU-Wechsel erfordert Reboot (Hot-Swap nicht möglich, siehe VM-SETUP.md Section 9)
 
 **Noch offen:**
-- VM starten + prüfen ob libvirt GPU korrekt von `nvidia` → `vfio-pci` umhängt
 - Bluetooth für DualSense (Desktop hat keine BT-Konfiguration — ggf. USB-BT-Adapter nötig)
 
 ---
