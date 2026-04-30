@@ -65,10 +65,19 @@ in
             exit 1
           fi
 
+          # nvidia-Module entladen (gibt DRM-Referenz frei, niri läuft weiter auf Intel)
+          echo "nvidia-Module entladen..."
+          sudo modprobe -r nvidia_drm nvidia_modeset nvidia_uvm 2>/dev/null || true
+          if lsmod | grep -q "^nvidia "; then
+            echo "Fehler: nvidia-Modul konnte nicht entladen werden (Prozesse nutzen GPU?)."
+            exit 1
+          fi
+
           # GPU an vfio-pci übergeben
           echo "GPU an vfio-pci übergeben..."
           if ! sudo virsh nodedev-detach pci_0000_01_00_0; then
             echo "Fehler: GPU-Detach fehlgeschlagen."
+            sudo modprobe nvidia_modeset nvidia_drm
             exit 1
           fi
           sudo virsh nodedev-detach pci_0000_01_00_1 || true
@@ -81,6 +90,7 @@ in
             echo "GPU zurückbinden..."
             sudo virsh nodedev-reattach pci_0000_01_00_1 2>/dev/null || true
             sudo virsh nodedev-reattach pci_0000_01_00_0 2>/dev/null || true
+            sudo modprobe nvidia_modeset nvidia_drm
             exit 1
           fi
 
@@ -175,10 +185,11 @@ in
 
           echo "force_linux" > /tmp/vm-toggle-kbd.fifo
 
-          # GPU zurück an nvidia
+          # GPU zurück an nvidia + Module neu laden
           echo "GPU zurück an nvidia..."
           sudo virsh nodedev-reattach pci_0000_01_00_1 2>/dev/null || true
           sudo virsh nodedev-reattach pci_0000_01_00_0 || echo "Hinweis: GPU-Reattach fehlgeschlagen — ggf. Reboot nötig"
+          sudo modprobe nvidia_modeset nvidia_drm || echo "Hinweis: nvidia-Module konnten nicht neu geladen werden"
 
           echo "Festplatten sind wieder verfügbar (KDE mountet automatisch)"
           echo "=== Fertig ==="
