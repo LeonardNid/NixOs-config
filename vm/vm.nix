@@ -65,12 +65,22 @@ in
             exit 1
           fi
 
-          # VM starten (max 30s — hängt sonst bei GPU-Detach)
+          # GPU an vfio-pci übergeben
+          echo "GPU an vfio-pci übergeben..."
+          if ! sudo virsh nodedev-detach pci_0000_01_00_0; then
+            echo "Fehler: GPU-Detach fehlgeschlagen."
+            exit 1
+          fi
+          sudo virsh nodedev-detach pci_0000_01_00_1 || true
+
+          # VM starten
           echo "VM starten..."
-          if ! timeout 30s sudo virsh start "$VM_NAME"; then
+          if ! sudo virsh start "$VM_NAME"; then
             echo ""
-            echo "Fehler: VM konnte nicht gestartet werden (Timeout oder Fehler)."
-            echo "Tipp: journalctl -t libvirt-gpu-hook für GPU-Hook-Details"
+            echo "Fehler: VM konnte nicht gestartet werden."
+            echo "GPU zurückbinden..."
+            sudo virsh nodedev-reattach pci_0000_01_00_1 2>/dev/null || true
+            sudo virsh nodedev-reattach pci_0000_01_00_0 2>/dev/null || true
             exit 1
           fi
 
@@ -165,11 +175,10 @@ in
 
           echo "force_linux" > /tmp/vm-toggle-kbd.fifo
 
-          # GPU-Rebind prüfen (Hook sollte nvidia bereits wiederhergestellt haben)
-          sleep 2
-          if ! nvidia-smi >/dev/null 2>&1; then
-            echo "Hinweis: GPU-Rebind fehlgeschlagen — siehe: journalctl -t libvirt-gpu-hook"
-          fi
+          # GPU zurück an nvidia
+          echo "GPU zurück an nvidia..."
+          sudo virsh nodedev-reattach pci_0000_01_00_1 2>/dev/null || true
+          sudo virsh nodedev-reattach pci_0000_01_00_0 || echo "Hinweis: GPU-Reattach fehlgeschlagen — ggf. Reboot nötig"
 
           echo "Festplatten sind wieder verfügbar (KDE mountet automatisch)"
           echo "=== Fertig ==="

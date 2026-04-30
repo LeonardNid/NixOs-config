@@ -6,82 +6,36 @@ let
     OPERATION="$2"
     PHASE="$3"
 
-    GPU="0000:01:00.0"
-    AUDIO="0000:01:00.1"
-
-    log() {
-      logger -t libvirt-gpu-hook "$*"
-    }
-
-    unbind_device() {
-      local dev="$1"
-      local driver_path="/sys/bus/pci/devices/$dev/driver"
-      if [ -e "$driver_path" ]; then
-        log "Unbind $dev von $(readlink -f $driver_path | xargs basename)"
-        echo "$dev" > "$driver_path/unbind" || log "WARN: unbind $dev fehlgeschlagen"
-      fi
-    }
-
-    bind_device() {
-      local dev="$1"
-      local driver="$2"
-      echo "$driver" > "/sys/bus/pci/devices/$dev/driver_override" || log "WARN: driver_override $dev fehlgeschlagen"
-      echo "$dev" > "/sys/bus/pci/drivers/$driver/bind" || log "WARN: bind $dev an $driver fehlgeschlagen"
-    }
-
-    clear_override() {
-      local dev="$1"
-      echo "" > "/sys/bus/pci/devices/$dev/driver_override" || log "WARN: clear driver_override $dev fehlgeschlagen"
-    }
-
-    if [ "$VM_NAME" != "windows11" ]; then
+    if [ "$VM_NAME" != "windows11" ] || [ "$OPERATION/$PHASE" != "release/end" ]; then
       exit 0
     fi
 
-    case "$OPERATION/$PHASE" in
-      prepare/begin)
-        log "GPU-Swap: nvidia → vfio-pci (VM startet)"
+    log() { logger -t libvirt-gpu-hook "$*"; }
 
-        # Pre-Flight: Rocket League darf nicht laufen
-        if pgrep -f "RocketLeague|Sugar\.exe" >/dev/null 2>&1; then
-          log "ABBRUCH: Rocket League läuft noch (pgrep match)"
-          exit 1
-        fi
+    log "release/end: GPU zurück an nvidia"
 
-        unbind_device "$GPU"
-        unbind_device "$AUDIO"
+    # GPU von vfio-pci trennen und an nvidia zurückbinden
+    for dev in 0000:01:00.0 0000:01:00.1; do
+      driver_path="/sys/bus/pci/devices/$dev/driver"
+      if [ -e "$driver_path" ]; then
+        log "Unbind $dev"
+        echo "$dev" > "/sys/bus/pci/drivers/vfio-pci/unbind" 2>/dev/null || true
+      fi
+      echo "" > "/sys/bus/pci/devices/$dev/driver_override" 2>/dev/null || true
+    done
 
-        bind_device "$GPU"   "vfio-pci"
-        bind_device "$AUDIO" "vfio-pci"
+    echo "0000:01:00.0" > /sys/bus/pci/drivers/nvidia/bind 2>/dev/null \
+      && log "nvidia bind OK" \
+      || log "WARN: nvidia bind fehlgeschlagen — Reboot nötig"
 
-        log "GPU-Swap abgeschlossen: beide Devices an vfio-pci"
-        ;;
+    echo "0000:01:00.1" > /sys/bus/pci/drivers/snd_hda_intel/bind 2>/dev/null \
+      || log "WARN: snd_hda_intel bind fehlgeschlagen"
 
-      release/end)
-        log "GPU-Swap: vfio-pci → nvidia (VM gestoppt)"
-
-        unbind_device "$GPU"
-        unbind_device "$AUDIO"
-
-        clear_override "$GPU"
-        clear_override "$AUDIO"
-
-        # GPU an nvidia zurückbinden
-        echo "$GPU" > /sys/bus/pci/drivers/nvidia/bind \
-          || log "WARN: nvidia bind für $GPU fehlgeschlagen"
-
-        # Audio an snd_hda_intel zurückbinden
-        echo "$AUDIO" > /sys/bus/pci/drivers/snd_hda_intel/bind \
-          || log "WARN: snd_hda_intel bind für $AUDIO fehlgeschlagen"
-
-        # Verifikation
-        if /run/current-system/sw/bin/nvidia-smi >/dev/null 2>&1; then
-          log "nvidia-smi OK — GPU zurück unter nvidia"
-        else
-          log "WARN: nvidia-smi fehlgeschlagen nach VM-Stop — prüfe: journalctl -t libvirt-gpu-hook"
-        fi
-        ;;
-    esac
+    if /run/current-system/sw/bin/nvidia-smi >/dev/null 2>&1; then
+      log "nvidia-smi OK"
+    else
+      log "WARN: nvidia-smi fehlgeschlagen nach VM-Stop"
+    fi
   '';
 in
 {

@@ -1,1 +1,1 @@
-feat:-GPU-hot-swap-hook-f--r-VM-RL-Wechsel-ohne-Reboot--07:12
+fix:-virsh-nodedev-detach-statt-sysfs-Swap-f--r-GPU-Passthrough--07:57
