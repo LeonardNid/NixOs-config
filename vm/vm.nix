@@ -97,7 +97,7 @@ let
           echo "Bereits im gpuvm-Modus."
           exit 0
         fi
-        ENTRY=$(ls /boot/loader/entries/ 2>/dev/null | grep "specialisation-gpuvm" | sort -V | tail -1 | sed 's/\.conf$//')
+        ENTRY=$(sudo ls /boot/loader/entries/ 2>/dev/null | grep "specialisation-gpuvm" | sort -V | tail -1 | sed 's/\.conf$//')
         if [ -z "$ENTRY" ]; then
           echo "Fehler: gpuvm-Bootentry nicht gefunden in /boot/loader/entries/"
           echo "Verfügbare Entries:"

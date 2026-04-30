@@ -1,1 +1,1 @@
-feat:-GPU-Modus-Switch-via-Specialisation--gpulinux-----gpuvm---21:01
+fix:-gpu-switch-reboot-braucht-sudo-f--r--boot-loader-entries---21:02
