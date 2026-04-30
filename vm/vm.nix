@@ -33,11 +33,19 @@ let
 
     log "=== VM-Start: Phase 1 — SDDM stoppen ==="
     systemctl stop display-manager
-    sleep 3
+    sleep 2
+
+    # Alle verbleibenden Prozesse killen die nvidia-Devices halten
+    for dev in /dev/dri/card1 /dev/nvidia0 /dev/nvidiactl /dev/nvidia-modeset; do
+      fuser -k "$dev" 2>/dev/null || true
+    done
+    sleep 2
 
     log "Phase 2: nvidia-Module entladen"
     modprobe -r nvidia_drm nvidia_modeset nvidia_uvm 2>/dev/null
     if lsmod | grep -q "^nvidia "; then
+      log "lsmod nvidia noch aktiv:"
+      lsmod | grep nvidia | logger -t vm-start
       abort "nvidia-Modul nicht entladbar"
     fi
     log "nvidia-Module OK"
