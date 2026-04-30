@@ -16,6 +16,7 @@
     wtype
     eza
     git-lfs
+    jq
   ];
 
   # Obsidian: --name setzt den Wayland app_id korrekt auf "Obsidian" statt "electron"

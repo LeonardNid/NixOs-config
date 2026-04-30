@@ -4,13 +4,13 @@
 tailscale status
 
 # Datei an Gerät senden
-tailscale file cp <datei> <gerät>:
+tailscale file cp "<datei>" <gerät>:
 
 # Datei an bestimmten Pfad auf Gerät senden
-tailscale file cp <datei> <gerät>:/home/<user>/
+tailscale file cp "<datei>" <gerät>:/home/<user>/
 
 # Mehrere Dateien senden (Glob oder Liste)
-tailscale file cp <datei> <gerät>:
+tailscale file cp "<datei>" <gerät>:
 
 # Gesendete Dateien empfangen (in aktuelles Verzeichnis)
 tailscale file get .
