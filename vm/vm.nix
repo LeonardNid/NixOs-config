@@ -9,6 +9,108 @@ let
       </source>
     </hostdev>
   '';
+
+  # Läuft als root im Hintergrund (überlebt niri-Neustart)
+  # Ablauf: SDDM stop → nvidia entladen → GPU detach → VM start → SDDM start → LG
+  vmStartBg = pkgs.writeShellScript "vm-start-bg" ''
+    VM_NAME="windows11"
+    VIRSH="${pkgs.libvirt}/bin/virsh"
+    BOOT_WAIT=20
+    USER_NAME="leonardn"
+    USER_ID=1000
+    USER_RUNTIME="/run/user/$USER_ID"
+
+    log() { logger -t vm-start "$*"; }
+
+    abort() {
+      log "Abbruch: $1 — stelle nvidia wieder her"
+      "$VIRSH" nodedev-reattach pci_0000_01_00_0 2>/dev/null || true
+      "$VIRSH" nodedev-reattach pci_0000_01_00_1 2>/dev/null || true
+      modprobe nvidia_modeset nvidia_drm 2>/dev/null || true
+      systemctl start display-manager
+      exit 1
+    }
+
+    log "=== VM-Start: Phase 1 — SDDM stoppen ==="
+    systemctl stop display-manager
+    sleep 3
+
+    log "Phase 2: nvidia-Module entladen"
+    modprobe -r nvidia_drm nvidia_modeset nvidia_uvm 2>/dev/null
+    if lsmod | grep -q "^nvidia "; then
+      abort "nvidia-Modul nicht entladbar"
+    fi
+    log "nvidia-Module OK"
+
+    log "Phase 3: GPU an vfio-pci"
+    "$VIRSH" nodedev-detach pci_0000_01_00_0 || abort "GPU-Detach fehlgeschlagen"
+    "$VIRSH" nodedev-detach pci_0000_01_00_1 2>/dev/null || true
+    log "GPU-Detach OK"
+
+    log "Phase 4: VM starten"
+    "$VIRSH" start "$VM_NAME" || abort "VM-Start fehlgeschlagen"
+    log "VM gestartet"
+
+    echo "init_linux_after_qemu_start" > /tmp/vm-toggle-kbd.fifo 2>/dev/null || true
+    systemd-inhibit --what=idle:sleep --who="Windows VM" --why="Gaming auf VM" sleep infinity &
+    echo $! > /tmp/vm-inhibit.pid
+
+    log "Phase 5: SDDM starten (niri ohne nvidia)"
+    systemctl start display-manager
+
+    log "Warte auf niri-Socket..."
+    NIRI_SOCK=""
+    for i in $(seq 1 60); do
+      NIRI_SOCK=$(ls "$USER_RUNTIME"/niri.*.sock 2>/dev/null | head -1)
+      [ -n "$NIRI_SOCK" ] && break
+      sleep 1
+    done
+    log "niri bereit: $NIRI_SOCK"
+
+    log "Warte auf Windows-Boot ($BOOT_WAIT s)..."
+    sleep "$BOOT_WAIT"
+
+    log "Phase 6: Looking Glass starten"
+    sudo -u "$USER_NAME" \
+      NIRI_SOCKET="$NIRI_SOCK" \
+      XDG_RUNTIME_DIR="$USER_RUNTIME" \
+      WAYLAND_DISPLAY=wayland-1 \
+      /run/current-system/sw/bin/niri msg action spawn -- \
+        ${pkgs.looking-glass-client}/bin/looking-glass-client \
+        -F -f /dev/kvmfr0 \
+        win:size=2560x1440 win:dontUpscale=on \
+        input:captureOnFocus=no input:grabKeyboardOnFocus=no \
+        input:escapeKey=KEY_PAUSE \
+        win:requestActivation=no \
+        spice:enable=no \
+        >> /tmp/looking-glass.log 2>&1
+    log "Looking Glass gestartet"
+
+    log "Phase 7: VM-Watcher aktiv (warte auf VM-Stop)"
+    while "$VIRSH" domstate "$VM_NAME" 2>/dev/null | grep -q "running"; do
+      sleep 5
+    done
+    log "VM gestoppt — Cleanup"
+
+    echo "force_linux" > /tmp/vm-toggle-kbd.fifo 2>/dev/null || true
+    pkill -f looking-glass-client 2>/dev/null || true
+    kill "$(cat /tmp/vm-inhibit.pid 2>/dev/null)" 2>/dev/null
+    rm -f /tmp/vm-inhibit.pid
+
+    log "Phase 8: SDDM stoppen für GPU-Reattach"
+    systemctl stop display-manager
+    sleep 2
+
+    log "Phase 9: GPU zurück an nvidia"
+    "$VIRSH" nodedev-reattach pci_0000_01_00_1 2>/dev/null || true
+    "$VIRSH" nodedev-reattach pci_0000_01_00_0 || log "WARN: GPU-Reattach fehlgeschlagen"
+    modprobe nvidia_modeset nvidia_drm || log "WARN: nvidia-Module nicht ladbar"
+
+    log "Phase 10: SDDM starten (niri mit nvidia)"
+    systemctl start display-manager
+
+    log "=== VM-Session beendet ==="
+  '';
 in
 {
   home.packages = with pkgs; [
@@ -16,8 +118,6 @@ in
     scream
     (writeShellScriptBin "vm" ''
       VM_NAME="windows11"
-      BOOT_DELAY=30  # Sekunden bis Looking Glass startet (anpassen bis Steam Big Picture bereit ist)
-      RESUME_DELAY=2
 
       ACTION="''${1:-}"
       if [ -z "$ACTION" ]; then
@@ -46,12 +146,11 @@ in
           check_usb "054c" "0ce6" "Sony DualSense Controller"
           check_usb "16d0" "12f7" "Azeron Keypad"
           if [ "$USB_MISSING" = 1 ]; then
-            echo ""
-            echo "Fehler: Nicht alle USB-Geräte angeschlossen. VM wird nicht gestartet."
+            echo "Fehler: Nicht alle USB-Geräte angeschlossen."
             exit 1
           fi
 
-          # Festplatten unmounten (ignoriere Fehler falls nicht gemountet)
+          # Festplatten unmounten
           echo "Festplatten unmounten..."
           for dev in /dev/sdb1 /dev/nvme0n1p1 /dev/nvme0n1p2 /dev/nvme0n1p3 /dev/nvme0n1p4; do
             if mountpoint -q "$(findmnt -n -o TARGET "$dev" 2>/dev/null)" 2>/dev/null; then
@@ -59,113 +158,36 @@ in
             fi
           done
 
-          # Rocket League darf nicht laufen (GPU wird benötigt)
+          # Rocket League darf nicht laufen
           if pgrep -f "RocketLeague|Sugar\.exe" >/dev/null 2>&1; then
             echo "Fehler: Rocket League läuft noch. Bitte erst beenden."
             exit 1
           fi
 
-          # nvidia-Module entladen (gibt DRM-Referenz frei, niri läuft weiter auf Intel)
-          echo "nvidia-Module entladen..."
-          sudo modprobe -r nvidia_drm nvidia_modeset nvidia_uvm 2>/dev/null || true
-          if lsmod | grep -q "^nvidia "; then
-            echo "Fehler: nvidia-Modul konnte nicht entladen werden (Prozesse nutzen GPU?)."
-            exit 1
-          fi
+          # sudo-Credentials cachen (wird im Hintergrundprozess gebraucht)
+          sudo -v || { echo "Fehler: sudo auth fehlgeschlagen"; exit 1; }
 
-          # GPU an vfio-pci übergeben
-          echo "GPU an vfio-pci übergeben..."
-          if ! sudo virsh nodedev-detach pci_0000_01_00_0; then
-            echo "Fehler: GPU-Detach fehlgeschlagen."
-            sudo modprobe nvidia_modeset nvidia_drm
-            exit 1
-          fi
-          sudo virsh nodedev-detach pci_0000_01_00_1 || true
-
-          # VM starten
-          echo "VM starten..."
-          if ! sudo virsh start "$VM_NAME"; then
-            echo ""
-            echo "Fehler: VM konnte nicht gestartet werden."
-            echo "GPU zurückbinden..."
-            sudo virsh nodedev-reattach pci_0000_01_00_1 2>/dev/null || true
-            sudo virsh nodedev-reattach pci_0000_01_00_0 2>/dev/null || true
-            sudo modprobe nvidia_modeset nvidia_drm
-            exit 1
-          fi
-
-          # QEMU kurz Zeit geben zum Starten und Greifen der Inputs
-          sleep 0.5
-          # Input sofort zurück zu Linux togglen (via virtuelles vm-toggle-kbd)
-          echo "init_linux_after_qemu_start" > /tmp/vm-toggle-kbd.fifo
-
-          # Warten bis KVMFR bereit ist
-          sleep 2
-
-          # Idle/Sleep blockieren solange VM läuft
-          systemd-inhibit --what=idle:sleep --who="Windows VM" --why="Gaming auf VM" sleep infinity &
-          echo $! > /tmp/vm-inhibit.pid
-
-          # Warten bis Windows + Steam hochgefahren ist
-          echo "=== Windows bootet... (ScrollLock = Input umschalten) ==="
-          for i in $(seq 1 $BOOT_DELAY); do
-            filled=$(( i * 30 / BOOT_DELAY ))
-            empty=$(( 30 - filled ))
-            bar=$(printf '%0.s█' $(seq 1 $filled) 2>/dev/null)$(printf '%0.s░' $(seq 1 $empty) 2>/dev/null)
-            printf '\r[%s] %d/%ds' "$bar" "$i" "$BOOT_DELAY"
-            sleep 1
-          done
+          echo ""
+          echo "=== Desktop wird kurz neu gestartet (~5s schwarz) ==="
+          echo "Looking Glass erscheint automatisch nach ca. 30 Sekunden."
+          echo "Log: journalctl -t vm-start -f"
           echo ""
 
-          # Looking Glass starten (Vollbild, kein Auto-Input-Grab, Log in Datei)
-          echo "Looking Glass starten..."
-          if [ "$XDG_CURRENT_DESKTOP" = "niri" ]; then
-            niri msg action focus-monitor-left
-            sleep 0.3
-          fi
-          looking-glass-client -F -f /dev/kvmfr0 \
-            win:size=2560x1440 win:dontUpscale=on \
-            input:captureOnFocus=no input:grabKeyboardOnFocus=no \
-            input:escapeKey=KEY_PAUSE \
-            win:requestActivation=no \
-            spice:enable=no \
-            > /tmp/looking-glass.log 2>&1 &
-          LG_PID=$!
-
-          # Background-Watcher: räumt automatisch auf wenn VM stoppt
-          (while sudo virsh domstate "$VM_NAME" 2>/dev/null | grep -q "running"; do
-            sleep 5
-          done
-          echo "force_linux" > /tmp/vm-toggle-kbd.fifo
-          pkill -f looking-glass-client 2>/dev/null
-          kill "$(cat /tmp/vm-inhibit.pid 2>/dev/null)" 2>/dev/null
-          rm -f /tmp/vm-inhibit.pid
-          notify-send "Windows VM" "VM gestoppt, aufgeräumt.") &
-
-          echo "Looking Glass läuft (PID: $LG_PID)"
-          echo "Log: /tmp/looking-glass.log"
-          echo ""
-          echo "=== VM läuft! ScrollLock = Input umschalten ==="
-          echo "VM stoppt automatisch wenn Windows herunterfährt."
-          echo "Oder manuell: vm stop"
+          # Im Hintergrund starten (überlebt niri-Neustart via disown)
+          sudo bash ${vmStartBg} &
+          disown $!
           ;;
 
         stop)
           echo "=== VM beenden ==="
 
-          # Looking Glass beenden
           pkill -f looking-glass-client 2>/dev/null && echo "Looking Glass beendet"
-
-          # Idle-Inhibitor freigeben
           kill "$(cat /tmp/vm-inhibit.pid 2>/dev/null)" 2>/dev/null
           rm -f /tmp/vm-inhibit.pid
 
-          # Falls VM noch läuft, herunterfahren
           if sudo virsh domstate "$VM_NAME" 2>/dev/null | grep -q "running"; then
             echo "VM herunterfahren..."
             sudo virsh shutdown "$VM_NAME"
-
-            # Warten bis VM aus ist (max 60 Sekunden)
             for i in $(seq 1 60); do
               if ! sudo virsh domstate "$VM_NAME" 2>/dev/null | grep -q "running"; then
                 echo "VM ist aus."
@@ -173,8 +195,6 @@ in
               fi
               sleep 1
             done
-
-            # Falls VM noch läuft, force stop
             if sudo virsh domstate "$VM_NAME" 2>/dev/null | grep -q "running"; then
               echo "VM reagiert nicht, erzwinge Shutdown..."
               sudo virsh destroy "$VM_NAME"
@@ -184,15 +204,8 @@ in
           fi
 
           echo "force_linux" > /tmp/vm-toggle-kbd.fifo
-
-          # GPU zurück an nvidia + Module neu laden
-          echo "GPU zurück an nvidia..."
-          sudo virsh nodedev-reattach pci_0000_01_00_1 2>/dev/null || true
-          sudo virsh nodedev-reattach pci_0000_01_00_0 || echo "Hinweis: GPU-Reattach fehlgeschlagen — ggf. Reboot nötig"
-          sudo modprobe nvidia_modeset nvidia_drm || echo "Hinweis: nvidia-Module konnten nicht neu geladen werden"
-
-          echo "Festplatten sind wieder verfügbar (KDE mountet automatisch)"
-          echo "=== Fertig ==="
+          echo "(Hintergrundprozess übernimmt GPU-Reattach und SDDM-Neustart)"
+          echo "=== VM wird beendet ==="
           ;;
 
         pause)
@@ -205,18 +218,24 @@ in
         resume)
           echo "=== VM fortsetzen ==="
           sudo virsh resume "$VM_NAME"
-          if [ "$XDG_CURRENT_DESKTOP" = "niri" ]; then
-            niri msg action focus-monitor-left
-            sleep 0.3
+          NIRI_SOCK=$(ls /run/user/1000/niri.*.sock 2>/dev/null | head -1)
+          if [ -n "$NIRI_SOCK" ]; then
+            NIRI_SOCKET="$NIRI_SOCK" niri msg action spawn -- \
+              looking-glass-client -F -f /dev/kvmfr0 \
+              win:size=2560x1440 win:dontUpscale=on \
+              input:captureOnFocus=no input:grabKeyboardOnFocus=no \
+              input:escapeKey=KEY_PAUSE \
+              win:requestActivation=no \
+              spice:enable=no
+          else
+            looking-glass-client -F -f /dev/kvmfr0 \
+              win:size=2560x1440 win:dontUpscale=on \
+              input:captureOnFocus=no input:grabKeyboardOnFocus=no \
+              input:escapeKey=KEY_PAUSE \
+              win:requestActivation=no \
+              spice:enable=no \
+              > /tmp/looking-glass.log 2>&1 &
           fi
-          looking-glass-client -F -f /dev/kvmfr0 \
-            win:size=2560x1440 win:dontUpscale=on \
-            input:captureOnFocus=no input:grabKeyboardOnFocus=no \
-            input:escapeKey=KEY_PAUSE \
-            win:requestActivation=no \
-            spice:enable=no \
-            > /tmp/looking-glass.log 2>&1 &
-          echo "Looking Glass gestartet (PID: $!)"
           echo "=== VM läuft wieder ==="
           ;;
 
