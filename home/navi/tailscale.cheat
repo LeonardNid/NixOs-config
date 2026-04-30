@@ -28,5 +28,5 @@ ssh <user>@<gerät>.tail6bb5cd.ts.net
 tailscale ip
 
 $ gerät: tailscale status --json | jq -r '.Peer[] | .HostName'
-$ datei: find ~ -maxdepth 4 -type f 2>/dev/null | sed "s|$HOME/|~/|"
+$ datei: find ~ -maxdepth 4 -type f 2>/dev/null
 $ user: echo -e "leonardn\nroot"
