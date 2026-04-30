@@ -1,1 +1,1 @@
-fix:-vm-start-mit-originalem-fortschrittsbalken---gpu-check--21:19
+feat:-Heroic-GPU-Modus-Warnung--gpuvm-Check-via-Wrapper---Desktop-Entry---22:00

@@ -2,6 +2,18 @@
 
 let
   wallpaper = "/home/leonardn/nixos-config/wallpapers/surreal-underwater-3840x2160-26042.jpg";
+
+  # Wrapper: zeigt Warnung wenn Heroic im gpuvm-Modus gestartet wird
+  heroicGpuCheck = pkgs.writeShellScript "heroic-gpu-check" ''
+    if grep -q 'gpu_mode=vm' /proc/cmdline; then
+      ${pkgs.libnotify}/bin/notify-send \
+        --icon=dialog-warning \
+        --urgency=critical \
+        "Falscher GPU-Modus" \
+        "Du bist im gpuvm-Modus!\nRocket League braucht gpulinux.\n\nAusführen: gpu-switch-reboot linux"
+    fi
+    exec ${pkgs.heroic}/bin/heroic "$@"
+  '';
 in
 {
   # Niri Window Manager
@@ -511,7 +523,8 @@ in
 
   # Pakete
   home.packages = with pkgs; [
-    heroic                     # Epic/GOG Games Launcher (Rocket League via Proton)
+    heroic                     # Epic/GOG Games Launcher (Icons + Desktop-Ressourcen)
+    (pkgs.hiPrio (pkgs.writeShellScriptBin "heroic" ''exec ${heroicGpuCheck} "$@"''))
     protonup-qt                # Proton-GE-Builds verwalten
     mangohud                   # FPS/GPU-Overlay (Shift+F12)
     fuzzel                     # App-Launcher
@@ -703,4 +716,14 @@ in
       exec waybar
     '')
   ];
+
+  # Heroic Desktop-Entry überschreiben damit der GPU-Modus-Check auch über Fuzzel greift
+  xdg.desktopEntries."heroic" = {
+    name = "Heroic Games Launcher";
+    exec = "${heroicGpuCheck} %U";
+    icon = "heroic";
+    categories = [ "Game" ];
+    mimeType = [ "x-scheme-handler/heroic" ];
+    settings.StartupWMClass = "heroic";
+  };
 }
