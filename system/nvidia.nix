@@ -10,7 +10,7 @@
     package = config.boot.kernelPackages.nvidiaPackages.stable;
     modesetting.enable = true;
     nvidiaSettings = true;
-    open = false;
+    open = true;
     prime = {
       offload.enable = true;
       offload.enableOffloadCmd = true;

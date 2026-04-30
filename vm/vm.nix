@@ -42,7 +42,7 @@ let
     sleep 2
 
     log "Phase 2: nvidia-Module entladen"
-    modprobe -r nvidia_drm nvidia_modeset nvidia_uvm 2>/dev/null
+    modprobe -r nvidia_drm nvidia_modeset nvidia_uvm nvidia 2>/dev/null
     if lsmod | grep -q "^nvidia "; then
       log "lsmod nvidia noch aktiv:"
       lsmod | grep nvidia | logger -t vm-start
