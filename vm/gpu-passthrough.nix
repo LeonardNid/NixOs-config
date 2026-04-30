@@ -27,7 +27,7 @@ let
 in
 {
   # IOMMU aktivieren; GPU dynamisch per libvirt managed=yes an vfio-pci gebunden
-  boot.kernelParams = [ "intel_iommu=on,sm_on" "iommu=pt" "random.trust_cpu=on" "i915.force_probe=a780" "nvidia-drm.fbdev=0" ];
+  boot.kernelParams = [ "intel_iommu=on,sm_on" "iommu=pt" "random.trust_cpu=on" "i915.force_probe=a780" ];
   boot.blacklistedKernelModules = [ "nouveau" "nvidiafb" ];
 
   # Virtualisierung
@@ -53,7 +53,6 @@ in
   boot.kernelModules = [ "kvmfr" "vfio" "vfio_iommu_type1" "vfio_pci" ];
   boot.extraModprobeConfig = ''
     options kvmfr static_size_mb=128
-    options nvidia-drm fbdev=0
   '';
 
   # udev Rules für Input-Devices und KVMFR

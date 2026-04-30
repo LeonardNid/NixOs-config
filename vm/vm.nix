@@ -10,8 +10,9 @@ let
     </hostdev>
   '';
 
-  # Läuft als root im Hintergrund (überlebt niri-Neustart)
-  # Ablauf: SDDM stop → nvidia entladen → GPU detach → VM start → SDDM start → LG
+  # Läuft als root im Hintergrund
+  # Ablauf: GPU detach → VM start → LG starten → VM-Warten → GPU reattach
+  # Desktop (niri auf iGPU) läuft durchgehend — kein SDDM-Stop nötig
   vmStartBg = pkgs.writeShellScript "vm-start-bg" ''
     VM_NAME="windows11"
     VIRSH="${pkgs.libvirt}/bin/virsh"
@@ -23,30 +24,18 @@ let
     log() { logger -t vm-start "$*"; }
 
     abort() {
-      log "Abbruch: $1 — stelle nvidia wieder her"
+      log "Abbruch: $1"
       "$VIRSH" nodedev-reattach pci_0000_01_00_0 2>/dev/null || true
       "$VIRSH" nodedev-reattach pci_0000_01_00_1 2>/dev/null || true
-      modprobe nvidia_modeset nvidia_drm 2>/dev/null || true
-      systemctl start display-manager
       exit 1
     }
 
-    log "=== VM-Start: Phase 1 — SDDM stoppen ==="
-    systemctl stop display-manager
-    sleep 2
-
-    # Alle verbleibenden Prozesse killen die nvidia-Devices halten
-    for dev in /dev/dri/card1 /dev/nvidia0 /dev/nvidiactl /dev/nvidia-modeset; do
-      fuser -k "$dev" 2>/dev/null || true
-    done
-    sleep 2
-
-    log "Phase 2→3: GPU an vfio-pci (nvidia-Module bleiben geladen, nur PCI-Device wandert)"
+    log "=== VM-Start: GPU an vfio-pci (Desktop läuft weiter auf iGPU) ==="
     "$VIRSH" nodedev-detach pci_0000_01_00_0 || abort "GPU-Detach fehlgeschlagen"
     "$VIRSH" nodedev-detach pci_0000_01_00_1 2>/dev/null || true
     log "GPU-Detach OK"
 
-    log "Phase 4: VM starten"
+    log "VM starten"
     "$VIRSH" start "$VM_NAME" || abort "VM-Start fehlgeschlagen"
     log "VM gestartet"
 
@@ -54,38 +43,40 @@ let
     systemd-inhibit --what=idle:sleep --who="Windows VM" --why="Gaming auf VM" sleep infinity &
     echo $! > /tmp/vm-inhibit.pid
 
-    log "Phase 5: SDDM starten (niri ohne nvidia)"
-    systemctl start display-manager
-
-    log "Warte auf niri-Socket..."
-    NIRI_SOCK=""
-    for i in $(seq 1 60); do
-      NIRI_SOCK=$(ls "$USER_RUNTIME"/niri.*.sock 2>/dev/null | head -1)
-      [ -n "$NIRI_SOCK" ] && break
-      sleep 1
-    done
-    log "niri bereit: $NIRI_SOCK"
-
     log "Warte auf Windows-Boot ($BOOT_WAIT s)..."
     sleep "$BOOT_WAIT"
 
-    log "Phase 6: Looking Glass starten"
-    sudo -u "$USER_NAME" \
-      NIRI_SOCKET="$NIRI_SOCK" \
-      XDG_RUNTIME_DIR="$USER_RUNTIME" \
-      WAYLAND_DISPLAY=wayland-1 \
-      /run/current-system/sw/bin/niri msg action spawn -- \
-        ${pkgs.looking-glass-client}/bin/looking-glass-client \
-        -F -f /dev/kvmfr0 \
-        win:size=2560x1440 win:dontUpscale=on \
-        input:captureOnFocus=no input:grabKeyboardOnFocus=no \
-        input:escapeKey=KEY_PAUSE \
-        win:requestActivation=no \
-        spice:enable=no \
-        >> /tmp/looking-glass.log 2>&1
+    NIRI_SOCK=$(ls "$USER_RUNTIME"/niri.*.sock 2>/dev/null | head -1)
+    if [ -z "$NIRI_SOCK" ]; then
+      log "WARN: kein niri-Socket gefunden, versuche später..."
+      for i in $(seq 1 30); do
+        NIRI_SOCK=$(ls "$USER_RUNTIME"/niri.*.sock 2>/dev/null | head -1)
+        [ -n "$NIRI_SOCK" ] && break
+        sleep 1
+      done
+    fi
+
+    log "Looking Glass starten (niri: $NIRI_SOCK)"
+    if [ -n "$NIRI_SOCK" ]; then
+      sudo -u "$USER_NAME" \
+        NIRI_SOCKET="$NIRI_SOCK" \
+        XDG_RUNTIME_DIR="$USER_RUNTIME" \
+        WAYLAND_DISPLAY=wayland-1 \
+        /run/current-system/sw/bin/niri msg action spawn -- \
+          ${pkgs.looking-glass-client}/bin/looking-glass-client \
+          -F -f /dev/kvmfr0 \
+          win:size=2560x1440 win:dontUpscale=on \
+          input:captureOnFocus=no input:grabKeyboardOnFocus=no \
+          input:escapeKey=KEY_PAUSE \
+          win:requestActivation=no \
+          spice:enable=no \
+          >> /tmp/looking-glass.log 2>&1
+    else
+      log "FEHLER: Kein niri-Socket gefunden, LG nicht gestartet"
+    fi
     log "Looking Glass gestartet"
 
-    log "Phase 7: VM-Watcher aktiv (warte auf VM-Stop)"
+    log "VM-Watcher aktiv (warte auf VM-Stop)"
     while "$VIRSH" domstate "$VM_NAME" 2>/dev/null | grep -q "running"; do
       sleep 5
     done
@@ -96,16 +87,9 @@ let
     kill "$(cat /tmp/vm-inhibit.pid 2>/dev/null)" 2>/dev/null
     rm -f /tmp/vm-inhibit.pid
 
-    log "Phase 8: SDDM stoppen für GPU-Reattach"
-    systemctl stop display-manager
-    sleep 2
-
-    log "Phase 9: GPU zurück an nvidia (Module waren nie entladen)"
+    log "GPU zurück an nvidia"
     "$VIRSH" nodedev-reattach pci_0000_01_00_1 2>/dev/null || true
     "$VIRSH" nodedev-reattach pci_0000_01_00_0 || log "WARN: GPU-Reattach fehlgeschlagen"
-
-    log "Phase 10: SDDM starten (niri mit nvidia)"
-    systemctl start display-manager
 
     log "=== VM-Session beendet ==="
   '';
@@ -166,7 +150,7 @@ in
           sudo -v || { echo "Fehler: sudo auth fehlgeschlagen"; exit 1; }
 
           echo ""
-          echo "=== Desktop wird kurz neu gestartet (~5s schwarz) ==="
+          echo "=== Desktop läuft weiter — kein Neustart nötig ==="
           echo "Looking Glass erscheint automatisch nach ca. 30 Sekunden."
           echo "Log: journalctl -t vm-start -f"
           echo ""
@@ -202,7 +186,7 @@ in
           fi
 
           echo "force_linux" > /tmp/vm-toggle-kbd.fifo
-          echo "(Hintergrundprozess übernimmt GPU-Reattach und SDDM-Neustart)"
+          echo "(Hintergrundprozess übernimmt GPU-Reattach)"
           echo "=== VM wird beendet ==="
           ;;
 
