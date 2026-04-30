@@ -58,5 +58,9 @@ in
       "vfio-pci.ids=10de:2206,10de:1aef"
       "gpu_mode=vm"
     ];
+    # GPU ist auf vfio-pci → nvidia hat kein Device → Intel iGPU übernimmt den Display
+    services.xserver.videoDrivers = lib.mkForce [ "modesetting" ];
+    hardware.nvidia.prime.offload.enable = lib.mkForce false;
+    hardware.nvidia.prime.offload.enableOffloadCmd = lib.mkForce false;
   };
 }

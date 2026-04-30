@@ -1,1 +1,1 @@
-fix:-gpu-switch-reboot-braucht-sudo-f--r--boot-loader-entries---21:02
+fix:-gpuvm-Specialisation-nutzt-modesetting-statt-nvidia--GPU-auf-vfio-pci---21:08
