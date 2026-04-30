@@ -12,6 +12,12 @@ let
 
     log() { logger -t libvirt-gpu-hook "$*"; }
 
+    # Im gpuvm-Modus bleibt die GPU auf vfio-pci — kein Reattach
+    if grep -q 'gpu_mode=vm' /proc/cmdline; then
+      log "gpuvm-Modus — GPU bleibt auf vfio-pci"
+      exit 0
+    fi
+
     log "release/end: GPU zurück an nvidia"
 
     # GPU von vfio-pci trennen und an nvidia zurückbinden

@@ -10,9 +10,9 @@ let
     </hostdev>
   '';
 
-  # Läuft als root im Hintergrund
-  # Ablauf: GPU detach → VM start → LG starten → VM-Warten → GPU reattach
-  # Desktop (niri auf iGPU) läuft durchgehend — kein SDDM-Stop nötig
+  # Läuft als root im Hintergrund.
+  # Voraussetzung: gpuvm-Modus (gpu-switch-reboot → Reboot), dann GPU bereits auf vfio-pci.
+  # Kein SDDM-Stop, kein Modul-Entladen — GPU wandert nur zwischen Treibern per Kernel-Param.
   vmStartBg = pkgs.writeShellScript "vm-start-bg" ''
     VM_NAME="windows11"
     VIRSH="${pkgs.libvirt}/bin/virsh"
@@ -23,20 +23,19 @@ let
 
     log() { logger -t vm-start "$*"; }
 
-    abort() {
-      log "Abbruch: $1"
-      "$VIRSH" nodedev-reattach pci_0000_01_00_0 2>/dev/null || true
-      "$VIRSH" nodedev-reattach pci_0000_01_00_1 2>/dev/null || true
+    log "=== VM-Start ==="
+
+    # GPU muss auf vfio-pci sein — nur im gpuvm-Modus (nach gpu-switch-reboot) gegeben
+    GPU_DRIVER=$(readlink /sys/bus/pci/devices/0000:01:00.0/driver 2>/dev/null | xargs basename 2>/dev/null || echo "keiner")
+    if [ "$GPU_DRIVER" != "vfio-pci" ]; then
+      log "FEHLER: GPU ist auf '$GPU_DRIVER', nicht vfio-pci"
+      log "Lösung: 'gpu-switch-reboot' ausführen → Reboot → dann 'vm start'"
       exit 1
-    }
+    fi
+    log "GPU auf vfio-pci — OK"
 
-    log "=== VM-Start: GPU an vfio-pci (Desktop läuft weiter auf iGPU) ==="
-    "$VIRSH" nodedev-detach pci_0000_01_00_0 || abort "GPU-Detach fehlgeschlagen"
-    "$VIRSH" nodedev-detach pci_0000_01_00_1 2>/dev/null || true
-    log "GPU-Detach OK"
-
-    log "VM starten"
-    "$VIRSH" start "$VM_NAME" || abort "VM-Start fehlgeschlagen"
+    log "Phase 1: VM starten"
+    "$VIRSH" start "$VM_NAME" || { log "VM-Start fehlgeschlagen"; exit 1; }
     log "VM gestartet"
 
     echo "init_linux_after_qemu_start" > /tmp/vm-toggle-kbd.fifo 2>/dev/null || true
@@ -46,17 +45,8 @@ let
     log "Warte auf Windows-Boot ($BOOT_WAIT s)..."
     sleep "$BOOT_WAIT"
 
+    log "Phase 2: Looking Glass starten"
     NIRI_SOCK=$(ls "$USER_RUNTIME"/niri.*.sock 2>/dev/null | head -1)
-    if [ -z "$NIRI_SOCK" ]; then
-      log "WARN: kein niri-Socket gefunden, versuche später..."
-      for i in $(seq 1 30); do
-        NIRI_SOCK=$(ls "$USER_RUNTIME"/niri.*.sock 2>/dev/null | head -1)
-        [ -n "$NIRI_SOCK" ] && break
-        sleep 1
-      done
-    fi
-
-    log "Looking Glass starten (niri: $NIRI_SOCK)"
     if [ -n "$NIRI_SOCK" ]; then
       sudo -u "$USER_NAME" \
         NIRI_SOCKET="$NIRI_SOCK" \
@@ -71,12 +61,12 @@ let
           win:requestActivation=no \
           spice:enable=no \
           >> /tmp/looking-glass.log 2>&1
+      log "Looking Glass gestartet"
     else
-      log "FEHLER: Kein niri-Socket gefunden, LG nicht gestartet"
+      log "WARN: kein niri-Socket, Looking Glass nicht gestartet"
     fi
-    log "Looking Glass gestartet"
 
-    log "VM-Watcher aktiv (warte auf VM-Stop)"
+    log "Phase 3: VM-Watcher (warte auf VM-Stop)"
     while "$VIRSH" domstate "$VM_NAME" 2>/dev/null | grep -q "running"; do
       sleep 5
     done
@@ -87,17 +77,70 @@ let
     kill "$(cat /tmp/vm-inhibit.pid 2>/dev/null)" 2>/dev/null
     rm -f /tmp/vm-inhibit.pid
 
-    log "GPU zurück an nvidia"
-    "$VIRSH" nodedev-reattach pci_0000_01_00_1 2>/dev/null || true
-    "$VIRSH" nodedev-reattach pci_0000_01_00_0 || log "WARN: GPU-Reattach fehlgeschlagen"
+    log "=== VM-Session beendet (GPU bleibt auf vfio-pci bis zum nächsten Reboot) ==="
+  '';
 
-    log "=== VM-Session beendet ==="
+  # Wechselt zwischen gpulinux (nvidia PRIME) und gpuvm (vfio-pci Passthrough) via Reboot.
+  # gpuvm → linux: normaler Reboot. gpulinux → vm: bootctl set-oneshot auf die Specialisation.
+  gpuSwitchReboot = pkgs.writeShellScriptBin "gpu-switch-reboot" ''
+    CURRENT_MODE="linux"
+    grep -q 'gpu_mode=vm' /proc/cmdline && CURRENT_MODE="vm"
+
+    TARGET="''${1:-}"
+    if [ -z "$TARGET" ]; then
+      [ "$CURRENT_MODE" = "vm" ] && TARGET="linux" || TARGET="vm"
+    fi
+
+    case "$TARGET" in
+      vm)
+        if [ "$CURRENT_MODE" = "vm" ]; then
+          echo "Bereits im gpuvm-Modus."
+          exit 0
+        fi
+        ENTRY=$(ls /boot/loader/entries/ 2>/dev/null | grep "specialisation-gpuvm" | sort -V | tail -1 | sed 's/\.conf$//')
+        if [ -z "$ENTRY" ]; then
+          echo "Fehler: gpuvm-Bootentry nicht gefunden in /boot/loader/entries/"
+          echo "Verfügbare Entries:"
+          ls /boot/loader/entries/ | grep nixos
+          exit 1
+        fi
+        echo "Wechsel zu gpuvm nach Reboot (Entry: $ENTRY)"
+        sudo ${pkgs.systemd}/bin/bootctl set-oneshot "$ENTRY"
+        sudo reboot
+        ;;
+      linux)
+        if [ "$CURRENT_MODE" = "linux" ]; then
+          echo "Bereits im gpulinux-Modus."
+          exit 0
+        fi
+        echo "Wechsel zu gpulinux nach Reboot..."
+        sudo reboot
+        ;;
+      *)
+        echo "Verwendung: gpu-switch-reboot [vm|linux]"
+        echo "Aktueller Modus: $CURRENT_MODE"
+        exit 1
+        ;;
+    esac
+  '';
+
+  gpuStatus = pkgs.writeShellScriptBin "gpu-status" ''
+    if grep -q 'gpu_mode=vm' /proc/cmdline; then
+      DRIVER=$(readlink /sys/bus/pci/devices/0000:01:00.0/driver 2>/dev/null | xargs basename 2>/dev/null || echo "unbekannt")
+      echo "Modus:      gpuvm (GPU-Passthrough)"
+      echo "GPU-Treiber: $DRIVER"
+    else
+      echo "Modus:      gpulinux (PRIME Offload)"
+      echo "GPU-Treiber: nvidia"
+    fi
   '';
 in
 {
   home.packages = with pkgs; [
     looking-glass-client
     scream
+    gpuSwitchReboot
+    gpuStatus
     (writeShellScriptBin "vm" ''
       VM_NAME="windows11"
 
@@ -112,6 +155,14 @@ in
       case "$ACTION" in
         start)
           echo "=== VM starten ==="
+
+          # GPU-Modus prüfen
+          GPU_DRIVER=$(readlink /sys/bus/pci/devices/0000:01:00.0/driver 2>/dev/null | xargs basename 2>/dev/null || echo "keiner")
+          if [ "$GPU_DRIVER" != "vfio-pci" ]; then
+            echo "Fehler: GPU ist auf '$GPU_DRIVER', nicht vfio-pci."
+            echo "Lösung: 'gpu-switch-reboot' ausführen → Reboot → dann 'vm start'"
+            exit 1
+          fi
 
           # USB-Geräte prüfen
           echo "USB-Geräte prüfen..."
@@ -146,16 +197,13 @@ in
             exit 1
           fi
 
-          # sudo-Credentials cachen (wird im Hintergrundprozess gebraucht)
           sudo -v || { echo "Fehler: sudo auth fehlgeschlagen"; exit 1; }
 
           echo ""
-          echo "=== Desktop läuft weiter — kein Neustart nötig ==="
           echo "Looking Glass erscheint automatisch nach ca. 30 Sekunden."
           echo "Log: journalctl -t vm-start -f"
           echo ""
 
-          # Im Hintergrund starten (überlebt niri-Neustart via disown)
           sudo bash ${vmStartBg} &
           disown $!
           ;;
@@ -186,8 +234,7 @@ in
           fi
 
           echo "force_linux" > /tmp/vm-toggle-kbd.fifo
-          echo "(Hintergrundprozess übernimmt GPU-Reattach)"
-          echo "=== VM wird beendet ==="
+          echo "=== VM beendet (GPU bleibt auf vfio-pci bis zum nächsten Reboot) ==="
           ;;
 
         pause)

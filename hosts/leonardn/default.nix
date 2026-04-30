@@ -47,4 +47,16 @@ in
     imports = [ ]
       ++ lib.optional (desktop == "niri") ../../home/desktop-niri.nix;
   };
+
+  # GPU-Modus-Specialisation: bootet mit vfio-pci.ids → GPU sofort auf vfio-pci (kein Hot-Detach nötig)
+  # Aktivierung: gpu-switch-reboot (nutzt bootctl set-oneshot auf diesen Entry)
+  specialisation.gpuvm.configuration = {
+    system.nixos.tags = [ "gpuvm" ];
+    boot.kernelParams = lib.mkForce [
+      "intel_iommu=on,sm_on" "iommu=pt" "random.trust_cpu=on"
+      "i915.force_probe=a780"
+      "vfio-pci.ids=10de:2206,10de:1aef"
+      "gpu_mode=vm"
+    ];
+  };
 }
