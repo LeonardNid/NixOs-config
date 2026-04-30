@@ -10,78 +10,6 @@ let
     </hostdev>
   '';
 
-  # Läuft als root im Hintergrund.
-  # Voraussetzung: gpuvm-Modus (gpu-switch-reboot → Reboot), dann GPU bereits auf vfio-pci.
-  # Kein SDDM-Stop, kein Modul-Entladen — GPU wandert nur zwischen Treibern per Kernel-Param.
-  vmStartBg = pkgs.writeShellScript "vm-start-bg" ''
-    VM_NAME="windows11"
-    VIRSH="${pkgs.libvirt}/bin/virsh"
-    BOOT_WAIT=20
-    USER_NAME="leonardn"
-    USER_ID=1000
-    USER_RUNTIME="/run/user/$USER_ID"
-
-    log() { logger -t vm-start "$*"; }
-
-    log "=== VM-Start ==="
-
-    # GPU muss auf vfio-pci sein — nur im gpuvm-Modus (nach gpu-switch-reboot) gegeben
-    GPU_DRIVER=$(readlink /sys/bus/pci/devices/0000:01:00.0/driver 2>/dev/null | xargs basename 2>/dev/null || echo "keiner")
-    if [ "$GPU_DRIVER" != "vfio-pci" ]; then
-      log "FEHLER: GPU ist auf '$GPU_DRIVER', nicht vfio-pci"
-      log "Lösung: 'gpu-switch-reboot' ausführen → Reboot → dann 'vm start'"
-      exit 1
-    fi
-    log "GPU auf vfio-pci — OK"
-
-    log "Phase 1: VM starten"
-    "$VIRSH" start "$VM_NAME" || { log "VM-Start fehlgeschlagen"; exit 1; }
-    log "VM gestartet"
-
-    echo "init_linux_after_qemu_start" > /tmp/vm-toggle-kbd.fifo 2>/dev/null || true
-    systemd-inhibit --what=idle:sleep --who="Windows VM" --why="Gaming auf VM" sleep infinity &
-    echo $! > /tmp/vm-inhibit.pid
-
-    log "Warte auf Windows-Boot ($BOOT_WAIT s)..."
-    sleep "$BOOT_WAIT"
-
-    log "Phase 2: Looking Glass starten"
-    NIRI_SOCK=$(ls "$USER_RUNTIME"/niri.*.sock 2>/dev/null | head -1)
-    if [ -n "$NIRI_SOCK" ]; then
-      sudo -u "$USER_NAME" \
-        NIRI_SOCKET="$NIRI_SOCK" \
-        XDG_RUNTIME_DIR="$USER_RUNTIME" \
-        WAYLAND_DISPLAY=wayland-1 \
-        /run/current-system/sw/bin/niri msg action spawn -- \
-          ${pkgs.looking-glass-client}/bin/looking-glass-client \
-          -F -f /dev/kvmfr0 \
-          win:size=2560x1440 win:dontUpscale=on \
-          input:captureOnFocus=no input:grabKeyboardOnFocus=no \
-          input:escapeKey=KEY_PAUSE \
-          win:requestActivation=no \
-          spice:enable=no \
-          > /dev/null 2>&1
-      log "Looking Glass gestartet"
-    else
-      log "WARN: kein niri-Socket, Looking Glass nicht gestartet"
-    fi
-
-    log "Phase 3: VM-Watcher (warte auf VM-Stop)"
-    while "$VIRSH" domstate "$VM_NAME" 2>/dev/null | grep -q "running"; do
-      sleep 5
-    done
-    log "VM gestoppt — Cleanup"
-
-    echo "force_linux" > /tmp/vm-toggle-kbd.fifo 2>/dev/null || true
-    pkill -f looking-glass-client 2>/dev/null || true
-    kill "$(cat /tmp/vm-inhibit.pid 2>/dev/null)" 2>/dev/null
-    rm -f /tmp/vm-inhibit.pid
-
-    log "=== VM-Session beendet (GPU bleibt auf vfio-pci bis zum nächsten Reboot) ==="
-  '';
-
-  # Wechselt zwischen gpulinux (nvidia PRIME) und gpuvm (vfio-pci Passthrough) via Reboot.
-  # gpuvm → linux: normaler Reboot. gpulinux → vm: bootctl set-oneshot auf die Specialisation.
   gpuSwitchReboot = pkgs.writeShellScriptBin "gpu-switch-reboot" ''
     CURRENT_MODE="linux"
     grep -q 'gpu_mode=vm' /proc/cmdline && CURRENT_MODE="vm"
@@ -101,7 +29,7 @@ let
         if [ -z "$ENTRY" ]; then
           echo "Fehler: gpuvm-Bootentry nicht gefunden in /boot/loader/entries/"
           echo "Verfügbare Entries:"
-          ls /boot/loader/entries/ | grep nixos
+          sudo ls /boot/loader/entries/ | grep nixos
           exit 1
         fi
         echo "Wechsel zu gpuvm nach Reboot (Entry: $ENTRY)"
@@ -127,10 +55,10 @@ let
   gpuStatus = pkgs.writeShellScriptBin "gpu-status" ''
     if grep -q 'gpu_mode=vm' /proc/cmdline; then
       DRIVER=$(readlink /sys/bus/pci/devices/0000:01:00.0/driver 2>/dev/null | xargs basename 2>/dev/null || echo "unbekannt")
-      echo "Modus:      gpuvm (GPU-Passthrough)"
+      echo "Modus:       gpuvm (GPU-Passthrough)"
       echo "GPU-Treiber: $DRIVER"
     else
-      echo "Modus:      gpulinux (PRIME Offload)"
+      echo "Modus:       gpulinux (PRIME Offload)"
       echo "GPU-Treiber: nvidia"
     fi
   '';
@@ -143,6 +71,8 @@ in
     gpuStatus
     (writeShellScriptBin "vm" ''
       VM_NAME="windows11"
+      BOOT_DELAY=30
+      RESUME_DELAY=2
 
       ACTION="''${1:-}"
       if [ -z "$ACTION" ]; then
@@ -156,9 +86,10 @@ in
         start)
           echo "=== VM starten ==="
 
-          # GPU-Modus prüfen
+          # GPU-Modus prüfen (nur im gpuvm-Modus startet die VM)
           GPU_DRIVER=$(readlink /sys/bus/pci/devices/0000:01:00.0/driver 2>/dev/null | xargs basename 2>/dev/null || echo "keiner")
           if [ "$GPU_DRIVER" != "vfio-pci" ]; then
+            echo ""
             echo "Fehler: GPU ist auf '$GPU_DRIVER', nicht vfio-pci."
             echo "Lösung: 'gpu-switch-reboot' ausführen → Reboot → dann 'vm start'"
             exit 1
@@ -179,7 +110,8 @@ in
           check_usb "054c" "0ce6" "Sony DualSense Controller"
           check_usb "16d0" "12f7" "Azeron Keypad"
           if [ "$USB_MISSING" = 1 ]; then
-            echo "Fehler: Nicht alle USB-Geräte angeschlossen."
+            echo ""
+            echo "Fehler: Nicht alle USB-Geräte angeschlossen. VM wird nicht gestartet."
             exit 1
           fi
 
@@ -191,21 +123,64 @@ in
             fi
           done
 
-          # Rocket League darf nicht laufen
-          if pgrep -f "RocketLeague|Sugar\.exe" >/dev/null 2>&1; then
-            echo "Fehler: Rocket League läuft noch. Bitte erst beenden."
+          # VM starten
+          echo "VM starten..."
+          if ! sudo virsh start "$VM_NAME"; then
+            echo ""
+            echo "Fehler: VM konnte nicht gestartet werden."
             exit 1
           fi
 
-          sudo -v || { echo "Fehler: sudo auth fehlgeschlagen"; exit 1; }
+          sleep 0.5
+          echo "init_linux_after_qemu_start" > /tmp/vm-toggle-kbd.fifo
 
-          echo ""
-          echo "Looking Glass erscheint automatisch nach ca. 30 Sekunden."
-          echo "Log: journalctl -t vm-start -f"
+          sleep 2
+
+          systemd-inhibit --what=idle:sleep --who="Windows VM" --why="Gaming auf VM" sleep infinity &
+          echo $! > /tmp/vm-inhibit.pid
+
+          # Fortschrittsbalken während Windows bootet
+          echo "=== Windows bootet... (ScrollLock = Input umschalten) ==="
+          for i in $(seq 1 $BOOT_DELAY); do
+            filled=$(( i * 30 / BOOT_DELAY ))
+            empty=$(( 30 - filled ))
+            bar=$(printf '%0.s█' $(seq 1 $filled) 2>/dev/null)$(printf '%0.s░' $(seq 1 $empty) 2>/dev/null)
+            printf '\r[%s] %d/%ds' "$bar" "$i" "$BOOT_DELAY"
+            sleep 1
+          done
           echo ""
 
-          sudo bash ${vmStartBg} &
-          disown $!
+          # Looking Glass starten
+          echo "Looking Glass starten..."
+          if [ "$XDG_CURRENT_DESKTOP" = "niri" ]; then
+            niri msg action focus-monitor-left
+            sleep 0.3
+          fi
+          looking-glass-client -F -f /dev/kvmfr0 \
+            win:size=2560x1440 win:dontUpscale=on \
+            input:captureOnFocus=no input:grabKeyboardOnFocus=no \
+            input:escapeKey=KEY_PAUSE \
+            win:requestActivation=no \
+            spice:enable=no \
+            > /tmp/looking-glass.log 2>&1 &
+          LG_PID=$!
+
+          # Background-Watcher: räumt auf wenn VM stoppt
+          (while sudo virsh domstate "$VM_NAME" 2>/dev/null | grep -q "running"; do
+            sleep 5
+          done
+          echo "force_linux" > /tmp/vm-toggle-kbd.fifo
+          pkill -f looking-glass-client 2>/dev/null
+          kill "$(cat /tmp/vm-inhibit.pid 2>/dev/null)" 2>/dev/null
+          rm -f /tmp/vm-inhibit.pid
+          notify-send "Windows VM" "VM gestoppt, aufgeräumt." 2>/dev/null || true) &
+
+          echo "Looking Glass läuft (PID: $LG_PID)"
+          echo "Log: /tmp/looking-glass.log"
+          echo ""
+          echo "=== VM läuft! ScrollLock = Input umschalten ==="
+          echo "VM stoppt automatisch wenn Windows herunterfährt."
+          echo "Oder manuell: vm stop"
           ;;
 
         stop)
@@ -218,6 +193,7 @@ in
           if sudo virsh domstate "$VM_NAME" 2>/dev/null | grep -q "running"; then
             echo "VM herunterfahren..."
             sudo virsh shutdown "$VM_NAME"
+
             for i in $(seq 1 60); do
               if ! sudo virsh domstate "$VM_NAME" 2>/dev/null | grep -q "running"; then
                 echo "VM ist aus."
@@ -225,6 +201,7 @@ in
               fi
               sleep 1
             done
+
             if sudo virsh domstate "$VM_NAME" 2>/dev/null | grep -q "running"; then
               echo "VM reagiert nicht, erzwinge Shutdown..."
               sudo virsh destroy "$VM_NAME"
@@ -234,7 +211,7 @@ in
           fi
 
           echo "force_linux" > /tmp/vm-toggle-kbd.fifo
-          echo "=== VM beendet (GPU bleibt auf vfio-pci bis zum nächsten Reboot) ==="
+          echo "=== Fertig ==="
           ;;
 
         pause)
@@ -247,24 +224,18 @@ in
         resume)
           echo "=== VM fortsetzen ==="
           sudo virsh resume "$VM_NAME"
-          NIRI_SOCK=$(ls /run/user/1000/niri.*.sock 2>/dev/null | head -1)
-          if [ -n "$NIRI_SOCK" ]; then
-            NIRI_SOCKET="$NIRI_SOCK" niri msg action spawn -- \
-              looking-glass-client -F -f /dev/kvmfr0 \
-              win:size=2560x1440 win:dontUpscale=on \
-              input:captureOnFocus=no input:grabKeyboardOnFocus=no \
-              input:escapeKey=KEY_PAUSE \
-              win:requestActivation=no \
-              spice:enable=no
-          else
-            looking-glass-client -F -f /dev/kvmfr0 \
-              win:size=2560x1440 win:dontUpscale=on \
-              input:captureOnFocus=no input:grabKeyboardOnFocus=no \
-              input:escapeKey=KEY_PAUSE \
-              win:requestActivation=no \
-              spice:enable=no \
-              > /tmp/looking-glass.log 2>&1 &
+          if [ "$XDG_CURRENT_DESKTOP" = "niri" ]; then
+            niri msg action focus-monitor-left
+            sleep 0.3
           fi
+          looking-glass-client -F -f /dev/kvmfr0 \
+            win:size=2560x1440 win:dontUpscale=on \
+            input:captureOnFocus=no input:grabKeyboardOnFocus=no \
+            input:escapeKey=KEY_PAUSE \
+            win:requestActivation=no \
+            spice:enable=no \
+            > /tmp/looking-glass.log 2>&1 &
+          echo "Looking Glass gestartet (PID: $!)"
           echo "=== VM läuft wieder ==="
           ;;
 
