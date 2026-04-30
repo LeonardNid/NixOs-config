@@ -32,9 +32,13 @@
       url = "github:noctalia-dev/noctalia-shell";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    kimi-cli = {
+      url = "github:MoonshotAI/kimi-cli";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
-  outputs = { self, nixpkgs, claude-code-nix, home-manager, mango, niri-flake, zen-browser, noctalia, ... }:
+  outputs = { self, nixpkgs, claude-code-nix, home-manager, mango, niri-flake, zen-browser, noctalia, kimi-cli, ... }:
   let
     homeManagerModules = [
       home-manager.nixosModules.home-manager
@@ -47,6 +51,7 @@
         environment.systemPackages = [
           claude-code-nix.packages.x86_64-linux.default
           zen-browser.packages.x86_64-linux.default
+          kimi-cli.packages.x86_64-linux.default
         ];
       }
     ];
