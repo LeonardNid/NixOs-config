@@ -53,6 +53,7 @@ in
   boot.kernelModules = [ "kvmfr" "vfio" "vfio_iommu_type1" "vfio_pci" ];
   boot.extraModprobeConfig = ''
     options kvmfr static_size_mb=128
+    options nvidia-drm fbdev=0
   '';
 
   # udev Rules für Input-Devices und KVMFR
