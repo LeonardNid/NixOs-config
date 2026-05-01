@@ -124,11 +124,13 @@
       mkdir -p "$STAGING"
 
       mapfile -t selected < <(
-        fd . "$NC_DIR" -t f --follow \
+        fd . "$NC_DIR" -t f \
             --exclude 'node_modules' \
             --exclude 'target' \
             --exclude '.git' \
-            -0 | xargs -0 stat -c '%Y %n' | sort -rn | cut -d' ' -f2- |
+            --exclude '.steam' \
+            --exclude '.local/share/Steam' \
+            -0 | xargs -0 stat -c '%Y %n' 2>/dev/null | sort -rn | cut -d' ' -f2- |
         fzf --multi \
             --prompt="  ~ > " \
             --delimiter "/" \
