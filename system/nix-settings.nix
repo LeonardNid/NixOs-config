@@ -12,4 +12,8 @@
   nixpkgs.config.allowUnfree = true;
 
   services.dbus.implementation = "broker";
+
+  # Proton/Wine benötigt sehr viele Memory Mappings (DLLs, Shader-Cache, etc.)
+  # Standard 65536 oder 1M reicht nicht → Spiele frieren ein wenn das Limit erreicht wird
+  boot.kernel.sysctl."vm.max_map_count" = 2147483642;
 }
