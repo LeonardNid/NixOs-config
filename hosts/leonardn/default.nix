@@ -37,6 +37,13 @@ in
     options = [ "uid=1000" "gid=100" "umask=0022" "nofail" "noauto" "x-systemd.automount" ];
   };
 
+  # HDD (ntfs3, für Backups und Medien)
+  fileSystems."/mnt/hdd" = {
+    device = "/dev/disk/by-uuid/01DB69DC8A91BC90";
+    fsType = "ntfs3";
+    options = [ "uid=1000" "gid=100" "umask=0022" "nofail" ];
+  };
+
   # Desktop: auto-login (kein Passwort beim Booten)
   services.displayManager.autoLogin.enable = true;
   services.displayManager.autoLogin.user = "leonardn";
