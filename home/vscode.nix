@@ -12,6 +12,13 @@
       ];
       userSettings = {
         "editor.lineNumbers" = "relative";
+        "explorer.confirmDragAndDrop" = false;
+        "github.copilot.enable" = {
+          "*" = false;
+          "plaintext" = false;
+          "markdown" = false;
+          "scminput" = false;
+        };
         "vim.useSystemClipboard" = true;
         "vim.handleKeys" = {
           "<C-f>" = false;
