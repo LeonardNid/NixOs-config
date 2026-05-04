@@ -89,6 +89,16 @@
       pkill -SIGRTMIN+1 waybar 2>/dev/null || true
     '')
 
+    (pkgs.writeShellScriptBin "niri-focus-or-launch" ''
+      APP_ID="$1"; shift
+      WIN_ID=$(niri msg -j windows 2>/dev/null | ${pkgs.jq}/bin/jq -r --arg id "$APP_ID" '[.[] | select(.app_id == $id)] | first | .id // empty')
+      if [ -n "$WIN_ID" ]; then
+        niri msg action focus-window --id "$WIN_ID"
+      else
+        exec "$@"
+      fi
+    '')
+
     (pkgs.writeShellScriptBin "vesktop-toggle" ''
       # Finde den AudioService-Prozess von Vesktop.
       AUDIO_PIDS=$(pgrep -f "utility-sub-type=audio.mojom.AudioService")

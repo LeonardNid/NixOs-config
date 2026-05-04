@@ -107,6 +107,8 @@ in
     binds {
       // Apps
       Mod+T { spawn "kitty"; }
+      Mod+A { spawn "niri-focus-or-launch" "zen" "zen"; }
+      Mod+L { spawn "niri-focus-or-launch" "vesktop" "vesktop"; }
       Mod+E { spawn "nautilus"; }
       Mod+Shift+E { spawn "kitty" "--override" "initial_window_width=1100" "--override" "initial_window_height=700" "--title" "nc-pick" "-e" "nc-pick"; }
       Alt+Space { spawn "noctalia-shell" "ipc" "call" "launcher" "toggle"; }
@@ -124,7 +126,6 @@ in
       Mod+H { focus-column-left; }
       Mod+J { focus-window-down; }
       Mod+K { focus-window-up; }
-      Mod+L { focus-column-right; }
 
       // Spalten/Fenster verschieben
       Mod+Ctrl+Left  { move-column-left; }
@@ -134,7 +135,6 @@ in
       Mod+Ctrl+H { move-column-left; }
       Mod+Ctrl+J { move-window-down; }
       Mod+Ctrl+K { move-window-up; }
-      Mod+Ctrl+L { move-column-right; }
 
       // Erste/letzte Spalte
       Mod+Home { focus-column-first; }
