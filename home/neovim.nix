@@ -49,19 +49,15 @@
   # Neo-spezifische Binds werden hier später ergänzt
   xdg.configFile."nvim/lua/config/keymaps.lua".text = ''
     vim.keymap.set("n", "<leader>F", function()
-      require("telescope.builtin").find_files({
-        attach_mappings = function(prompt_bufnr, _)
-          local actions = require("telescope.actions")
-          local action_state = require("telescope.actions.state")
-          actions.select_default:replace(function()
-            local selection = action_state.get_selected_entry()
-            actions.close(prompt_bufnr)
-            if selection then
-              vim.fn.jobstart({ "kitty", "nvim", selection[1] }, { detach = true })
+      Snacks.picker.files({
+        actions = {
+          confirm = function(picker, item)
+            picker:close()
+            if item and item.file then
+              vim.fn.jobstart({ "kitty", "nvim", item.file }, { detach = true })
             end
-          end)
-          return true
-        end,
+          end,
+        },
       })
     end, { desc = "Open file in new Kitty window" })
   '';
