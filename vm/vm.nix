@@ -19,6 +19,15 @@ let
       [ "$CURRENT_MODE" = "vm" ] && TARGET="linux" || TARGET="vm"
     fi
 
+    set_default() {
+      local entry="$1"
+      if ! sudo ${pkgs.systemd}/bin/bootctl set-default "$entry"; then
+        echo "Fehler: bootctl set-default fehlgeschlagen!"
+        exit 1
+      fi
+      echo "Standard-Boot dauerhaft auf: $entry"
+    }
+
     case "$TARGET" in
       vm)
         if [ "$CURRENT_MODE" = "vm" ]; then
@@ -32,12 +41,9 @@ let
           sudo ls /boot/loader/entries/ | grep nixos
           exit 1
         fi
-        echo "Wechsel zu gpuvm nach Reboot (Entry: $ENTRY)"
-        if ! sudo ${pkgs.systemd}/bin/bootctl set-oneshot "$ENTRY"; then
-          echo "Fehler: bootctl set-oneshot fehlgeschlagen!"
-          exit 1
-        fi
-        echo "Oneshot gesetzt. Starte neu..."
+        echo "vm" | sudo tee /var/lib/gpu-switch-mode > /dev/null
+        set_default "$ENTRY"
+        echo "Starte neu..."
         sudo reboot
         ;;
       linux)
@@ -45,7 +51,12 @@ let
           echo "Bereits im gpulinux-Modus."
           exit 0
         fi
-        echo "Wechsel zu gpulinux nach Reboot..."
+        ENTRY=$(sudo ls /boot/loader/entries/ 2>/dev/null | grep -v "specialisation" | grep "nixos-generation" | sort -V | tail -1 | sed 's/\.conf$//')
+        sudo rm -f /var/lib/gpu-switch-mode
+        if [ -n "$ENTRY" ]; then
+          set_default "$ENTRY"
+        fi
+        echo "Starte neu..."
         sudo reboot
         ;;
       *)

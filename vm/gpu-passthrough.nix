@@ -30,6 +30,19 @@ in
   boot.kernelParams = [ "intel_iommu=on,sm_on" "iommu=pt" "random.trust_cpu=on" "i915.force_probe=a780" ];
   boot.blacklistedKernelModules = [ "nouveau" "nvidiafb" ];
 
+  # Nach jedem Rebuild: Standard-Boot-Entry auf den gewünschten GPU-Modus setzen
+  # (damit NixOS den default nicht auf die neue Generation zurücksetzt)
+  boot.loader.systemd-boot.extraInstallCommands = ''
+    MODE_FILE="/var/lib/gpu-switch-mode"
+    if [ -f "$MODE_FILE" ] && [ "$(cat "$MODE_FILE")" = "vm" ]; then
+      ENTRY=$(ls /boot/loader/entries/ 2>/dev/null | grep "specialisation-gpuvm" | sort -V | tail -1 | sed 's/\.conf$//')
+      [ -n "$ENTRY" ] && ${pkgs.systemd}/bin/bootctl set-default "$ENTRY"
+    else
+      ENTRY=$(ls /boot/loader/entries/ 2>/dev/null | grep -v specialisation | grep "nixos-generation" | sort -V | tail -1 | sed 's/\.conf$//')
+      [ -n "$ENTRY" ] && ${pkgs.systemd}/bin/bootctl set-default "$ENTRY"
+    fi
+  '';
+
   # Virtualisierung
   virtualisation.libvirtd = {
     enable = true;

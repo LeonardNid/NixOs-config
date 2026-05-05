@@ -1,1 +1,1 @@
-gnome-keyring:-auto-unlock-bei-auto-login-aktiviert--16:17
+gpu-switch:-set-default-statt-oneshot--persistenter-Modus--16:25
