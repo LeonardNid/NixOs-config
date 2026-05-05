@@ -143,6 +143,7 @@ in
       Mod+Return { spawn "kitty"; }
       Mod+A { spawn "niri-focus-or-launch" "zen" "zen"; }
       Mod+L { spawn "niri-focus-or-launch" "vesktop" "vesktop"; }
+      // Mod+W { spawn "niri-focus-or-launch" "obsidian" "obsidian"; }
       Mod+E { spawn "nautilus"; }
       Mod+Shift+E { spawn "kitty" "--override" "initial_window_width=1100" "--override" "initial_window_height=700" "--title" "nc-pick" "-e" "nc-pick"; }
       Alt+Space { spawn "noctalia-shell" "ipc" "call" "launcher" "toggle"; }
