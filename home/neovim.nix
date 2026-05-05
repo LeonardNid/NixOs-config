@@ -48,6 +48,22 @@
   # keyboard layout: ${keyboardLayout}
   # Neo-spezifische Binds werden hier später ergänzt
   xdg.configFile."nvim/lua/config/keymaps.lua".text = ''
+    vim.keymap.set("n", "<leader>F", function()
+      require("telescope.builtin").find_files({
+        attach_mappings = function(prompt_bufnr, _)
+          local actions = require("telescope.actions")
+          local action_state = require("telescope.actions.state")
+          actions.select_default:replace(function()
+            local selection = action_state.get_selected_entry()
+            actions.close(prompt_bufnr)
+            if selection then
+              vim.fn.jobstart({ "kitty", "nvim", selection[1] }, { detach = true })
+            end
+          end)
+          return true
+        end,
+      })
+    end, { desc = "Open file in new Kitty window" })
   '';
 
   xdg.configFile."nvim/lua/plugins/init.lua".text = "return {}";
