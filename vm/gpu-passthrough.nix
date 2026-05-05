@@ -32,16 +32,25 @@ in
 
   # Nach jedem Rebuild: Standard-Boot-Entry auf den gewünschten GPU-Modus setzen
   # (damit NixOS den default nicht auf die neue Generation zurücksetzt)
-  boot.loader.systemd-boot.extraInstallCommands = ''
-    MODE_FILE="/var/lib/gpu-switch-mode"
-    if [ -f "$MODE_FILE" ] && [ "$(cat "$MODE_FILE")" = "vm" ]; then
-      ENTRY=$(ls /boot/loader/entries/ 2>/dev/null | grep "specialisation-gpuvm" | sort -V | tail -1 | sed 's/\.conf$//')
-      [ -n "$ENTRY" ] && ${pkgs.systemd}/bin/bootctl set-default "$ENTRY"
-    else
-      ENTRY=$(ls /boot/loader/entries/ 2>/dev/null | grep -v specialisation | grep "nixos-generation" | sort -V | tail -1 | sed 's/\.conf$//')
-      [ -n "$ENTRY" ] && ${pkgs.systemd}/bin/bootctl set-default "$ENTRY"
-    fi
-  '';
+  boot.loader.systemd-boot.extraInstallCommands =
+    let
+      grep = "${pkgs.gnugrep}/bin/grep";
+      sort  = "${pkgs.coreutils}/bin/sort";
+      tail  = "${pkgs.coreutils}/bin/tail";
+      sed   = "${pkgs.gnused}/bin/sed";
+      ls    = "${pkgs.coreutils}/bin/ls";
+      cat   = "${pkgs.coreutils}/bin/cat";
+      bootctl = "${pkgs.systemd}/bin/bootctl";
+    in ''
+      MODE_FILE="/var/lib/gpu-switch-mode"
+      if [ -f "$MODE_FILE" ] && [ "$(${cat} "$MODE_FILE")" = "vm" ]; then
+        ENTRY=$(${ls} /boot/loader/entries/ 2>/dev/null | ${grep} "specialisation-gpuvm" | ${sort} -V | ${tail} -1 | ${sed} 's/\.conf$//')
+        [ -n "$ENTRY" ] && ${bootctl} set-default "$ENTRY"
+      else
+        ENTRY=$(${ls} /boot/loader/entries/ 2>/dev/null | ${grep} -v specialisation | ${grep} "nixos-generation" | ${sort} -V | ${tail} -1 | ${sed} 's/\.conf$//')
+        [ -n "$ENTRY" ] && ${bootctl} set-default "$ENTRY"
+      fi
+    '';
 
   # Virtualisierung
   virtualisation.libvirtd = {

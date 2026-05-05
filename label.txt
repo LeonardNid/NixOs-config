@@ -1,1 +1,1 @@
-gpu-switch:-set-default-statt-oneshot--persistenter-Modus--16:25
+gpu-switch:-extraInstallCommands-mit-vollen-Nix-Store-Pfaden--16:26
