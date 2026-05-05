@@ -112,6 +112,7 @@ in
       Mod+W { spawn "niri-focus-or-launch" "obsidian" "obsidian"; }
       Mod+E { spawn "nautilus"; }
       Mod+Shift+E { spawn "kitty" "--override" "initial_window_width=1100" "--override" "initial_window_height=700" "--title" "nc-pick" "-e" "nc-pick"; }
+      Mod+Shift+V { spawn "sh" "-c" "cliphist list | fuzzel --dmenu | cliphist decode | wl-copy"; }
       Alt+Space { spawn "noctalia-shell" "ipc" "call" "launcher" "toggle"; }
       Super+Alt+L { spawn "noctalia-shell" "ipc" "call" "lockScreen" "lock"; }
       Mod+S { close-window; }
