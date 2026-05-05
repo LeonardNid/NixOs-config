@@ -8,7 +8,7 @@
     shellAliases = {
       ll = "ls -la";
       la = "ls -A";
-      nf = ''file=$(fd . ~/Nextcloud | fzf) && xdg-open "$file"'';
+      nf = ''file=$(fd . ~/Nextcloud | fzf) && setsid xdg-open "$file" &>/dev/null'';
       e = "eza";
       ea = "eza -A";
       c = "clear";
