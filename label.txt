@@ -1,1 +1,1 @@
-leader-F2--10:32
+install-zathura--set-as-default-PDF-viewer--10:40
