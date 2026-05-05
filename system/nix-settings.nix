@@ -11,6 +11,8 @@
 
   nixpkgs.config.allowUnfree = true;
 
+  programs.nix-ld.enable = true;
+
   services.dbus.implementation = "broker";
 
   # Proton/Wine benötigt sehr viele Memory Mappings (DLLs, Shader-Cache, etc.)
