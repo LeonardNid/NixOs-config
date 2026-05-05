@@ -27,13 +27,19 @@
   # SDDM anweisen, KWallet beim Login zu entsperren
   security.pam.services.sddm.kwallet.enable = true;
 
+  # GNOME Keyring (libsecret) fuer Browser-Passwortspeicherung
+  # Auto-entsperrt sich beim Start wenn das Keyring-Passwort leer ist
+  services.gnome.gnome-keyring.enable = true;
+  security.pam.services.sddm.enableGnomeKeyring = true;
+
   # Polkit: benoetigt fuer Berechtigungsdialoge
   security.polkit.enable = true;
 
-  # kwalletd6 bereitstellen
+  # kwalletd6 + seahorse (Keyring-Manager, zum einmaligen Passwort-Leeren benoetigt)
   environment.systemPackages = [
     pkgs.kdePackages.kwallet
     pkgs.catppuccin-sddm-corners
+    pkgs.seahorse
   ];
 
   services.printing.enable = true;
