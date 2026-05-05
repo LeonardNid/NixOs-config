@@ -136,6 +136,7 @@ in
       Mod+Ctrl+H { move-column-left; }
       Mod+Ctrl+J { move-window-down; }
       Mod+Ctrl+K { move-window-up; }
+      Mod+Shift+L { focus-monitor-right; }
 
       // Erste/letzte Spalte
       Mod+Home { focus-column-first; }
