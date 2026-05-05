@@ -1,1 +1,1 @@
-gpu-switch:-extraInstallCommands-mit-vollen-Nix-Store-Pfaden--16:26
+gpu-switch:-loader.conf-direkt-statt-EFI-Variable--16:32

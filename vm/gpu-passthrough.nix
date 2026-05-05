@@ -35,20 +35,19 @@ in
   boot.loader.systemd-boot.extraInstallCommands =
     let
       grep = "${pkgs.gnugrep}/bin/grep";
-      sort  = "${pkgs.coreutils}/bin/sort";
-      tail  = "${pkgs.coreutils}/bin/tail";
-      sed   = "${pkgs.gnused}/bin/sed";
-      ls    = "${pkgs.coreutils}/bin/ls";
-      cat   = "${pkgs.coreutils}/bin/cat";
-      bootctl = "${pkgs.systemd}/bin/bootctl";
+      sort = "${pkgs.coreutils}/bin/sort";
+      tail = "${pkgs.coreutils}/bin/tail";
+      sed  = "${pkgs.gnused}/bin/sed";
+      ls   = "${pkgs.coreutils}/bin/ls";
+      cat  = "${pkgs.coreutils}/bin/cat";
     in ''
       MODE_FILE="/var/lib/gpu-switch-mode"
       if [ -f "$MODE_FILE" ] && [ "$(${cat} "$MODE_FILE")" = "vm" ]; then
-        ENTRY=$(${ls} /boot/loader/entries/ 2>/dev/null | ${grep} "specialisation-gpuvm" | ${sort} -V | ${tail} -1 | ${sed} 's/\.conf$//')
-        [ -n "$ENTRY" ] && ${bootctl} set-default "$ENTRY"
+        ENTRY=$(${ls} /boot/loader/entries/ 2>/dev/null | ${grep} "specialisation-gpuvm" | ${sort} -V | ${tail} -1)
+        [ -n "$ENTRY" ] && ${sed} -i "s/^default .*/default $ENTRY/" /boot/loader/loader.conf
       else
-        ENTRY=$(${ls} /boot/loader/entries/ 2>/dev/null | ${grep} -v specialisation | ${grep} "nixos-generation" | ${sort} -V | ${tail} -1 | ${sed} 's/\.conf$//')
-        [ -n "$ENTRY" ] && ${bootctl} set-default "$ENTRY"
+        ENTRY=$(${ls} /boot/loader/entries/ 2>/dev/null | ${grep} -v specialisation | ${grep} "nixos-generation" | ${sort} -V | ${tail} -1)
+        [ -n "$ENTRY" ] && ${sed} -i "s/^default .*/default $ENTRY/" /boot/loader/loader.conf
       fi
     '';
 

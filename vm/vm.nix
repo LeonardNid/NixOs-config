@@ -19,12 +19,9 @@ let
       [ "$CURRENT_MODE" = "vm" ] && TARGET="linux" || TARGET="vm"
     fi
 
-    set_default() {
+    set_loader_default() {
       local entry="$1"
-      if ! sudo ${pkgs.systemd}/bin/bootctl set-default "$entry"; then
-        echo "Fehler: bootctl set-default fehlgeschlagen!"
-        exit 1
-      fi
+      sudo ${pkgs.gnused}/bin/sed -i "s/^default .*/default $entry/" /boot/loader/loader.conf
       echo "Standard-Boot dauerhaft auf: $entry"
     }
 
@@ -34,15 +31,13 @@ let
           echo "Bereits im gpuvm-Modus."
           exit 0
         fi
-        ENTRY=$(sudo ls /boot/loader/entries/ 2>/dev/null | grep "specialisation-gpuvm" | sort -V | tail -1 | sed 's/\.conf$//')
+        ENTRY=$(sudo ${pkgs.coreutils}/bin/ls /boot/loader/entries/ 2>/dev/null | grep "specialisation-gpuvm" | sort -V | tail -1)
         if [ -z "$ENTRY" ]; then
           echo "Fehler: gpuvm-Bootentry nicht gefunden in /boot/loader/entries/"
-          echo "Verfügbare Entries:"
-          sudo ls /boot/loader/entries/ | grep nixos
           exit 1
         fi
         echo "vm" | sudo tee /var/lib/gpu-switch-mode > /dev/null
-        set_default "$ENTRY"
+        set_loader_default "$ENTRY"
         echo "Starte neu..."
         sudo reboot
         ;;
@@ -51,10 +46,10 @@ let
           echo "Bereits im gpulinux-Modus."
           exit 0
         fi
-        ENTRY=$(sudo ls /boot/loader/entries/ 2>/dev/null | grep -v "specialisation" | grep "nixos-generation" | sort -V | tail -1 | sed 's/\.conf$//')
+        ENTRY=$(sudo ${pkgs.coreutils}/bin/ls /boot/loader/entries/ 2>/dev/null | grep -v "specialisation" | grep "nixos-generation" | sort -V | tail -1)
         sudo rm -f /var/lib/gpu-switch-mode
         if [ -n "$ENTRY" ]; then
-          set_default "$ENTRY"
+          set_loader_default "$ENTRY"
         fi
         echo "Starte neu..."
         sudo reboot
