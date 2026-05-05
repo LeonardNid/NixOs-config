@@ -40,15 +40,15 @@
       extraDefCfg = "process-unmapped-keys yes";
       config = ''
       (defsrc
-        caps w i a s d f j k l ' z m ,
+        caps w i a s d f j k l ' z m , e
       )
 
       (deflayer default
-        esc  @w  _   @a  @s  @d  @f  @j  @k  @l  @ä  @y  _    _
+        esc  @w  _   @a  @s  @d  @f  @j  @k  @l  @ö  @y  _    _   e
       )
 
       (deflayer nav
-        _    _   up  _   _   _   _  left down rght  _   _  home end
+        _    _   up  _   _   _   _  left down rght  _   _  home end _
       )
 
       (defalias
@@ -60,7 +60,7 @@
         j  (tap-hold-release 200 150 j   rctl)
         k  (tap-hold-release 200 150 k   rsft)
         l  (tap-hold-release 200 150 l   ralt)
-        ä  (tap-hold-release 200 150 '   rmet)
+        ö  (tap-hold-release 200 150 '   rmet)
         ;; w: tap=w, hold=Nav-Layer
         w  (tap-hold             200 150 w   (layer-while-held nav))
         ;; y (physisch: kanata-z): tap=y, hold=AltGr → y+q=@

@@ -1,10 +1,11 @@
-{ keyboardLayout ? "qwertz", ... }:
+{ keyboardLayout ? "qwertz", pkgs, ... }:
 
 {
   programs.neovim = {
     enable = true;
     withRuby = false;
     withPython3 = false;
+    extraPackages = with pkgs; [ gcc ];
   };
 
   xdg.configFile."nvim/init.lua".text = ''
@@ -49,5 +50,5 @@
   xdg.configFile."nvim/lua/config/keymaps.lua".text = ''
   '';
 
-  xdg.configFile."nvim/lua/plugins/.keep".text = "";
+  xdg.configFile."nvim/lua/plugins/init.lua".text = "return {}";
 }
