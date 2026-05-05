@@ -33,7 +33,11 @@ let
           exit 1
         fi
         echo "Wechsel zu gpuvm nach Reboot (Entry: $ENTRY)"
-        sudo ${pkgs.systemd}/bin/bootctl set-oneshot "$ENTRY"
+        if ! sudo ${pkgs.systemd}/bin/bootctl set-oneshot "$ENTRY"; then
+          echo "Fehler: bootctl set-oneshot fehlgeschlagen!"
+          exit 1
+        fi
+        echo "Oneshot gesetzt. Starte neu..."
         sudo reboot
         ;;
       linux)

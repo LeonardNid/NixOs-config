@@ -59,9 +59,8 @@ in
   # Aktivierung: gpu-switch-reboot (nutzt bootctl set-oneshot auf diesen Entry)
   specialisation.gpuvm.configuration = {
     system.nixos.tags = [ "gpuvm" ];
-    boot.kernelParams = lib.mkForce [
-      "intel_iommu=on,sm_on" "iommu=pt" "random.trust_cpu=on"
-      "i915.force_probe=a780"
+    # Nur die VM-spezifischen Params hinzufügen – nicht mkForce, damit root=fstab/lsm=... erhalten bleiben
+    boot.kernelParams = [
       "vfio-pci.ids=10de:2206,10de:1aef"
       "gpu_mode=vm"
     ];
