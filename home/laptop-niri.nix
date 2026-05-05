@@ -127,6 +127,7 @@ in
       Mod+H { focus-column-left; }
       Mod+J { focus-window-down; }
       Mod+K { focus-window-up; }
+      Mod+L { focus-column-right; }
 
       // Spalten/Fenster verschieben
       Mod+Ctrl+Left  { move-column-left; }
@@ -136,7 +137,7 @@ in
       Mod+Ctrl+H { move-column-left; }
       Mod+Ctrl+J { move-window-down; }
       Mod+Ctrl+K { move-window-up; }
-      Mod+Shift+L { focus-monitor-right; }
+      Mod+Ctrl+L { move-column-right; }
 
       // Erste/letzte Spalte
       Mod+Home { focus-column-first; }
