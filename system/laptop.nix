@@ -77,6 +77,7 @@
       tapping = true;
       naturalScrolling = true;
       middleEmulation = true;
+      scrollMethod = "edge";
     };
   };
 
