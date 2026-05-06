@@ -53,7 +53,7 @@
 
       (defalias
         ;; Home Row Mods
-        a    (tap-hold-release 280 200 a    lmet)
+        a    (tap-hold-release 500 200 a    lmet)
         s    (tap-hold-release 200 150 s    lalt)
         d    (tap-hold-release 200 150 d    lsft)
         f    (tap-hold-release 200 150 f    lctl)
