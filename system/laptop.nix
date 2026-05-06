@@ -53,14 +53,14 @@
 
       (defalias
         ;; Home Row Mods
-        a    (tap-hold-release 500 200 a    lmet)
+        a    (tap-hold-release 300 200 a    lmet)
         s    (tap-hold-release 200 150 s    lalt)
         d    (tap-hold-release 200 150 d    lsft)
         f    (tap-hold-release 200 150 f    lctl)
         j    (tap-hold-release 200 150 j    rctl)
         k    (tap-hold-release 200 150 k    rsft)
         l    (tap-hold-release 200 150 l    ralt)
-        rml  (tap-hold-release 280 200 scln rmet)
+        rml  (tap-hold-release 300 200 scln rmet)
         ;; w: tap=w, hold=Nav-Layer
         w  (tap-hold             200 150 w   (layer-while-held nav))
         ;; y (physisch: kanata-z): tap=y, hold=AltGr → y+q=@

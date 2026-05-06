@@ -115,7 +115,7 @@ in
       Mod+Shift+V { spawn "noctalia-shell" "ipc" "call" "launcher" "clipboard"; }
       Alt+Space { spawn "noctalia-shell" "ipc" "call" "launcher" "toggle"; }
       Super+Alt+L { spawn "noctalia-shell" "ipc" "call" "lockScreen" "lock"; }
-      Mod+S { close-window; }
+      Mod+Q { close-window; }
 
       // Overview (niri native)
       Mod+O { toggle-overview; }
