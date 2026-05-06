@@ -245,35 +245,207 @@ Da die Voyager mehrere Interfaces besitzt und QEMUs interner `grab-toggle` Mecha
 <qemu:arg value="-object"/>
 <qemu:arg value="input-linux,id=mouse,evdev=/dev/input/corsair-fixed"/>
 <qemu:arg value="-object"/>
+<qemu:arg value="input-linux,id=mouse2,evdev=/dev/input/logitech-fixed"/>
+<qemu:arg value="-object"/>
 <qemu:arg value="input-linux,id=kbd0,evdev=/dev/input/virtual-voyager,grab_all=on,repeat=on"/>
 <qemu:arg value="-object"/>
 <qemu:arg value="input-linux,id=vm-toggle,evdev=/dev/input/vm-toggle-kbd,grab_all=on,grab-toggle=scrolllock"/>
 ```
 
-**Reihenfolge ist wichtig**: Die Maus (Slave) muss ZUERST definiert werden, danach die Tastatur (`virtual-voyager`), und zuletzt das `vm-toggle` Gerät (Master mit `grab-toggle=scrolllock`), damit die Ungrab-Cascade in QEMU rückwärts alle vorherigen Slaves erreicht.
+**Reihenfolge ist wichtig**: Alle Mäuse (Slaves, kein `grab_all`) müssen ZUERST definiert werden, danach die Tastaturen (`virtual-voyager`, `vm-toggle`). Nur so erreicht die Ungrab-Cascade von `vm-toggle` rückwärts alle Slaves.
 
-### Automatische Maus-Erkennung (kabellos vs. kabelgebunden)
+---
 
-Zwei Corsair-Mäuse (DARKSTAR kabelgebunden, SLIPSTREAM kabellos) teilen sich den Symlink
-`/dev/input/vm-mouse`. Per udev-Priorität gewinnt SLIPSTREAM (immer eingesteckt):
+### Mäuse via evdev-Daemon: Architektur
+
+Jede Maus, die per Scroll-Lock umschalten soll, läuft durch einen **evdev-Daemon**:
+
+```
+Physische Maus (USB)
+    └─ Daemon (python3 + evdev)
+           ├─ EVIOCGRAB auf physisches Gerät  (Linux-Desktop sieht keine direkten Events)
+           └─ Schreibt Events auf UInput-Virtualgerät ("XyzFixed")
+                  └─ udev-Symlink: /dev/input/xyz-fixed → /dev/input/eventN
+                         └─ QEMU input-linux: evdev=/dev/input/xyz-fixed  →  VM
+```
+
+**Warum der Umweg über einen Daemon statt direktes evdev-Passthrough?**
+
+- Die Event-Nummer (`eventN`) ändert sich je nach Boot-Reihenfolge und Steck-Reihenfolge. Ein Symlink auf einen festen Namen ist stabiler als ein hardcodierter Pfad.
+- Für die Corsair ist ein Scroll-Fix (Encoder-Bounce-Korrektur + Beschleunigung) notwendig, der im Daemon läuft.
+- Der Daemon kann Button-Remapping, Makros und andere Korrekturen übernehmen, die QEMU nicht kann.
+
+**Dummy-Modus wenn Gerät nicht angeschlossen**
+
+Wenn die physische Maus beim Daemon-Start nicht gefunden wird, erstellt der Daemon trotzdem das virtuelle Gerät mit demselben Namen — aber als leeres Dummy-Gerät ohne Events:
+
+- `/dev/input/xyz-fixed` existiert immer → QEMU-Start schlägt nicht fehl
+- Der Daemon prüft alle 3 Sekunden ob die physische Maus erschienen ist
+- Sobald sie eingesteckt wird: Daemon beendet sich mit Exit-Code 1 → systemd startet neu → volles Forwarding
+
+**Wichtig: Eigene UInput-Geräte aus der Suche ausschließen**
+
+Ohne Schutz findet der Daemon beim Polling sein eigenes Dummy-Gerät (gleiche Vendor:Product-IDs) und bootet endlos neu. Der Fix: UInput-Geräte haben `phys = "py-evdev-uinput"`, physische USB-Geräte haben z.B. `phys = "usb-0000:00:14.0-12/input0"`. Daher in jedem Daemon:
+
+```python
+if "uinput" in (dev.phys or ""):
+    dev.close()
+    continue
+```
+
+---
+
+### Neue Maus hinzufügen — Schritt-für-Schritt
+
+#### Schritt 1: Vendor:Product-ID ermitteln
+
+Maus einstecken, dann:
+
+```bash
+cat /proc/bus/input/devices | grep -A 8 -i "<gerätename>"
+```
+
+Im Sysfs-Pfad steht Vendor und Product im Format `VVVV:PPPP`:
+
+```
+S: Sysfs=/devices/.../0003:046D:C08F.001A/input/input59
+                              ^^^^  ^^^^
+                           Vendor  Product
+```
+
+→ Vendor: `046d`, Product: `c08f` (Kleinbuchstaben für udev-Regeln)
+
+Alternativ (wenn `usbutils` verfügbar): `lsusb | grep -i <name>`
+
+#### Schritt 2: Daemon-Skript erstellen
+
+`scripts/<name>-mouse-daemon.py` anlegen. Als Vorlage:
+
+- **Einfache Maus** (kein Scroll-Fix): `scripts/logitech-mouse-daemon.py` kopieren und anpassen
+- **Maus mit Encoder-Bounce-Problemen**: `scripts/corsair-mouse-daemon-v2.py` kopieren und anpassen
+
+Die drei Stellen die immer angepasst werden müssen:
+
+```python
+VENDOR_<NAME>  = 0x046D   # Vendor-ID (hex)
+PRODUCT_<NAME> = 0xC08F   # Product-ID (hex)
+
+# Im UInput-Konstruktor:
+ui = UInput(caps, name="<Name>Fixed", vendor=VENDOR_<NAME>, product=PRODUCT_<NAME>)
+#                       ^^^^^^^^^^^
+#                   Dieser Name erscheint in udev (ATTRS{name})
+```
+
+In `find_<name>_devices()` Vendor/Product-Filter und Geräteerkennung (REL_X für Maus, EV_LED für Keyboard-Interface) anpassen. Das `"uinput" in (dev.phys or "")` Skip **immer drinlassen**.
+
+#### Schritt 3: Systemd-Service anlegen
+
+`system/<name>-mouse-daemon.nix`:
 
 ```nix
-# DARKSTAR (kabelgebunden) - niedrige Priorität
-KERNEL=="event*", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="1bdc", ENV{ID_INPUT_MOUSE}=="1",
-  SYMLINK+="input/vm-mouse", OPTIONS+="link_priority=50"
-
-# SLIPSTREAM (kabellos) - hohe Priorität
-KERNEL=="event*", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="1bb2", ENV{ID_INPUT_MOUSE}=="1",
-  SYMLINK+="input/vm-mouse", OPTIONS+="link_priority=100"
+{ pkgs, ... }:
+{
+  systemd.services.<name>-mouse-daemon = let
+    python = pkgs.python3.withPackages (ps: [ ps.evdev ]);
+  in {
+    description = "<Gerätename> Mouse Daemon (evdev passthrough)";
+    wantedBy = [ "multi-user.target" ];
+    after = [ "systemd-udev-settle.service" ];
+    serviceConfig = {
+      Type = "simple";
+      Restart = "always";
+      RestartSec = 3;
+      ExecStart = "${python}/bin/python3 ${../scripts/<name>-mouse-daemon.py}";
+    };
+  };
+}
 ```
+
+#### Schritt 4: udev-Regeln ergänzen
+
+In `vm/gpu-passthrough.nix`, im `services.udev.extraRules`-Block **zwei Zeilen** hinzufügen:
+
+```nix
+# 1. Physisches Gerät: Zugriffsrechte (damit der Daemon es grabben kann)
+SUBSYSTEM=="input", ATTRS{idVendor}=="<vendor>", ATTRS{idProduct}=="<product>", GROUP="kvm", MODE="0660"
+# 2. Virtuelles Gerät: stabiler Symlink für QEMU
+KERNEL=="event*", ATTRS{name}=="<Name>Fixed", SYMLINK+="input/<name>-fixed", GROUP="kvm", MODE="0666", TAG+="uaccess"
+```
+
+Regeln:
+- Vendor/Product in **Kleinbuchstaben** (udev-Konvention)
+- `ATTRS{name}` muss exakt mit dem `name=`-Parameter im UInput-Konstruktor übereinstimmen
+- `MODE="0666"` beim virtuellen Gerät damit QEMU (root) es grabben kann
+- Die Reihenfolge in der Datei ist egal, aber der Übersicht halber bei den anderen Corsair/Logitech-Regeln einfügen
+
+#### Schritt 5: QEMU XML erweitern
+
+In `vm/windows11.xml`, den neuen Slave **vor** den Keyboard-Einträgen einfügen:
+
+```xml
+<!-- Mäuse (Slaves): alle vor den Tastaturen -->
+<qemu:arg value="-object"/>
+<qemu:arg value="input-linux,id=mouse,evdev=/dev/input/corsair-fixed"/>
+<qemu:arg value="-object"/>
+<qemu:arg value="input-linux,id=mouse2,evdev=/dev/input/logitech-fixed"/>
+<qemu:arg value="-object"/>
+<qemu:arg value="input-linux,id=mouse3,evdev=/dev/input/<name>-fixed"/>
+<!-- Tastaturen (Masters): immer nach den Mäusen -->
+<qemu:arg value="-object"/>
+<qemu:arg value="input-linux,id=kbd0,evdev=/dev/input/virtual-voyager,grab_all=on,repeat=on"/>
+<qemu:arg value="-object"/>
+<qemu:arg value="input-linux,id=vm-toggle,evdev=/dev/input/vm-toggle-kbd,grab_all=on,grab-toggle=scrolllock"/>
+```
+
+IDs (`mouse`, `mouse2`, `mouse3`, ...) müssen eindeutig sein. Mäuse bekommen **kein** `grab_all` — das ist nur für die Tastaturen nötig, die die Cascade auslösen.
+
+#### Schritt 6: Modul in Host importieren
+
+In `hosts/leonardn/default.nix` hinzufügen:
+
+```nix
+../../system/<name>-mouse-daemon.nix
+```
+
+#### Schritt 7: Rebuild + VM neu definieren
+
+```bash
+rebuild "<beschreibung>"
+```
+
+Danach **zwingend** die VM-Definition in libvirt aktualisieren. libvirt liest `windows11.xml` **nicht automatisch** — es hält eine eigene Kopie der VM-Definition. Ohne diesen Schritt startet die VM mit der alten XML und das neue Gerät fehlt im QEMU-Commandline:
+
+```bash
+vm stop   # falls VM läuft
+sudo virsh define /home/leonardn/nixos-config/vm/windows11.xml
+vm start
+```
+
+Kein `virsh undefine` nötig (und auch nicht gewollt — das würde die NVRAM-Datei löschen und Windows verliert seine UEFI-Einstellungen).
+
+#### Schritt 8: Prüfen
+
+```bash
+# Symlink vorhanden und zeigt auf ein existierendes Gerät?
+ls -la /dev/input/<name>-fixed
+
+# Daemon läuft stabil (kein Restart-Loop)?
+systemctl status <name>-mouse-daemon
+
+# QEMU hat das Gerät geöffnet (nach vm start)?
+QPID=$(pgrep -f "qemu-system-x86_64" | head -1)
+sudo cat /proc/$QPID/cmdline | tr '\0' '\n' | grep input-linux
+```
+
+Die letzte Prüfung muss alle konfigurierten `input-linux`-Einträge zeigen (mouse, mouse2, ..., kbd0, vm-toggle). Fehlt ein Eintrag, hat QEMU das Gerät nicht geöffnet — häufigste Ursache: `virsh define` wurde vergessen.
 
 ### cgroup_device_acl für Eingabegeräte
 
-Alle `/dev/input/event0` bis `/dev/input/event260` müssen in der ACL stehen, da die Event-Nummern
-dynamisch vergeben werden. Generiert mit:
+Alle `/dev/input/event0` bis `/dev/input/event299` müssen in der ACL stehen, da die Event-Nummern
+dynamisch vergeben werden (virtuelle UInput-Geräte bekommen oft hohe Nummern). Generiert mit:
 
 ```nix
-eventDevices = builtins.genList (i: ''"/dev/input/event${toString i}"'') 261;
+eventDevices = builtins.genList (i: ''"/dev/input/event${toString i}"'') 300;
 ```
 
 ---
