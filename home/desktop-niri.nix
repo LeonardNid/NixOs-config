@@ -139,7 +139,6 @@ in
     window-rule {
       match app-id="^kitty$" title="^float-term$"
       open-floating true
-      default-window-size { width 900; height 550; }
     }
 
 
