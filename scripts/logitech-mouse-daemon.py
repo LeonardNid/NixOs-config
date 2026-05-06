@@ -25,6 +25,9 @@ def find_g403_devices():
             dev = evdev.InputDevice(path)
         except OSError:
             continue
+        if "uinput" in (dev.phys or ""):
+            dev.close()
+            continue
         if dev.info.vendor != VENDOR_LOGITECH or dev.info.product != PRODUCT_G403:
             dev.close()
             continue

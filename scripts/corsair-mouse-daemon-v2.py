@@ -79,6 +79,9 @@ def find_corsair_devices():
     keyboard = None
     for path in evdev.list_devices():
         dev = evdev.InputDevice(path)
+        if "uinput" in (dev.phys or ""):
+            dev.close()
+            continue
         if dev.info.vendor != VENDOR_CORSAIR or dev.info.product != PRODUCT_SLIPSTREAM:
             dev.close()
             continue
