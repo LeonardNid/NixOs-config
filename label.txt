@@ -1,1 +1,1 @@
-gpu-switch:-loader.conf-direkt-statt-EFI-Variable--16:32
+update--10:00
