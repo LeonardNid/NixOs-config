@@ -136,11 +136,17 @@ in
       match app-id="^kitty$" title="^nc-pick$"
       open-floating true
     }
+    window-rule {
+      match app-id="^kitty$" title="^float-term$"
+      open-floating true
+      default-window-size { width 900; height 550; }
+    }
 
 
     binds {
       // Apps
       Mod+Return { spawn "kitty"; }
+      Mod+Shift+Return { spawn "kitty" "--title" "float-term"; }
       Mod+A { spawn "niri-focus-or-launch" "zen" "zen"; }
       Mod+L { spawn "niri-focus-or-launch" "vesktop" "vesktop"; }
       // Mod+W { spawn "niri-focus-or-launch" "obsidian" "obsidian"; }
