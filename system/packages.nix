@@ -34,5 +34,6 @@
     qutebrowser
     mission-center
     signal-desktop
+    rustdesk-flutter
   ];
 }
