@@ -8,6 +8,7 @@ all events to a unified virtual device (LogitechFixed) for QEMU evdev passthroug
 
 import sys
 import select
+import time
 
 import evdev
 from evdev import UInput, ecodes, InputEvent
@@ -61,8 +62,28 @@ def build_combined_caps(mouse, keyboard):
 def main():
     mouse, keyboard = find_g403_devices()
     if not mouse:
-        print("Logitech G403 HERO mouse not found, exiting.", file=sys.stderr)
-        sys.exit(1)
+        print("Logitech G403 HERO mouse not found, creating dummy LogitechFixed...", file=sys.stderr)
+        dummy_caps = {
+            ecodes.EV_KEY: [ecodes.BTN_LEFT, ecodes.BTN_RIGHT, ecodes.BTN_MIDDLE,
+                            ecodes.BTN_SIDE, ecodes.BTN_EXTRA],
+            ecodes.EV_REL: [ecodes.REL_X, ecodes.REL_Y,
+                            ecodes.REL_WHEEL, ecodes.REL_WHEEL_HI_RES,
+                            ecodes.REL_HWHEEL, ecodes.REL_HWHEEL_HI_RES],
+        }
+        ui = UInput(dummy_caps, name="LogitechFixed", vendor=VENDOR_LOGITECH, product=PRODUCT_G403)
+        try:
+            while True:
+                time.sleep(3)
+                m, _ = find_g403_devices()
+                if m:
+                    m.close()
+                    print("Logitech device appeared, restarting to grab it.", file=sys.stderr)
+                    sys.exit(1)
+        except (KeyboardInterrupt, OSError):
+            pass
+        finally:
+            ui.close()
+        return
 
     print(f"Found mouse: {mouse.name} at {mouse.path}", file=sys.stderr)
     if keyboard:

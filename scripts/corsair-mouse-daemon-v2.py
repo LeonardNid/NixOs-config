@@ -229,8 +229,28 @@ def main():
 
     mouse, keyboard = find_corsair_devices()
     if not mouse:
-        print("Corsair Slipstream mouse not found, exiting.", file=sys.stderr)
-        sys.exit(1)
+        print("Corsair Slipstream mouse not found, creating dummy CorsairFixed...", file=sys.stderr)
+        dummy_caps = {
+            ecodes.EV_KEY: [ecodes.BTN_LEFT, ecodes.BTN_RIGHT, ecodes.BTN_MIDDLE,
+                            ecodes.BTN_SIDE, ecodes.BTN_EXTRA],
+            ecodes.EV_REL: [ecodes.REL_X, ecodes.REL_Y,
+                            ecodes.REL_WHEEL, ecodes.REL_WHEEL_HI_RES,
+                            ecodes.REL_HWHEEL, ecodes.REL_HWHEEL_HI_RES],
+        }
+        ui = UInput(dummy_caps, name="CorsairFixed", vendor=VENDOR_CORSAIR, product=PRODUCT_SLIPSTREAM)
+        try:
+            while True:
+                time.sleep(3)
+                m, _ = find_corsair_devices()
+                if m:
+                    m.close()
+                    print("Corsair device appeared, restarting to grab it.", file=sys.stderr)
+                    sys.exit(1)
+        except (KeyboardInterrupt, OSError):
+            pass
+        finally:
+            ui.close()
+        return
 
     print(f"Found mouse: {mouse.name} at {mouse.path}", file=sys.stderr)
     if keyboard:
