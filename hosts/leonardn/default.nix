@@ -16,6 +16,7 @@ in
     ../../vm/gpu-passthrough.nix
     ../../vm/libvirt-hooks.nix
     ../../system/corsair-mouse-daemon.nix
+    ../../system/logitech-mouse-daemon.nix
     ../../system/amazonbasics-touchpad-daemon.nix
     ../../system/nix-settings.nix
     ../../system/networking.nix
