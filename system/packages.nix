@@ -33,18 +33,7 @@
     mission-center
     signal-desktop
     # rustdesk-flutter
+    zoxide
+    neovim
   ];
-
-  # Obsidian: --name setzt den Wayland app_id korrekt auf "Obsidian" statt "electron"
-  home.file.".local/share/applications/obsidian.desktop".text = ''
-    [Desktop Entry]
-    Name=Obsidian
-    Exec=obsidian --name Obsidian %u
-    Icon=obsidian
-    Type=Application
-    Categories=Office
-    MimeType=x-scheme-handler/obsidian
-    StartupWMClass=Obsidian
-    Comment=A powerful knowledge base
-  '';
 }
