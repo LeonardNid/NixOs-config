@@ -30,7 +30,7 @@
     eza
     git-lfs
     jq
-    zathura
+    kdePackages.okular
   ];
 
 
