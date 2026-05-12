@@ -18,7 +18,7 @@
       "x-scheme-handler/ftp"    = "zen.desktop";
 
       # PDF
-      "application/pdf"         = "org.pwmt.zathura.desktop";
+      "application/pdf"         = "okular.desktop";
 
       # Videos
       "video/mp4"               = "mpv.desktop";
