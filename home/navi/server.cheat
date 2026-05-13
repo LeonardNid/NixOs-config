@@ -4,4 +4,7 @@
 ssh leo@leoserver '/home/leo/.local/bin/moodle-dl --path /home/leo/moodle-dl --max-parallel-downloads 2'
 
 # Moodle-DL in Vault synchronisieren (leoserver, sudo)
-ssh leo@leoserver 'sudo bash /home/leo/moodle-dl/sync-to-vault.sh'
+ssh -t leo@leoserver 'sudo bash /home/leo/moodle-dl/sync-to-vault.sh'
+
+# Moodle-DL herunterladen und in Vault synchronisieren (leoserver)
+ssh -t leo@leoserver '/home/leo/.local/bin/moodle-dl --path /home/leo/moodle-dl --max-parallel-downloads 2 && sudo bash /home/leo/moodle-dl/sync-to-vault.sh'
