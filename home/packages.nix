@@ -31,6 +31,7 @@
     git-lfs
     jq
     kdePackages.okular
+    obs-studio
   ];
 
 
