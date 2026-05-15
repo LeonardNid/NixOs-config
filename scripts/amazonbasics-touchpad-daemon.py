@@ -1,12 +1,19 @@
 #!/usr/bin/env python3
 """
-AmazonBasics Touchpad Hotspot Daemon.
+AmazonBasics Touchpad Hotspot + Reading-Layer Daemon.
 
 Grabs the real AmazonBasics touchpad evdev exclusively and re-emits all
 events through a virtual uinput touchpad, which libinput picks up like
-the original. Single-finger taps that start inside a configured hotspot
-rectangle are swallowed (no BTN_LEFT, no cursor move) and replaced by
-a keyboard combo on a separate virtual keyboard device.
+the original. The daemon implements two layers:
+
+Default layer:
+  Single-finger taps that start inside a configured hotspot rectangle are
+  swallowed and replaced by a keyboard combo on a separate virtual keyboard.
+
+Reading layer (toggled by a 4-finger tap):
+  Every single-finger tap anywhere on the pad is swallowed and replaced by
+  N mouse-wheel-down notches on a virtual wheel device, for comfortable
+  reading. Two-finger scroll and cursor movement still work normally.
 
 Runs as a systemd service, started once at boot. If the touchpad is not
 present or disappears (unplug), the daemon idles and retries until it
@@ -14,6 +21,7 @@ comes back. No udev-triggered restart needed.
 """
 
 import select
+import subprocess
 import sys
 import time
 
@@ -30,6 +38,13 @@ X_MAX, Y_MAX = 1973, 1458
 TAP_MAX_MS = 180
 TAP_MAX_DIST = 30
 
+# Reading layer: each single-finger tap emits this many wheel notches down.
+READING_WHEEL_NOTCHES = 3
+
+# Notification target (user session running Mako).
+NOTIFY_USER = "leonardn"
+NOTIFY_UID = 1000
+
 # ---------------------------------------------------------------------------
 # Hotspot configuration — add/remove entries here, nothing else needs to change.
 #
@@ -38,7 +53,7 @@ TAP_MAX_DIST = 30
 #   "y": (y_min, y_max)  — touchpad Y range (0–1458, top→bottom)
 #   "keys": [key, ...]   — keys pressed simultaneously on a tap
 #
-# Percentage helpers: int(X_MAX * 0.20) = left 20% boundary, etc.
+# Hotspots only fire in the default layer; in reading mode every tap scrolls.
 # ---------------------------------------------------------------------------
 HOTSPOTS = [
     {   # top-left 20% × 20% → Super+O (niri toggle-overview)
@@ -67,9 +82,33 @@ HOTSPOTS = [
 INPUT_PROPS = [E.INPUT_PROP_POINTER, E.INPUT_PROP_BUTTONPAD]
 DEVICE_POLL_SEC = 2.0
 
+# BTN_TOOL_* code → finger count.
+TOOL_FINGER_COUNT = {
+    E.BTN_TOOL_FINGER:    1,
+    E.BTN_TOOL_DOUBLETAP: 2,
+    E.BTN_TOOL_TRIPLETAP: 3,
+    E.BTN_TOOL_QUADTAP:   4,
+    E.BTN_TOOL_QUINTTAP:  5,
+}
+
 
 def log(msg):
     print(msg, file=sys.stderr, flush=True)
+
+
+def notify(title, body):
+    try:
+        subprocess.Popen(
+            [
+                "runuser", "-u", NOTIFY_USER, "--",
+                "env", f"DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/{NOTIFY_UID}/bus",
+                "notify-send", "-t", "1500", title, body,
+            ],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+    except Exception as e:
+        log(f"notify failed: {e}")
 
 
 def find_hotspot(x, y):
@@ -126,6 +165,17 @@ def make_virtual_keyboard():
     )
 
 
+def make_virtual_wheel():
+    return UInput(
+        {
+            E.EV_KEY: [E.BTN_LEFT],
+            E.EV_REL: [E.REL_WHEEL, E.REL_HWHEEL],
+        },
+        name="AmazonBasics Touchpad Wheel",
+        vendor=0x248A, product=0x827A,
+    )
+
+
 def run_once(touchpad):
     """Run the filter loop on an already-opened touchpad. Returns when the
     device disappears or on keyboard interrupt."""
@@ -134,20 +184,27 @@ def run_once(touchpad):
 
     vpad = make_virtual_touchpad(touchpad)
     vkbd = make_virtual_keyboard()
-    log(f"virtual pad: {vpad.device.path}")
-    log(f"virtual kbd: {vkbd.device.path}")
+    vwheel = make_virtual_wheel()
+    log(f"virtual pad:   {vpad.device.path}")
+    log(f"virtual kbd:   {vkbd.device.path}")
+    log(f"virtual wheel: {vwheel.device.path}")
     time.sleep(0.3)
 
+    # ---- persistent layer state (lives across touch sessions) ----
+    reading_mode = False
+
+    # ---- per-session state (reset on each session_start) ----
     current_x = 0
     current_y = 0
 
-    state_buffering = False
-    active_hotspot = None
-    buffer_pkts = []
-    touch_start_time = 0.0
-    start_x = 0
-    start_y = 0
-    max_dist = 0.0
+    session_active = False
+    session_decided = False   # True once we commit to "flush" before session_end
+    session_buffer = []       # list of packets buffered during this session
+    session_start_time = 0.0
+    session_start_x = 0
+    session_start_y = 0
+    session_max_dist = 0.0
+    session_max_tool = 1      # highest finger count seen this session
 
     packet = []
 
@@ -159,11 +216,15 @@ def run_once(touchpad):
             vkbd.write(E.EV_KEY, k, 0)
         vkbd.syn()
 
+    def emit_wheel(notches):
+        vwheel.write(E.EV_REL, E.REL_WHEEL, notches)
+        vwheel.syn()
+
     def flush_buffer():
-        for pkt in buffer_pkts:
+        for pkt in session_buffer:
             for e in pkt:
                 vpad.write_event(e)
-        buffer_pkts.clear()
+        session_buffer.clear()
 
     def forward_packet(pkt):
         for e in pkt:
@@ -171,7 +232,7 @@ def run_once(touchpad):
 
     try:
         while True:
-            timeout = 0.05 if state_buffering else 1.0
+            timeout = 0.05 if (session_active and not session_decided) else 1.0
             r, _, _ = select.select([touchpad.fd], [], [], timeout)
 
             if r:
@@ -188,9 +249,9 @@ def run_once(touchpad):
                     pkt = packet + [ev]
                     packet = []
 
+                    # Parse packet for classification signals.
                     session_start = False
                     session_end = False
-                    multi_touch = False
                     for e in pkt:
                         if e.type == E.EV_ABS:
                             if e.code == E.ABS_MT_POSITION_X:
@@ -203,61 +264,88 @@ def run_once(touchpad):
                                     session_start = True
                                 else:
                                     session_end = True
-                            elif e.code in (E.BTN_TOOL_DOUBLETAP,
-                                            E.BTN_TOOL_TRIPLETAP,
-                                            E.BTN_TOOL_QUADTAP,
-                                            E.BTN_TOOL_QUINTTAP) and e.value == 1:
-                                multi_touch = True
+                            elif e.code in TOOL_FINGER_COUNT and e.value == 1:
+                                count = TOOL_FINGER_COUNT[e.code]
+                                if session_active and count > session_max_tool:
+                                    session_max_tool = count
 
-                    if session_start and not state_buffering:
-                        hit = find_hotspot(current_x, current_y)
-                        if hit is not None:
-                            state_buffering = True
-                            active_hotspot = hit
-                            touch_start_time = time.monotonic()
-                            start_x = current_x
-                            start_y = current_y
-                            max_dist = 0.0
+                    if session_start and not session_active:
+                        session_active = True
+                        session_decided = False
+                        session_buffer.clear()
+                        session_start_time = time.monotonic()
+                        session_start_x = current_x
+                        session_start_y = current_y
+                        session_max_dist = 0.0
+                        session_max_tool = 1
 
-                    if state_buffering:
-                        dx = current_x - start_x
-                        dy = current_y - start_y
+                    if session_active:
+                        # Update movement distance.
+                        dx = current_x - session_start_x
+                        dy = current_y - session_start_y
                         d = (dx * dx + dy * dy) ** 0.5
-                        if d > max_dist:
-                            max_dist = d
+                        if d > session_max_dist:
+                            session_max_dist = d
 
-                        buffer_pkts.append(pkt)
+                        if not session_decided:
+                            session_buffer.append(pkt)
 
-                        dt_ms = (time.monotonic() - touch_start_time) * 1000
-                        commit = None
-                        if multi_touch:
-                            commit = "flush"
-                        elif session_end:
-                            if dt_ms < TAP_MAX_MS and max_dist < TAP_MAX_DIST:
-                                commit = "swallow"
-                            else:
-                                commit = "flush"
-                        elif dt_ms > TAP_MAX_MS or max_dist > TAP_MAX_DIST:
-                            commit = "flush"
+                            dt_ms = (time.monotonic() - session_start_time) * 1000
+                            is_tap = (
+                                session_end
+                                and dt_ms < TAP_MAX_MS
+                                and session_max_dist < TAP_MAX_DIST
+                            )
 
-                        if commit == "swallow":
-                            buffer_pkts.clear()
-                            state_buffering = False
-                            emit_combo(active_hotspot["keys"])
-                            active_hotspot = None
-                        elif commit == "flush":
-                            flush_buffer()
-                            state_buffering = False
-                            active_hotspot = None
+                            if is_tap:
+                                if session_max_tool == 4:
+                                    # 4-finger tap → toggle reading layer.
+                                    session_buffer.clear()
+                                    reading_mode = not reading_mode
+                                    notify("Reading mode", "on" if reading_mode else "off")
+                                    log(f"reading_mode={'on' if reading_mode else 'off'}")
+                                elif session_max_tool == 1:
+                                    if reading_mode:
+                                        session_buffer.clear()
+                                        emit_wheel(-READING_WHEEL_NOTCHES)
+                                    else:
+                                        hit = find_hotspot(session_start_x, session_start_y)
+                                        if hit is not None:
+                                            session_buffer.clear()
+                                            emit_combo(hit["keys"])
+                                        else:
+                                            flush_buffer()
+                                else:
+                                    # 2/3/5-finger tap: no action, just forward.
+                                    flush_buffer()
+                                session_active = False
+                                session_decided = False
+                            elif session_end:
+                                # Long press or drag that ended — forward everything.
+                                flush_buffer()
+                                session_active = False
+                                session_decided = False
+                            elif dt_ms > TAP_MAX_MS or session_max_dist > TAP_MAX_DIST:
+                                # Definitely not a tap anymore — flush and live-forward.
+                                flush_buffer()
+                                session_decided = True
+                        else:
+                            # Already decided: forward live. Reset on session end.
+                            forward_packet(pkt)
+                            if session_end:
+                                session_active = False
+                                session_decided = False
                     else:
                         forward_packet(pkt)
+
             else:
-                if state_buffering:
-                    dt_ms = (time.monotonic() - touch_start_time) * 1000
+                # Select timeout — check for stale buffering session.
+                if session_active and not session_decided:
+                    dt_ms = (time.monotonic() - session_start_time) * 1000
                     if dt_ms > TAP_MAX_MS:
                         flush_buffer()
-                        state_buffering = False
-                        active_hotspot = None
+                        session_decided = True
+
     finally:
         try: touchpad.ungrab()
         except OSError: pass
@@ -266,6 +354,8 @@ def run_once(touchpad):
         try: vpad.close()
         except Exception: pass
         try: vkbd.close()
+        except Exception: pass
+        try: vwheel.close()
         except Exception: pass
 
 
