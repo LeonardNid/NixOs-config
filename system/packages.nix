@@ -26,7 +26,7 @@
     imv
     file-roller
     drawing
-    # gimp
+    gimp
     libreoffice-qt6-fresh
     gemini-cli
     # qutebrowser
