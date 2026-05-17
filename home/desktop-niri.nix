@@ -733,6 +733,10 @@ in
     '')
   ];
 
+  systemd.user.services.gvfs-daemon = {
+    Install.WantedBy = [ "graphical-session.target" ];
+  };
+
   # Heroic Desktop-Entry überschreiben damit der GPU-Modus-Check auch über Fuzzel greift
   xdg.desktopEntries."heroic" = {
     name = "Heroic Games Launcher";
