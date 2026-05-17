@@ -71,7 +71,6 @@ in
     spawn-at-startup "swaybg" "-i" "${wallpaper}" "-m" "fill"
     spawn-at-startup "wl-paste" "--watch" "cliphist" "store"
     spawn-at-startup "nm-applet" "--indicator"
-    spawn-at-startup "systemctl" "--user" "start" "gvfs-daemon.service"
 
     // Hotkey-Overlay beim Start nicht anzeigen
     hotkey-overlay {
