@@ -224,6 +224,11 @@ in
     size       = 24;
   };
 
+  gtk.iconTheme = {
+    package = pkgs.papirus-icon-theme;
+    name    = "Papirus-Dark";
+  };
+
   # Sperrbildschirm (Catppuccin Mocha)
   programs.swaylock = {
     enable = true;

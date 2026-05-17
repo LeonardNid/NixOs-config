@@ -279,6 +279,11 @@ in
     size       = 24;
   };
 
+  gtk.iconTheme = {
+    package = pkgs.papirus-icon-theme;
+    name    = "Papirus-Dark";
+  };
+
   programs.kitty = {
     enable = true;
     themeFile = "Catppuccin-Mocha";
