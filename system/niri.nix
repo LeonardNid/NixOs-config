@@ -44,7 +44,6 @@
 
   services.printing.enable = true;
   services.gvfs.enable = true;
-  environment.sessionVariables.GIO_EXTRA_MODULES = "${pkgs.gvfs}/lib/gio/modules";
 
   # File-Chooser-Dialog für Browser (Drucken/Speichern) und andere GTK-Apps
   xdg.portal.extraPortals = [ pkgs.xdg-desktop-portal-gtk ];
