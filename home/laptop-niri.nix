@@ -227,8 +227,8 @@ in
   gtk = {
     enable = true;
     iconTheme = {
-      package = pkgs.candy-icons;
-      name    = "candy-icons";
+      package = pkgs.papirus-icon-theme;
+      name    = "Papirus-Dark";
     };
   };
 
