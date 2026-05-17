@@ -4,10 +4,10 @@
 tailscale status
 
 # Datei(en) an Gerät senden (Tab = mehrere auswählen)
-find ~ -maxdepth 4 -type f 2>/dev/null | fzf --multi | xargs -d '\n' tailscale file cp <gerät>:
+mapfile -t _f < <(find ~ -maxdepth 4 -type f 2>/dev/null | fzf --multi) && tailscale file cp "${_f[@]}" <gerät>:
 
 # Datei(en) an bestimmten Pfad auf Gerät senden (Tab = mehrere auswählen)
-find ~ -maxdepth 4 -type f 2>/dev/null | fzf --multi | xargs -d '\n' tailscale file cp <gerät>:/home/<user>/
+mapfile -t _f < <(find ~ -maxdepth 4 -type f 2>/dev/null | fzf --multi) && tailscale file cp "${_f[@]}" <gerät>:/home/<user>/
 
 # Gesendete Dateien empfangen (in aktuelles Verzeichnis)
 tailscale file get .
