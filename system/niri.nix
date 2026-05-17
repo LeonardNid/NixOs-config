@@ -43,6 +43,7 @@
   ];
 
   services.printing.enable = true;
+  services.gvfs.enable = true;
 
   # File-Chooser-Dialog für Browser (Drucken/Speichern) und andere GTK-Apps
   xdg.portal.extraPortals = [ pkgs.xdg-desktop-portal-gtk ];
