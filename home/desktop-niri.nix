@@ -279,9 +279,12 @@ in
     size       = 24;
   };
 
-  gtk.iconTheme = {
-    package = pkgs.papirus-icon-theme;
-    name    = "Papirus-Dark";
+  gtk = {
+    enable = true;
+    iconTheme = {
+      package = pkgs.papirus-icon-theme;
+      name    = "Papirus-Dark";
+    };
   };
 
   programs.kitty = {
