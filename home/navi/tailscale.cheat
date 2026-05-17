@@ -4,10 +4,10 @@
 tailscale status
 
 # Datei(en) an Gerät senden (Tab = mehrere auswählen)
-tailscale file cp <datei> <gerät>:
+find ~ -maxdepth 4 -type f 2>/dev/null | fzf --multi | xargs -d '\n' tailscale file cp <gerät>:
 
 # Datei(en) an bestimmten Pfad auf Gerät senden (Tab = mehrere auswählen)
-tailscale file cp <datei> <gerät>:/home/<user>/
+find ~ -maxdepth 4 -type f 2>/dev/null | fzf --multi | xargs -d '\n' tailscale file cp <gerät>:/home/<user>/
 
 # Gesendete Dateien empfangen (in aktuelles Verzeichnis)
 tailscale file get .
@@ -25,5 +25,5 @@ ssh <user>@<gerät>.tail6bb5cd.ts.net
 tailscale ip
 
 $ gerät: tailscale status --json | jq -r '.Peer[] | .HostName'
-$ datei: find ~ -maxdepth 4 -type f 2>/dev/null --- --multi
+
 $ user: echo -e "leonardn\nroot"
