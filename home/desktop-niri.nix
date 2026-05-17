@@ -733,9 +733,8 @@ in
     '')
   ];
 
-  systemd.user.services.gvfs-daemon = {
-    Install.WantedBy = [ "graphical-session.target" ];
-  };
+  xdg.configFile."systemd/user/graphical-session.target.wants/gvfs-daemon.service".source =
+    "/etc/systemd/user/gvfs-daemon.service";
 
   # Heroic Desktop-Entry überschreiben damit der GPU-Modus-Check auch über Fuzzel greift
   xdg.desktopEntries."heroic" = {
