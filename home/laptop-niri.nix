@@ -60,6 +60,10 @@ in
       xcursor-size 24
     }
 
+    output "HDMI-A-1" {
+      mode "1920x1080@60.000"
+    }
+
     prefer-no-csd
 
     environment {
