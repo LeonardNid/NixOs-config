@@ -7,6 +7,7 @@
   home.file.".local/share/navi/cheats/git.cheat".source = ./navi/git.cheat;
   home.file.".local/share/navi/cheats/tailscale.cheat".source = ./navi/tailscale.cheat;
   home.file.".local/share/navi/cheats/server.cheat".source = ./navi/server.cheat;
+  home.file.".local/share/navi/cheats/tools.cheat".source = ./navi/tools.cheat;
 
   # Zsh-Widget: Ctrl+G öffnet navi mit fzf
   programs.zsh.initContent = ''

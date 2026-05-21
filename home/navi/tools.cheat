@@ -1,0 +1,4 @@
+% tools
+
+# Nautilus im aktuellen Ordner öffnen (ohne Logs)
+nautilus . &>/dev/null &
