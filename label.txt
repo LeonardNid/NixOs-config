@@ -1,1 +1,1 @@
-fix:-xwayland-satellite-f--r-Steam-X11-Apps-unter-Niri--15:11
+xwayland-enable--15:16

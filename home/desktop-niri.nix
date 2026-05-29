@@ -101,7 +101,6 @@ in
       QT_QPA_PLATFORM "wayland"
       XCURSOR_THEME "catppuccin-latte-light-cursors"
       XCURSOR_SIZE "24"
-      DISPLAY ":0"
     }
 
     // Window Rules
@@ -538,27 +537,8 @@ in
   home.file.".local/share/icons/hicolor/scalable/apps/org.gnome.nautilus.svg".source =
     "${pkgs.nautilus}/share/icons/hicolor/scalable/apps/org.gnome.Nautilus.svg";
 
-  # XWayland fuer X11-Apps (Steam, Heroic, Wine, …)
-  systemd.user.services.xwayland-satellite = {
-    Unit = {
-      Description = "Xwayland outside your Wayland";
-      BindsTo = [ "graphical-session.target" ];
-      PartOf  = [ "graphical-session.target" ];
-      After   = [ "graphical-session.target" ];
-      Requisite = [ "graphical-session.target" ];
-    };
-    Service = {
-      Type = "notify";
-      NotifyAccess = "all";
-      ExecStart = "${pkgs.xwayland-satellite}/bin/xwayland-satellite :0";
-      StandardOutput = "journal";
-    };
-    Install.WantedBy = [ "graphical-session.target" ];
-  };
-
   # Pakete
   home.packages = with pkgs; [
-    xwayland-satellite
     heroic                     # Epic/GOG Games Launcher (Icons + Desktop-Ressourcen)
     (pkgs.hiPrio (pkgs.writeShellScriptBin "heroic" ''exec ${heroicGpuCheck} "$@"''))
     protonup-qt                # Proton-GE-Builds verwalten

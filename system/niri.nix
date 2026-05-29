@@ -14,6 +14,9 @@
     extraPackages = [ pkgs.kdePackages.qt5compat ];
   };
 
+  # X11-App-Unterstützung (Steam, etc.) via XWayland
+  programs.xwayland.enable = true;
+
   # X11 + Keyboard Layout (SDDM + Xwayland)
   services.xserver.enable = true;
   services.xserver.xkb = {
