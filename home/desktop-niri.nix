@@ -166,8 +166,10 @@ in
       Mod+Up    { focus-window-up; }
       Mod+Right { focus-column-right; }
       Mod+S { focus-column-left; }
-      Mod+N { focus-window-down; }
-      Mod+R { focus-window-up; }
+      // Mod+N { focus-window-down; }
+      // Mod+R { focus-window-up; }
+      Mod+N { focus-workspace-down; }
+      Mod+R { focus-workspace-up; }
       Mod+T { focus-column-right; }
 
       // Scrollen durch Columns/Workspaces mit Mausrad
