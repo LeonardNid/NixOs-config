@@ -133,3 +133,83 @@ pgrep -a quickshell                           # Prüfen ob Prozess läuft
 - `PowerProfiles service not available` — kein Problem, Laptop nutzt TLP
 - `ext-background-effect-v1 not supported` — Blur wird von Niri nicht unterstützt
 - `Could not register app ID` — XDG Portal Kleinigkeit, keine Auswirkung
+
+---
+
+## App-Icons im Audio-Panel fehlen (lila/schwarze Vierecke)
+
+**Symptom:** Im Audio-Panel (Lautstärken-Tab) zeigen manche Apps lila/schwarze
+Vierecke statt Icons — z.B. Chromium oder Scream.
+
+**Ursache:** Noctalia ist Qt/Quickshell-basiert und nutzt ein eigenes Icon-System
+(`ThemeIcons.qml`), das **nicht** das GTK-Icon-Theme (Papirus-Dark) liest.
+Der Lookup läuft in zwei Stufen:
+
+1. `ThemeIcons.findAppEntry(binaryName)` — sucht in `DesktopEntries` nach einer
+   passenden `.desktop`-Datei. Gibt es keine, bricht der Lookup ab und fällt auf
+   `application-x-executable` zurück (falsche Icon-Darstellung).
+2. Wenn eine `.desktop`-Datei gefunden wird: `Quickshell.iconPath(entry.icon)`
+   — Qt durchsucht `$XDG_DATA_DIRS/icons/hicolor/` inkl.
+   `~/.local/share/icons/hicolor/`.
+
+Die GTK-Theme-Einstellung (`Papirus-Dark`) wird von Qt ohne konfigurierten
+`QT_QPA_PLATFORMTHEME` ignoriert.
+
+**Fix:** Für jede betroffene App sind zwei Dinge nötig:
+
+### 1. Icon-Datei im hicolor-Fallback
+
+In `home/desktop-niri.nix` (und `home/laptop-niri.nix`):
+
+```nix
+home.file.".local/share/icons/hicolor/scalable/apps/chromium.svg".source =
+  "${pkgs.papirus-icon-theme}/share/icons/Papirus-Dark/48x48/apps/chromium-browser.svg";
+
+home.file.".local/share/icons/hicolor/scalable/apps/scream.svg".source =
+  "${pkgs.papirus-icon-theme}/share/icons/Papirus-Dark/48x48/apps/juk.svg";
+```
+
+### 2. Minimale .desktop-Datei
+
+Ohne `.desktop`-Eintrag findet `ThemeIcons.findAppEntry()` nichts und der
+`Quickshell.iconPath()`-Aufruf wird nie erreicht:
+
+```nix
+home.file.".local/share/applications/chromium.desktop".text = ''
+  [Desktop Entry]
+  Type=Application
+  Name=Chromium
+  Icon=chromium
+  Exec=chromium
+  NoDisplay=true
+'';
+
+home.file.".local/share/applications/scream.desktop".text = ''
+  [Desktop Entry]
+  Type=Application
+  Name=Scream
+  Icon=scream
+  Exec=scream
+  NoDisplay=true
+'';
+```
+
+`NoDisplay=true` verhindert, dass die Einträge im App-Launcher erscheinen.
+
+**Nach dem Rebuild:** Noctalia neu starten damit DesktopEntries neu eingelesen werden:
+```bash
+pkill -9 quickshell && sleep 1 && noctalia-shell &
+```
+
+### Neue App ohne Icon hinzufügen
+
+1. Binary-Namen aus PulseAudio ermitteln (App beim Abspielen):
+   ```bash
+   pactl list sink-inputs | grep "application.process.binary"
+   ```
+2. Passendes SVG in Papirus-Dark suchen:
+   ```bash
+   ls /etc/profiles/per-user/leonardn/share/icons/Papirus-Dark/48x48/apps/ | grep -i <name>
+   ```
+3. Icon-Datei und `.desktop`-Eintrag nach obigem Muster in `desktop-niri.nix`
+   und `laptop-niri.nix` eintragen.
