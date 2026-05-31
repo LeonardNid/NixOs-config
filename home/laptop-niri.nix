@@ -463,9 +463,13 @@ in
     settings.confirm_os_window_close = 0;
   };
 
-  # Lowercase icon-alias damit Noctalia org.gnome.nautilus (lowercased app-id) findet
+  # Icon-Aliasse für Noctalia: Qt/Quickshell findet Papirus-Dark nicht → hicolor-Fallback nötig
   home.file.".local/share/icons/hicolor/scalable/apps/org.gnome.nautilus.svg".source =
     "${pkgs.nautilus}/share/icons/hicolor/scalable/apps/org.gnome.Nautilus.svg";
+  home.file.".local/share/icons/hicolor/scalable/apps/chromium.svg".source =
+    "${pkgs.papirus-icon-theme}/share/icons/Papirus-Dark/48x48/apps/chromium-browser.svg";
+  home.file.".local/share/icons/hicolor/scalable/apps/scream.svg".source =
+    "${pkgs.papirus-icon-theme}/share/icons/Papirus-Dark/48x48/apps/juk.svg";
 
   # XWayland fuer X11-Apps (Steam, Wine, …)
   systemd.user.services.xwayland-satellite = {
