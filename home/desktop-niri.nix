@@ -543,6 +543,25 @@ in
   home.file.".local/share/icons/hicolor/scalable/apps/scream.svg".source =
     "${pkgs.papirus-icon-theme}/share/icons/Papirus-Dark/48x48/apps/juk.svg";
 
+  # .desktop-Einträge für Noctalia: ThemeIcons.findAppEntry() braucht eine .desktop-Datei
+  # um via DesktopEntries den Icon-Namen aufzulösen (kein .desktop → kein Icon-Lookup)
+  home.file.".local/share/applications/chromium.desktop".text = ''
+    [Desktop Entry]
+    Type=Application
+    Name=Chromium
+    Icon=chromium
+    Exec=chromium
+    NoDisplay=true
+  '';
+  home.file.".local/share/applications/scream.desktop".text = ''
+    [Desktop Entry]
+    Type=Application
+    Name=Scream
+    Icon=scream
+    Exec=scream
+    NoDisplay=true
+  '';
+
   # Pakete
   home.packages = with pkgs; [
     heroic                     # Epic/GOG Games Launcher (Icons + Desktop-Ressourcen)
