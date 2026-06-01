@@ -35,5 +35,6 @@
     # rustdesk-flutter
     zoxide
     neovim
+    glow
   ];
 }
