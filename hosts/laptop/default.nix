@@ -17,6 +17,7 @@ in
     ../../system/networking.nix
     ../../system/locale.nix
     ../../system/audio.nix
+    ../../system/bluetooth.nix
     ../../system/users.nix
     ../../system/packages.nix
     ../../system/ollama.nix
