@@ -86,7 +86,7 @@ in
 
       ACTION="''${1:-}"
       if [ -z "$ACTION" ]; then
-        ACTION=$(${pkgs.gum}/bin/gum choose "start" "stop" "pause" "resume" "status" --header="Wähle eine Aktion für die Windows 11 VM:")
+        ACTION=$(${pkgs.gum}/bin/gum choose "start" "stop" "restart" "pause" "resume" "status" --header="Wähle eine Aktion für die Windows 11 VM:")
         if [ -z "$ACTION" ]; then
           exit 0
         fi
@@ -224,6 +224,15 @@ in
           echo "=== Fertig ==="
           ;;
 
+        restart)
+          echo "=== VM neustarten ==="
+          "$0" stop
+          echo ""
+          echo "Kurz warten, dann VM wieder starten..."
+          sleep 2
+          "$0" start
+          ;;
+
         pause)
           echo "=== VM pausieren ==="
           pkill -f looking-glass-client 2>/dev/null && echo "Looking Glass beendet"
@@ -266,7 +275,7 @@ in
           ;;
 
         *)
-          echo "Verwendung: vm {start|stop|pause|resume|fixcon|status}"
+          echo "Verwendung: vm {start|stop|restart|pause|resume|fixcon|status}"
           ;;
       esac
     '')
