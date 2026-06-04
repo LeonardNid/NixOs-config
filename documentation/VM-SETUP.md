@@ -883,11 +883,25 @@ Beide Skripte liegen im Repo und müssen einmalig in die VM kopiert + eingericht
    ```powershell
    New-NetFirewallRule -DisplayName "Clipboard Sync" -Direction Inbound -LocalPort 5556 -Protocol TCP -Action Allow
    ```
-3. Zwei Autostart-Verknüpfungen in `shell:startup`:
+3. Autostart via **Task-Scheduler + VBS-Launcher** (Admin-PowerShell). Wichtig: `shell:startup`-
+   Shortcuts und `-WindowStyle Hidden` allein verstecken das PowerShell-Konsolenfenster NICHT
+   zuverlässig — der VBS-Launcher startet PowerShell mit Fenstermodus `0` (komplett unsichtbar):
+   ```powershell
+   # VBS-Launcher anlegen
+   foreach ($s in 'receiver','sender') {
+     $vbs = "CreateObject(""Wscript.Shell"").Run ""powershell.exe -STA -ExecutionPolicy Bypass -File C:\clipboard-sync\clipboard-$s.ps1"", 0, False"
+     Set-Content -Path "C:\clipboard-sync\run-$s.vbs" -Value $vbs -Encoding ASCII
+   }
+   # Tasks "Bei Anmeldung" registrieren, die die VBS via wscript starten
+   $trigger  = New-ScheduledTaskTrigger -AtLogOn
+   $settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -ExecutionTimeLimit ([TimeSpan]::Zero)
+   foreach ($s in 'receiver','sender') {
+     $action = New-ScheduledTaskAction -Execute "wscript.exe" -Argument "C:\clipboard-sync\run-$s.vbs"
+     Register-ScheduledTask -TaskName "Clipboard-$s" -Action $action -Trigger $trigger -Settings $settings -RunLevel Limited -Force
+   }
    ```
-   powershell.exe -STA -WindowStyle Hidden -ExecutionPolicy Bypass -File C:\clipboard-sync\clipboard-receiver.ps1
-   powershell.exe -STA -WindowStyle Hidden -ExecutionPolicy Bypass -File C:\clipboard-sync\clipboard-sender.ps1
-   ```
+   Sofort (ohne Reboot) unsichtbar starten: `wscript.exe C:\clipboard-sync\run-receiver.vbs` und
+   `…\run-sender.vbs`. Prüfen: `Get-Process powershell` zeigt zwei Prozesse ohne Fenster.
 
 ### Feste VM-IP (DHCP-Reservierung, einmalig auf dem Host)
 
@@ -904,10 +918,10 @@ Danach VM neu booten (oder `ipconfig /release & ipconfig /renew`). Prüfen:
 
 ### Status / getestet
 
-- Linux-Empfangsstrecke (VM→Linux) end-to-end verifiziert: simulierte VM-Verbindung an :5557 →
-  Text landet im niri-Clipboard, Guard-Hash korrekt.
-- Linux-Sendestrecke (Linux→VM) und beide Windows-Skripte sind in Betrieb zu nehmen, sobald die
-  VM läuft und die Windows-Schritte erledigt sind.
+- Beide Richtungen end-to-end funktionsfähig (Linux↔VM, Text). Verifiziert.
+- Linux-Seite startet reboot-fest über niri `spawn-at-startup`. Der Listener (`clipboard-from-vm`)
+  läuft in einer Retry-Schleife, falls `virbr0` beim Boot noch nicht da ist.
+- Windows-Seite startet reboot-fest über Task-Scheduler („Bei Anmeldung") + VBS-Launcher (unsichtbar).
 
 ### Debug
 

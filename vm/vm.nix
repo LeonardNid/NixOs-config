@@ -86,10 +86,15 @@ let
     printf '%s' "$data" | wl-copy
   '';
 
-  # Listener (langlebig): nimmt VM→Linux entgegen, nur an virbr0 gebunden
+  # Listener (langlebig): nimmt VM→Linux entgegen, nur an virbr0 gebunden.
+  # Retry-Schleife: wartet, falls virbr0 beim Boot noch nicht da ist, und
+  # startet socat neu, falls es je beendet wird.
   clipFromVm = pkgs.writeShellScriptBin "clipboard-from-vm" ''
     export PATH="${clipPath}"
-    exec socat TCP-LISTEN:5557,fork,reuseaddr,bind=192.168.122.1 EXEC:${clipRecvHandler}
+    while true; do
+      socat TCP-LISTEN:5557,fork,reuseaddr,bind=192.168.122.1 EXEC:${clipRecvHandler}
+      sleep 2
+    done
   '';
 
   # Sender (pro Clipboard-Änderung 1×, als wl-paste --watch Handler)
