@@ -72,6 +72,36 @@ let
       echo "GPU-Treiber: nvidia"
     fi
   '';
+
+  # ── Clipboard-Sync Linux ↔ Windows-VM (TCP über virbr0, text-only) ──
+  # Anti-Ping-Pong über Hash-Guard-Datei (symmetrisch zur Windows-Seite).
+  clipGuard = "/tmp/clipboard-sync-guard";
+  clipPath  = "${pkgs.coreutils}/bin:${pkgs.socat}/bin:${pkgs.wl-clipboard}/bin";
+
+  # Empfänger-Handler: pro eingehender VM-Verbindung 1×, schreibt in Linux-Clipboard
+  clipRecvHandler = pkgs.writeShellScript "clipboard-recv-handler" ''
+    export PATH="${clipPath}"
+    data=$(cat); [ -z "$data" ] && exit 0
+    printf '%s' "$data" | sha256sum | cut -d' ' -f1 > ${clipGuard}   # Guard VOR wl-copy
+    printf '%s' "$data" | wl-copy
+  '';
+
+  # Listener (langlebig): nimmt VM→Linux entgegen, nur an virbr0 gebunden
+  clipFromVm = pkgs.writeShellScriptBin "clipboard-from-vm" ''
+    export PATH="${clipPath}"
+    exec socat TCP-LISTEN:5557,fork,reuseaddr,bind=192.168.122.1 EXEC:${clipRecvHandler}
+  '';
+
+  # Sender (pro Clipboard-Änderung 1×, als wl-paste --watch Handler)
+  clipToVm = pkgs.writeShellScriptBin "clipboard-to-vm" ''
+    export PATH="${clipPath}"
+    data=$(cat)
+    hash=$(printf '%s' "$data" | sha256sum | cut -d' ' -f1)
+    if [ -f ${clipGuard} ] && [ "$(cat ${clipGuard})" = "$hash" ]; then
+      rm -f ${clipGuard}; exit 0          # kam gerade von der VM → nicht zurückschicken
+    fi
+    printf '%s' "$data" | timeout 2 socat - TCP:192.168.122.50:5556 2>/dev/null || true
+  '';
 in
 {
   home.packages = with pkgs; [
@@ -79,6 +109,8 @@ in
     scream
     gpuSwitchReboot
     gpuStatus
+    clipFromVm
+    clipToVm
     (writeShellScriptBin "vm" ''
       VM_NAME="windows11"
       BOOT_DELAY=30

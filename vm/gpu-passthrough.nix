@@ -119,6 +119,8 @@ in
 
   # Firewall: Scream Audio (UDP 4010) von VM erlauben
   networking.firewall.allowedUDPPorts = [ 4010 ];
+  # Firewall: Clipboard-Sync VM→Linux (TCP 5557)
+  networking.firewall.allowedTCPPorts = [ 5557 ];
 
   # OVMF binary patchen: "BOCHS " → "ALASKA", "BXPC" → "AMI "
   # qemu.ovmf.packages wurde in NixOS entfernt; OVMF kommt jetzt von QEMU selbst.
