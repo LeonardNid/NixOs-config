@@ -852,12 +852,15 @@ clipboard-from-vm (socat TCP-LISTEN :5557)    clipboard-sender.ps1 (Poll 500ms)
 
 ### Linux-Seite (`vm/vm.nix`)
 
-Drei Skripte im `let`-Block, zwei davon als Executables in `home.packages`:
+Skripte im `let`-Block, die langlebigen davon als Executables in `home.packages`:
 
 - `clipboard-to-vm` — `wl-paste --watch`-Handler: liest Clipboard von stdin, Guard-Check, dann
-  `socat - TCP:192.168.122.50:5556`.
-- `clipboard-from-vm` — Listener: `socat TCP-LISTEN:5557,fork,reuseaddr,bind=192.168.122.1
-  EXEC:<recv-handler>`.
+  `socat - TCP:192.168.122.50:5556`. Endet immer mit Exit 0 (`|| true`).
+- `clipboard-to-vm-watch` — **Wrapper mit Retry-Schleife** um `wl-paste --type text --watch
+  <clipboard-to-vm>`. Startet den Watcher neu, falls er je stirbt (das war der Fehler im ersten
+  Reboot-Test: der nackte `wl-paste --watch` starb und hatte keine Selbstheilung).
+- `clipboard-from-vm` — Listener mit **Retry-Schleife** um `socat TCP-LISTEN:5557,fork,reuseaddr,
+  bind=192.168.122.1 EXEC:<recv-handler>`. Wartet/retryt, falls `virbr0` beim Boot noch nicht da ist.
 - `clipboard-recv-handler` (intern) — schreibt `sha256`-Guard VOR `wl-copy`, dann `wl-copy`.
 
 Start über niri in `home/desktop-niri.nix` (garantiert `WAYLAND_DISPLAY`, gleiches Muster wie der
@@ -865,8 +868,11 @@ cliphist-Watcher):
 
 ```
 spawn-at-startup "clipboard-from-vm"
-spawn-at-startup "wl-paste" "--type" "text" "--watch" "clipboard-to-vm"
+spawn-at-startup "clipboard-to-vm-watch"
 ```
+
+**Wichtig:** Beide Linux-Seiten laufen in einer Retry-Schleife (selbstheilend). `spawn-at-startup`
+startet abgestürzte Prozesse NICHT automatisch neu — deshalb die Schleifen im Skript.
 
 Firewall in `vm/gpu-passthrough.nix`: `networking.firewall.allowedTCPPorts = [ 5557 ]`.
 
@@ -918,9 +924,9 @@ Danach VM neu booten (oder `ipconfig /release & ipconfig /renew`). Prüfen:
 
 ### Status / getestet
 
-- Beide Richtungen end-to-end funktionsfähig (Linux↔VM, Text). Verifiziert.
-- Linux-Seite startet reboot-fest über niri `spawn-at-startup`. Der Listener (`clipboard-from-vm`)
-  läuft in einer Retry-Schleife, falls `virbr0` beim Boot noch nicht da ist.
+- Beide Richtungen end-to-end funktionsfähig (Linux↔VM, Text). Über Reboot verifiziert.
+- Linux-Seite startet reboot-fest über niri `spawn-at-startup`. Beide Watcher (`clipboard-from-vm`
+  UND `clipboard-to-vm-watch`) laufen in Retry-Schleifen und heilen sich selbst, falls einer stirbt.
 - Windows-Seite startet reboot-fest über Task-Scheduler („Bei Anmeldung") + VBS-Launcher (unsichtbar).
 
 ### Debug
