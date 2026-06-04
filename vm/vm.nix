@@ -107,6 +107,16 @@ let
     fi
     printf '%s' "$data" | timeout 2 socat - TCP:192.168.122.50:5556 2>/dev/null || true
   '';
+
+  # Watcher-Wrapper mit Retry-Schleife (analog zum Listener): startet
+  # `wl-paste --watch` neu, falls es je beendet wird → reboot-/dauerfest.
+  clipToVmWatch = pkgs.writeShellScriptBin "clipboard-to-vm-watch" ''
+    export PATH="${clipPath}"
+    while true; do
+      wl-paste --type text --watch ${clipToVm}/bin/clipboard-to-vm
+      sleep 2
+    done
+  '';
 in
 {
   home.packages = with pkgs; [
@@ -116,6 +126,7 @@ in
     gpuStatus
     clipFromVm
     clipToVm
+    clipToVmWatch
     (writeShellScriptBin "vm" ''
       VM_NAME="windows11"
       BOOT_DELAY=30

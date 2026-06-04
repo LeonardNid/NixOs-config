@@ -73,7 +73,7 @@ in
     spawn-at-startup "nm-applet" "--indicator"
     // Clipboard-Sync mit Windows-VM (TCP über virbr0)
     spawn-at-startup "clipboard-from-vm"
-    spawn-at-startup "wl-paste" "--type" "text" "--watch" "clipboard-to-vm"
+    spawn-at-startup "clipboard-to-vm-watch"
 
     // Hotkey-Overlay beim Start nicht anzeigen
     hotkey-overlay {
