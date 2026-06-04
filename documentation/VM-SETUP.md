@@ -818,92 +818,104 @@ Die VM nutzt das libvirt NAT-Netzwerk `default` (192.168.122.0/24):
 
 ---
 
-## 11. Clipboard-Sync (nicht fertiggestellt, zum Wiederaufgreifen)
+## 11. Clipboard-Sync (implementiert)
 
 ### Ziel
 
-Bidirektionaler Clipboard-Sync zwischen Linux-Host und Windows-VM. SPICE-Clipboard wurde
-bewusst deaktiviert (`spice:enable=no`) weil es mit Looking Glass kollidiert. Input Leap
-wurde als zu schwergewichtig abgelehnt (ganzer KVM-Stack nur für Clipboard).
+Bidirektionaler Text-Clipboard-Sync zwischen Linux-Host (niri) und Windows-VM. In niri mit
+`Ctrl+C` kopieren → in der VM `Ctrl+V` und umgekehrt. SPICE-Clipboard ist bewusst NICHT genutzt
+(`spice:enable=no`, zu buggy). Input Leap wurde als zu schwergewichtig abgelehnt.
 
-### Gewählter Ansatz
+### Mechanismus
 
-TCP-basierter Clipboard-Sync über `virbr0` (192.168.122.0/24):
+TCP-Sync über `virbr0` (192.168.122.0/24). Jede Clipboard-Änderung = eine kurze TCP-Verbindung,
+EOF = Nachrichtenende (kein Framing). Text-only. Anti-Ping-Pong über eine Hash-Guard-Datei.
 
 ```
-Linux (192.168.122.1)                    Windows VM (192.168.122.111)
-─────────────────────                    ────────────────────────────
-Polling-Loop (500ms)                     PowerShell Listener :5556
-  wl-paste → hash-check                   → Set-Clipboard
-  → socat TCP → VM:5556
+Linux (192.168.122.1)                         Windows VM (192.168.122.50)
+─────────────────────                         ───────────────────────────
+wl-paste --watch → clipboard-to-vm            clipboard-receiver.ps1  (TCP-LISTEN :5556)
+   socat → TCP VM:5556  ───────────────────►     → Clipboard.SetText
 
-socat TCP-LISTEN:5557 ◄──────────────   PowerShell Poller (500ms)
-  → wl-copy                               → Get-Clipboard → TcpClient → Host:5557
+clipboard-from-vm (socat TCP-LISTEN :5557)    clipboard-sender.ps1 (Poll 500ms)
+   → wl-copy            ◄───────────────────     Clipboard.GetText → TcpClient Host:5557
 ```
 
-- Jede Clipboard-Änderung = neue TCP-Verbindung, EOF = Nachrichtenende (kein Framing nötig)
-- Anti-Ping-Pong via SHA-256-Hash des letzten gesendeten/empfangenen Inhalts
-- Text-only, max 10 MB
-- Firewall: TCP 5557 auf Linux öffnen (5556 auf Windows-Seite)
+### Warum diese Variante (zwei Lehren aus dem ersten Versuch)
 
-### Was bereits implementiert und getestet war
+1. **Linux event-getrieben** (`wl-paste --watch`) statt 500ms-Polling. Der erste Versuch lief auf
+   KDE, dessen KWin `zwlr_data_control_manager_v1` nicht unterstützt → `--watch` ging nicht. niri
+   kann `wlr-data-control` (wird auch für cliphist genutzt) → `--watch` funktioniert zuverlässig.
+2. **Windows: zwei getrennte `powershell.exe -STA`-Prozesse** (Empfänger + Sender) statt
+   `Set-Clipboard` in einem Runspace. `powershell.exe` (5.1) ist von Haus aus STA → kein
+   Threading-Gefrickel, das war die Bruchstelle des ersten Versuchs.
 
-**Linux-Seite (danach revertiert):**
-- `vm/vm.nix`: `socat` als Paket, zwei `writeShellScript`-Scripts, zwei systemd User-Services
-  (Pattern wie Scream-Service)
-- `vm/gpu-passthrough.nix`: `networking.firewall.allowedTCPPorts = [ 5557 ]`
-- TCP-Verbindung zu Windows:5556 hat funktioniert (verifiziert per `socat` manuell)
-- Linux-Service lief stabil (Polling-Loop aktiv, `sleep 0.5` im Prozessbaum sichtbar)
+### Linux-Seite (`vm/vm.nix`)
 
-**Windows-Seite (`vm/clipboard-sync.ps1` liegt noch im Repo):**
-- TCP-Listener auf Port 5556 (Background-Runspace)
-- Polling-Sender alle 500ms (`Get-Clipboard` → TcpClient)
-- SHA-256-Deduplication
-- Windows-Firewall-Regel: TCP 5556 inbound erlaubt (bereits eingerichtet)
-- Autostart-Shortcut in `shell:startup` (bereits eingerichtet)
+Drei Skripte im `let`-Block, zwei davon als Executables in `home.packages`:
 
-### Gefundene Bugs (alle gefixt im Revert-Stand)
+- `clipboard-to-vm` — `wl-paste --watch`-Handler: liest Clipboard von stdin, Guard-Check, dann
+  `socat - TCP:192.168.122.50:5556`.
+- `clipboard-from-vm` — Listener: `socat TCP-LISTEN:5557,fork,reuseaddr,bind=192.168.122.1
+  EXEC:<recv-handler>`.
+- `clipboard-recv-handler` (intern) — schreibt `sha256`-Guard VOR `wl-copy`, dann `wl-copy`.
 
-| Bug | Ursache | Fix |
-|-----|---------|-----|
-| `wl-paste --watch` schlägt fehl | KDE Plasma 6 / KWin unterstützt `zwlr_data_control_manager_v1` nicht | Auf 500ms-Polling mit `wl-paste --no-newline` umgestellt |
-| `sleep: command not found` | Nix `writeShellScript` hat kein PATH | `export PATH="..."` am Scriptanfang mit allen nötigen Paketen |
-| `virsh net-dhcp-leases default` leer | `virtnetworkd` findet `dnsmasq` nicht im PATH | Auf `ip neigh show dev virbr0` umgestellt |
-| awk-Filter liefert leere VM-IP | `$3=="lladdr"` falsch, korrekt ist `$2=="lladdr"` | Filter korrigiert (aber revertiert bevor getestet) |
+Start über niri in `home/desktop-niri.nix` (garantiert `WAYLAND_DISPLAY`, gleiches Muster wie der
+cliphist-Watcher):
 
-### Was noch offen ist
+```
+spawn-at-startup "clipboard-from-vm"
+spawn-at-startup "wl-paste" "--type" "text" "--watch" "clipboard-to-vm"
+```
 
-1. **awk-Fix verifizieren**: Der letzte Fix (`$2=="lladdr"`) war korrekt (manuell getestet),
-   aber der Rebuild wurde revertiert bevor der End-to-End-Test abgeschlossen war.
+Firewall in `vm/gpu-passthrough.nix`: `networking.firewall.allowedTCPPorts = [ 5557 ]`.
 
-2. **Set-Clipboard in PowerShell-Runspace**: Möglicherweise STA-Thread-Problem.
-   Workaround bereits im Script: `$rs.ApartmentState = [System.Threading.ApartmentState]::STA`.
-   Ob das ausreicht ist unklar — der Windows-Empfang war noch nicht verifiziert.
-   Alternativ: `clip.exe` statt `Set-Clipboard` verwenden (keine Threading-Probleme,
-   aber schlechtere Unicode-Unterstützung).
+**Anti-Ping-Pong:** Empfang schreibt `hash(text)` nach `/tmp/clipboard-sync-guard` VOR `wl-copy`.
+Der dadurch ausgelöste `wl-paste --watch`-Fire matcht den Guard → kein Echo zurück, Guard wird
+konsumiert (`rm`). Symmetrisch auf der Windows-Seite über `%TEMP%\clip-guard.txt`.
 
-3. **Windows→Linux-Richtung**: Komplett ungetestet.
+### Windows-Seite (`vm/clipboard-receiver.ps1`, `vm/clipboard-sender.ps1`)
 
-### VM-IP ermitteln (wichtig)
+Beide Skripte liegen im Repo und müssen einmalig in die VM kopiert + eingerichtet werden:
 
-`virsh net-dhcp-leases default` funktioniert nicht (dnsmasq-Problem). Stattdessen:
+1. Skripte nach Windows kopieren, z.B. `C:\clipboard-sync\`.
+2. Firewall (Admin-PowerShell):
+   ```powershell
+   New-NetFirewallRule -DisplayName "Clipboard Sync" -Direction Inbound -LocalPort 5556 -Protocol TCP -Action Allow
+   ```
+3. Zwei Autostart-Verknüpfungen in `shell:startup`:
+   ```
+   powershell.exe -STA -WindowStyle Hidden -ExecutionPolicy Bypass -File C:\clipboard-sync\clipboard-receiver.ps1
+   powershell.exe -STA -WindowStyle Hidden -ExecutionPolicy Bypass -File C:\clipboard-sync\clipboard-sender.ps1
+   ```
+
+### Feste VM-IP (DHCP-Reservierung, einmalig auf dem Host)
+
+VM-MAC `b4:96:91:4a:f3:c2`, Netz `default` → immer `192.168.122.50`:
 
 ```bash
-ip neigh show dev virbr0 | awk '$2=="lladdr" {print $1}' | head -1
+sudo virsh net-update default add ip-dhcp-host \
+  "<host mac='b4:96:91:4a:f3:c2' name='windows11' ip='192.168.122.50'/>" \
+  --live --config
 ```
 
-Liefert die aktuelle VM-IP (z.B. `192.168.122.111`).
+Danach VM neu booten (oder `ipconfig /release & ipconfig /renew`). Prüfen:
+`ip neigh show dev virbr0` muss `192.168.122.50` zeigen.
 
-### Nix-Script PATH-Template
+### Status / getestet
 
-Alle Tools müssen in Nix-Scripts explizit im PATH sein:
+- Linux-Empfangsstrecke (VM→Linux) end-to-end verifiziert: simulierte VM-Verbindung an :5557 →
+  Text landet im niri-Clipboard, Guard-Hash korrekt.
+- Linux-Sendestrecke (Linux→VM) und beide Windows-Skripte sind in Betrieb zu nehmen, sobald die
+  VM läuft und die Windows-Schritte erledigt sind.
 
-```nix
-export PATH="${pkgs.coreutils}/bin:${pkgs.gawk}/bin:${pkgs.iproute2}/bin:${pkgs.socat}/bin:${pkgs.wl-clipboard}/bin"
+### Debug
+
+```bash
+pgrep -af clipboard-from-vm; ss -tlnp | grep 5557        # Listener aktiv?
+echo "hallo vm" | socat - TCP:192.168.122.50:5556        # manueller Sende-Test Linux→VM
+socat - TCP-LISTEN:5557,reuseaddr,bind=192.168.122.1     # manueller Empfangs-Test
+watch -n0.5 'cat /tmp/clipboard-sync-guard 2>/dev/null'  # Guard beobachten
 ```
 
-### Wiederaufnahme
-
-Den Revert-Commit rückgängig machen und mit dem awk-Fix + Windows-Test weitermachen.
-Der Code liegt in `vm/clipboard-sync.ps1` (Windows-Seite, noch im Repo).
-Linux-Seite muss in `vm/vm.nix` und `vm/gpu-passthrough.nix` neu eingetragen werden.
+Windows: beide `.ps1` sichtbar (ohne `-WindowStyle Hidden`) starten, um Fehler zu sehen.
