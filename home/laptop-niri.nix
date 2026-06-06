@@ -519,5 +519,6 @@ in
     polkit_gnome               # Polkit-Authentifizierungsagent
     nerd-fonts.jetbrains-mono  # Icons fuer Waybar und Mako
     playerctl                  # MPRIS Media Controls
+    moonlight-qt               # Moonlight Streaming Client (Sunshine/GameStream)
   ];
 }
