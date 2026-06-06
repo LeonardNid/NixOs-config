@@ -60,8 +60,20 @@ in
       xcursor-size 24
     }
 
+    // Monitor-Layout (links → rechts): Gigabyte M27Q (1440p@120) | Asus VG248 | Laptop
+    // Hinweis: 120 Hz ist das Maximum des DP-Adapters bei 1440p (165 fällt auf 120 zurück)
+    output "DP-1" {
+      mode "2560x1440@119.998"
+      position x=0 y=0
+    }
+
     output "HDMI-A-1" {
       mode "1920x1080@60.000"
+      position x=2560 y=0
+    }
+
+    output "eDP-1" {
+      position x=4480 y=0
     }
 
     prefer-no-csd
