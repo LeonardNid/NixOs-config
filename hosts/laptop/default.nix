@@ -29,6 +29,17 @@ in
 
   networking.hostName = "laptop";
 
+  networking.interfaces.enp2s0.ipv4.addresses = [{
+    address = "10.0.0.2";
+    prefixLength = 30;
+  }];
+
+  networking.nat = {
+    enable = true;
+    externalInterface = "wlp3s0";
+    internalInterfaces = [ "enp2s0" ];
+  };
+
   # Home-Module: gemeinsam + desktop-spezifisch
   home-manager.users.leonardn = {
     _module.args.keyboardLayout = "qwertz";
