@@ -275,7 +275,7 @@ in
   };
 
   # Noctalia Shell (ersetzt Waybar + Mako)
-  programs.noctalia-shell.enable = true;
+  programs.noctalia.enable = true;
 
   # Status-Leiste (deaktiviert, durch Noctalia ersetzt)
   programs.waybar = {

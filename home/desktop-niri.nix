@@ -343,7 +343,7 @@ in
     };
   };
 
-  programs.noctalia-shell.enable = true;
+  programs.noctalia.enable = true;
 
   # Status-Leiste mit nativen niri-Modulen — deaktiviert, Noctalia übernimmt
   programs.waybar = {
