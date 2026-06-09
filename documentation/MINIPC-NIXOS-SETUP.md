@@ -21,7 +21,7 @@ und der gesamte Rest (Partitionieren, Config, `nixos-install`) wird vom Laptop f
 |---|---|
 | Modell | GMKtec Nucbox M6 Ultra |
 | CPU/APU | AMD Ryzen 5 **7640HS** w/ Radeon 760M (Phoenix, RDNA3 iGPU) |
-| RAM | 9,5 GiB nutzbar (Rest als UMA-Buffer für die iGPU im BIOS reserviert) |
+| RAM | 16 GiB verbaut; UMA-Buffer im BIOS auf `2G` → ~13 GiB nutzbar (Details: `minipc-uma-buffer.md`) |
 | SSD | „GMK 512GB" NVMe (476,9 GiB) |
 | Boot | UEFI, GPT |
 
@@ -391,7 +391,25 @@ ssh leonardn@192.168.178.62 'hostname; uname -r'   # → minipc
 - **Ursache:** `vm/vm.nix` (über `home/default.nix` für **beide** Hosts geladen) startet einen
   Scream-Audio-Receiver auf `virbr0`. Diese VM-Bridge existiert auf dem Mini-PC nicht.
 - **Laufzeit-Stopp:** `systemctl --user stop scream` (kommt beim Reboot wieder).
-- **Echter Fix:** siehe TODO — VM-Kram host-spezifisch machen / für `minipc` rausnehmen.
+- **Echter Fix (erledigt 2026-06-09):** VM-Kram host-spezifisch gemacht — `vm/vm.nix` nur noch
+  auf `leonardn` importiert, `vmTools`-Flag in `home/desktop-niri.nix` gated die Autostarts.
+  Siehe Abschnitt 13. Auf `minipc` (und Laptop) existiert die `scream`-Unit nicht mehr.
+
+### GNOME-Keyring fragt bei Auto-Login nach Passwort
+
+- **Symptom:** Nach jedem Reboot Popup „Default keyring entsperren".
+- **Ursache:** Bei **Auto-Login** gibt PAM kein Login-Passwort an `gnome-keyring` weiter. Der
+  Keyring wurde aber mit dem Login-Passwort (`456456`) verschlüsselt, als das erste Secret
+  (z. B. Browser-Passwort) gespeichert wurde → kann nicht automatisch entsperrt werden.
+- **Fix:** Keyring-Passwort **leeren** — ein Keyring mit leerem Passwort wird ohne Nachfrage
+  entsperrt (so auch auf dem alten Desktop, vgl. Kommentar in `system/niri.nix`):
+  1. `seahorse` öffnen
+  2. links **Passwörter** → **„Default keyring"** → Rechtsklick → **Passwort ändern**
+  3. altes Passwort `456456`, neues **leer lassen** → Warnung bestätigen
+- **Tradeoff:** Leeres Keyring-Passwort = Secrets liegen praktisch unverschlüsselt in
+  `~/.local/share/keyrings`. Auf Single-User-Rechner ohne FDE ohnehin der Status quo.
+- **Unabhängig vom Login-Passwort:** Wenn das Login-Passwort später geändert wird, bleibt der
+  Keyring leer und entsperrt sich weiter automatisch.
 
 ### Monitor-Layout vom alten Desktop
 
@@ -399,7 +417,21 @@ ssh leonardn@192.168.178.62 'hostname; uname -r'   # → minipc
   einem „Phantom"-Monitor (`DP-1`), der am Mini-PC nicht existiert.
 - **Ursache:** `home/desktop-niri.nix` hat das Dual-Monitor-Layout des alten Desktops fest verdrahtet
   (`output "DP-1"` @ x=0, `output "HDMI-A-1"` @ x=2560).
-- **Echter Fix:** siehe TODO.
+- **Status:** bewusst offen gelassen (aktuell nur temporärer Monitor; echtes Dual-Setup folgt).
+- **Einfachste Einstellmethode (niri):**
+  - **Live, temporär** (nicht in Config geschrieben, sofort sichtbar):
+    ```bash
+    niri msg output HDMI-A-1 position set 0 0
+    niri msg output HDMI-A-1 mode 2560x1440@143.856   # bzw. @119.998
+    niri msg output HDMI-A-1 vrr on
+    niri msg outputs                                  # kontrollieren
+    ```
+  - **GUI:** `nwg-displays` (unterstützt niri offiziell, Drag&Drop). **Haken:** schreibt in eine
+    eigene Datei unter `~/.config/niri/…` — die ist bei uns home-manager-verwaltet (read-only
+    Symlink), „Save" persistiert daher **nicht**. Nur als **visueller Helfer** nutzen, dann die
+    Werte deklarativ in `programs.niri.config` eintragen.
+  - **Echter Fix:** Output-Block host-spezifisch machen (per Modul-Arg, analog `vmTools`), damit
+    das Dual-Layout nur für `leonardn` gilt und `minipc` seinen eigenen Output bekommt.
 
 ---
 
@@ -446,7 +478,9 @@ Die globale Git-Identität (`user.name`/`user.email`) kommt bereits aus dem Home
 
 ## 13. Offene Punkte / TODO
 
-- [ ] **Reboot-Test:** kommt Noctalia jetzt von selbst sauber hoch?
+- [ ] **Reboot-Test:** kommt Noctalia jetzt von selbst sauber hoch? (kam zuletzt automatisch)
+- [x] **GNOME-Keyring Auto-Unlock:** Keyring-Passwort via `seahorse` geleert → kein Prompt mehr
+      bei Auto-Login (Details Abschnitt 11).
 - [x] **VM-/Looking-Glass-Kram für `minipc` deaktiviert** (host-spezifisch, nichts gelöscht):
       - `vm/vm.nix` (Looking Glass, scream, `gpu-switch-reboot`, `gpu-status`, `vm`-Befehl,
         Clipboard-Sync) wird **nicht mehr in `home/default.nix`** geladen (das galt für alle
@@ -459,13 +493,17 @@ Die globale Git-Identität (`user.name`/`user.email`) kommt bereits aus dem Home
         Skripte bleiben im Repo erhalten und sind durch Umlegen des Flags reaktivierbar.
       - Nebeneffekt: behebt denselben `scream`-Crash-Loop auch auf dem **Laptop** (lud `vm.nix`
         ebenfalls über `home/default.nix`).
-- [ ] **Monitor-Layout** für den Single-Monitor-Mini-PC korrigieren (Output auf `x=0`), möglichst
-      host-spezifisch statt im gemeinsamen `desktop-niri.nix`.
+- [ ] **Monitor-Layout** host-spezifisch machen (Output `x=0`), aktuell bewusst offen (nur
+      temporärer Monitor). Einstellmethode + nwg-displays-Haken: siehe Abschnitt 11.
 - [x] **Git:** erledigt — `minipc`-Host gepusht, Mini-PC hat eigenen SSH-Key + frischen Clone (Abschnitt 12).
 - [ ] **Passwörter** von `456456` auf etwas Eigenes ändern (`passwd`).
-- [ ] **Tastatur-Layout** prüfen: aktuell `neo` (wie alter Desktop) — bei Bedarf auf `de` umstellen.
-- [ ] **RAM/UMA:** im BIOS prüfen, ob der iGPU-UMA-Buffer kleiner gestellt werden kann (aktuell nur
-      9,5 GiB nutzbar).
+- [ ] **Tastatur-Layout:** niri nutzt aktuell hart `xkb layout "de"` in `home/desktop-niri.nix`
+      (das `_module.args.keyboardLayout = "neo"` wird dort **nicht** konsumiert). „de" passt.
+- [x] **RAM/UMA:** UMA-Buffer im BIOS auf `2G` gesetzt → ~13 GiB nutzbar (Details `minipc-uma-buffer.md`).
+- [ ] **Wake-on-LAN (vorbereitet, wartet auf Ethernet):** geht nur über Kabel, nicht WLAN. Beim
+      Verkabeln zu tun: BIOS „Wake on LAN" aktivieren + `networking.interfaces.<iface>.wakeOnLan.enable
+      = true;` + `ethtool` zum Verifizieren (`Wake-on: g`). MACs: `eno1` = `84:47:09:86:FF:C2`,
+      `enp3s0` = `84:47:09:86:FF:C1` (DHCP lief zuletzt über `eno1`). Senden: `wakeonlan <MAC>`.
 
 ---
 

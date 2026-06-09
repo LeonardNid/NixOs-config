@@ -29,6 +29,8 @@ daher kaum Vorteil.
 
 ## Fix: UMA-Buffer im BIOS verkleinern
 
+> **Erledigt (2026-06-09):** Auf `2G` gesetzt → `free -h` zeigt jetzt ~13 GiB.
+
 1. Reboot → beim Start **`Entf`** oder **`F2`** für das BIOS-Setup
 2. Navigieren zu:
    ```
