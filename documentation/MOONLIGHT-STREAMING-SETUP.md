@@ -313,3 +313,10 @@ damit Alt+Tab und andere Windows-Shortcuts auch im Fenstermodus an Windows weite
 - VDD installiert, Monitor kann abgesteckt werden
 - Internet-Sharing vom Laptop (WLAN) zum Gaming-PC über NAT aktiv
 - Kopplung gespeichert, nach Neustart direkt verbindbar
+
+### Mini-PC (2026-06-09)
+
+- Mini-PC (`minipc`) als Client eingerichtet und getestet — Stream läuft
+- Direktlink `enp3s0` ↔ Gaming-PC, statische `10.0.0.2/30` (NM-unmanaged, reboot-fest)
+- Internet-Sharing vom Mini-PC (LAN via `eno1`) zum Gaming-PC über NAT
+- Kopplung erfolgreich (Sunshine vom Laptop-Setup unverändert, Client weiterhin `10.0.0.2`)
