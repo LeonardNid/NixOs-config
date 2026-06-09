@@ -28,6 +28,9 @@ in
 
   # ── Moonlight-Streaming: Direktverbindung zum Gaming-PC über enp3s0 ──
   # eno1 = Internet (Router), enp3s0 = Direktkabel zum Gaming-PC.
+  # NetworkManager darf enp3s0 NICHT verwalten, sonst greift die statische IP nicht.
+  networking.networkmanager.unmanaged = [ "interface-name:enp3s0" ];
+
   # Statische IP auf dem Direktlink (Gaming-PC bekommt 10.0.0.1).
   networking.interfaces.enp3s0.ipv4.addresses = [{
     address = "10.0.0.2";

@@ -1,1 +1,1 @@
-moonlight-client:-moonlight-qt---enp3s0-10.0.0.2-30---nat--eno1----enp3s0---23:07
+moonlight:-enp3s0-als-NM-unmanaged--statische-10.0.0.2-bleibt-nach-reboot---23:12
