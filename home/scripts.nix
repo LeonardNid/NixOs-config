@@ -300,10 +300,10 @@
         echo ""
         echo "┌─── noctalia ───────────────────────────────────"
         ${pkgs.rsync}/bin/rsync -a --delete "$NOCT_REPO/" "$NOCT_CFG/"
-        if pgrep -f quickshell >/dev/null 2>&1; then
-          pkill -f quickshell 2>/dev/null || true
+        if pgrep -x noctalia >/dev/null 2>&1; then
+          pkill -x noctalia 2>/dev/null || true
           sleep 1
-          setsid noctalia-shell >/tmp/noctalia.log 2>&1 &
+          setsid noctalia >/tmp/noctalia.log 2>&1 &
           echo -e "│ ''${GREEN}✓ Neue Settings eingespielt, Noctalia neu gestartet''${RESET}"
         else
           echo -e "│ ''${GREEN}✓ Neue Settings eingespielt (Noctalia läuft nicht – kein Neustart)''${RESET}"
@@ -377,7 +377,7 @@
       fi
 
       # Noctalia stoppen, damit es die Dateien beim Beenden nicht überschreibt
-      pkill -f quickshell 2>/dev/null || true
+      pkill -x noctalia 2>/dev/null || true
       sleep 1
 
       mkdir -p "$DEST"
@@ -385,7 +385,7 @@
       echo "✓ Settings eingespielt."
 
       # Noctalia in der laufenden Session neu starten
-      setsid noctalia-shell >/tmp/noctalia.log 2>&1 &
+      setsid noctalia >/tmp/noctalia.log 2>&1 &
       echo "✓ Noctalia neu gestartet."
     '')
   ];

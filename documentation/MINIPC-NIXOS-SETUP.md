@@ -510,13 +510,19 @@ Die globale Git-Identität (`user.name`/`user.email`) kommt bereits aus dem Home
 - [ ] **Reboot-Test Noctalia:** kommt die Shell beim echten Reboot von selbst sauber hoch? (kam
       zuletzt automatisch; spätere manuelle Neustarts waren nur Settings-/Icon-bedingt).
 - [ ] **Passwörter** von `456456` auf etwas Eigenes ändern (`passwd`).
-- [x] **Wake-on-LAN** auf `eno1` aktiviert (Config: `hosts/minipc/default.nix`):
-      `networking.interfaces.eno1.wakeOnLan.enable = true;` setzt beim Boot das WoL-Flag (`g`).
+- [x] **Wake-on-LAN** auf `eno1` aktiviert + verifiziert (`ethtool eno1` → `Wake-on: g`).
+      Config in `hosts/minipc/default.nix`:
+      - `networking.interfaces.eno1.wakeOnLan.enable = true;` → erzeugt `40-eno1.link` mit
+        `WakeOnLan=magic` (greift via udev beim Erscheinen des Geräts).
+      - **Stolperstein:** NetworkManager verwaltet `eno1` und setzt das Flag beim Aktivieren der
+        Verbindung sonst wieder auf `d` (disabled) zurück. Deshalb zusätzlich
+        `networking.networkmanager.settings.connection."ethernet.wake-on-lan" = 64;`
+        (64 = MAGIC) → landet als `ethernet.wake-on-lan=64` in `NetworkManager.conf`, bleibt
+        dadurch dauerhaft erhalten.
       MACs: `eno1` = `84:47:09:86:FF:C2`, `enp3s0` = `84:47:09:86:FF:C1`.
       Senden: `wakeonlan 84:47:09:86:FF:C2`.
       **Noch zu prüfen:** im BIOS „Wake on LAN" / „Power On by PCI-E" aktivieren, sonst wacht
-      die NIC im Soft-Off (S5) nicht auf. Verifizieren mit `ethtool eno1 | grep Wake-on`
-      (soll `Wake-on: g` zeigen).
+      die NIC im Soft-Off (S5) nicht auf.
 - [ ] **WLAN** (`wlp2s0`) noch als Fallback neben LAN aktiv — optional abschalten für reinen LAN-Betrieb.
 
 ### Weitere Dokumentation

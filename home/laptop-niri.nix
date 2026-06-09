@@ -43,7 +43,7 @@ in
     }
 
     // Autostart
-    spawn-at-startup "noctalia-shell"
+    spawn-at-startup "noctalia"
     spawn-at-startup "swaybg" "-i" "${wallpaper}" "-m" "fill"
     spawn-at-startup "wl-paste" "--watch" "cliphist" "store"
     spawn-at-startup "nm-applet" "--indicator"
@@ -129,9 +129,9 @@ in
       Mod+W { spawn "niri-focus-or-launch" "obsidian" "obsidian"; }
       Mod+E { spawn "nautilus"; }
       Mod+Shift+E { spawn "kitty" "--override" "initial_window_width=1100" "--override" "initial_window_height=700" "--title" "nc-pick" "-e" "nc-pick"; }
-      Mod+Shift+V { spawn "noctalia-shell" "ipc" "call" "launcher" "clipboard"; }
-      Alt+Space { spawn "noctalia-shell" "ipc" "call" "launcher" "toggle"; }
-      Super+Alt+L { spawn "noctalia-shell" "ipc" "call" "lockScreen" "lock"; }
+      Mod+Shift+V { spawn "noctalia" "msg" "panel-toggle" "launcher" "/clip"; }
+      Alt+Space { spawn "noctalia" "msg" "panel-toggle" "launcher"; }
+      Super+Alt+L { spawn "noctalia" "msg" "session" "lock"; }
       Mod+Q { close-window; }
 
       // Overview (niri native)
