@@ -55,5 +55,10 @@ in
     imports = [ ]
       ++ lib.optional (desktop == "niri") ../../home/desktop-niri.nix;
     home.packages = [ pkgs.moonlight-qt ];   # Moonlight-Client (Stream-Empfänger)
+
+    # Moonlight-Icon für Noctalia: quickshell durchsucht nur ~/.local/share/icons/hicolor,
+    # nicht das Profil-hicolor → Icon dorthin spiegeln (gleiches Muster wie chromium/scream).
+    home.file.".local/share/icons/hicolor/scalable/apps/moonlight.svg".source =
+      "${pkgs.moonlight-qt}/share/icons/hicolor/scalable/apps/moonlight.svg";
   };
 }
