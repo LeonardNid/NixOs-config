@@ -66,6 +66,16 @@
       ] ++ homeManagerModules;
     };
 
+    nixosConfigurations.minipc = nixpkgs.lib.nixosSystem {
+      system = "x86_64-linux";
+      specialArgs = { inherit self; };
+      modules = [
+        ./hosts/minipc
+        { home-manager.sharedModules = [ noctalia.homeModules.default ]; }
+        niri-flake.nixosModules.niri
+      ] ++ homeManagerModules;
+    };
+
     nixosConfigurations.laptop = nixpkgs.lib.nixosSystem {
       system = "x86_64-linux";
       specialArgs = { inherit self; };

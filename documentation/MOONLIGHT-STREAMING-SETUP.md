@@ -223,7 +223,28 @@ einen zweiten Port und bleibt direkt am Router, während das Streaming-Kabel sep
 
 ---
 
-## 6. Workflow
+## 6. Moonlight Tastenkombinationen
+
+Alle Shortcuts gelten während eines aktiven Streams:
+
+| Tastenkombination | Funktion |
+|---|---|
+| `Ctrl+Alt+Shift+Q` | Stream beenden |
+| `Ctrl+Alt+Shift+X` | Vollbild ↔ Fenstermodus |
+| `Ctrl+Alt+Shift+Z` | Maus/Tastatur-Capture umschalten |
+| `Ctrl+Alt+Shift+M` | Mausmodus wechseln (direktes Capture ↔ Remote-Desktop-Zeiger) |
+| `Ctrl+Alt+Shift+V` | Text aus lokaler Zwischenablage auf Host einfügen (Remote Strg+V) |
+| `Ctrl+Alt+Shift+D` | Streaming-Fenster minimieren |
+| `Ctrl+Alt+Shift+S` | Performance-Overlay ein/ausblenden |
+| `Ctrl+Alt+Shift+C` | Lokalen Mauszeiger im Remote-Desktop-Modus ein/ausblenden |
+| `Ctrl+Alt+Shift+L` | Mauszeiger auf Video-Bereich sperren (benötigt "Maus für Remote-Desktop optimieren") |
+
+**Tipp:** "Erfasse System-Tastenkürzel" in den Moonlight-Einstellungen auf **"Immer"** stellen,
+damit Alt+Tab und andere Windows-Shortcuts auch im Fenstermodus an Windows weitergeleitet werden.
+
+---
+
+## 7. Workflow
 
 ### Gaming starten
 
