@@ -403,7 +403,48 @@ ssh leonardn@192.168.178.62 'hostname; uname -r'   # → minipc
 
 ---
 
-## 12. Offene Punkte / TODO
+## 12. Git auf dem Mini-PC einrichten
+
+Die Config wurde beim Installieren nur **als Kopie ohne `.git`** übertragen (Abschnitt 8 — bewusst,
+damit Nix sie als Path-Flake nimmt). Damit der `rebuild`-Workflow (git add/commit + nixos-rebuild +
+git push) auf dem Mini-PC läuft, braucht er ein echtes Git-Repo mit GitHub-Zugang.
+
+### a) Stand vom Laptop nach GitHub pushen
+
+Der neue `minipc`-Host + Doku werden auf dem **Laptop** committet und gepusht (z. B. via
+`rebuild "documentation minipc"`), sodass `origin/main` aktuell ist.
+
+### b) Eigener SSH-Key für den Mini-PC
+
+Pro-Gerät-Key (sauberer als den Laptop-Key zu kopieren — einzeln bei GitHub widerrufbar):
+
+```bash
+ssh leonardn@192.168.178.62 'ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519 -N "" -C "leonardn@minipc"; cat ~/.ssh/id_ed25519.pub'
+```
+
+Den ausgegebenen **öffentlichen** Key bei GitHub hinterlegen:
+**https://github.com/settings/ssh/new** → Title `minipc`, Key type `Authentication Key`,
+Key einfügen → „Add SSH key".
+
+### c) Verbindung testen & frisch klonen
+
+```bash
+ssh leonardn@192.168.178.62 '
+  ssh -o StrictHostKeyChecking=accept-new -T git@github.com   # → "Hi LeonardNid! ... successfully authenticated"
+  rm -rf ~/nixos-config
+  git clone git@github.com:LeonardNid/NixOs-config.git ~/nixos-config'
+```
+
+> Die alte `.git`-lose Kopie wird dabei ersetzt — da der Mini-PC bereits installiert ist, geht nichts
+> verloren. `origin/main` ist die maßgebliche Quelle (und enthält z. B. die Doku, die der Kopie noch fehlte).
+
+Die globale Git-Identität (`user.name`/`user.email`) kommt bereits aus dem Home-Manager-Modul
+`home/git.nix`, muss also nicht gesetzt werden. Danach läuft der normale `rebuild`-Workflow
+(`$(hostname)` → baut `#minipc`).
+
+---
+
+## 13. Offene Punkte / TODO
 
 - [ ] **Reboot-Test:** kommt Noctalia jetzt von selbst sauber hoch?
 - [ ] **VM-/Looking-Glass-Kram für `minipc` entfernen** (`vm/vm.nix`, `scream`, Looking-Glass,
@@ -411,8 +452,7 @@ ssh leonardn@192.168.178.62 'hostname; uname -r'   # → minipc
       VM-Teil host-spezifisch machen, damit `leonardn` ihn behält, `minipc` nicht.
 - [ ] **Monitor-Layout** für den Single-Monitor-Mini-PC korrigieren (Output auf `x=0`), möglichst
       host-spezifisch statt im gemeinsamen `desktop-niri.nix`.
-- [ ] **Git:** `minipc`-Host committen & nach GitHub pushen; auf dem Mini-PC `~/nixos-config` als
-      echtes Git-Repo einrichten, damit der `rebuild`-Workflow funktioniert.
+- [x] **Git:** erledigt — `minipc`-Host gepusht, Mini-PC hat eigenen SSH-Key + frischen Clone (Abschnitt 12).
 - [ ] **Passwörter** von `456456` auf etwas Eigenes ändern (`passwd`).
 - [ ] **Tastatur-Layout** prüfen: aktuell `neo` (wie alter Desktop) — bei Bedarf auf `de` umstellen.
 - [ ] **RAM/UMA:** im BIOS prüfen, ob der iGPU-UMA-Buffer kleiner gestellt werden kann (aktuell nur
@@ -420,10 +460,11 @@ ssh leonardn@192.168.178.62 'hostname; uname -r'   # → minipc
 
 ---
 
-## 13. Getesteter Stand (2026-06-09)
+## 14. Getesteter Stand (2026-06-09)
 
 - NixOS installiert, bootet von interner SSD, Auto-Login in Niri
 - AMD Radeon 760M via `amdgpu`, Wayland-Rendering ok (swaybg-Wallpaper)
 - Ethernet (eno1) per DHCP, SSH key-basiert als `leonardn` erreichbar
 - Noctalia-Shell läuft (nach manuellem Neustart) — First-Boot-Verhalten noch zu verifizieren
-- Offen: VM-Kram entfernen, Monitor-Layout, Git-Push (siehe TODO)
+- Git: `minipc`-Host auf GitHub, Mini-PC mit eigenem SSH-Key frisch geklont — `rebuild` einsatzbereit
+- Offen: VM-Kram entfernen, Monitor-Layout (siehe TODO)
