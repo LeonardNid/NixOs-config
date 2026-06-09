@@ -46,10 +46,33 @@ noctalia-load
 - spielt `<repo>/noctalia-settings/` → `~/.config/noctalia/` ein
 - startet Noctalia in der laufenden Session neu
 
+## In `rebuild` integriert (Voll-Sync, automatisch)
+
+`rebuild` macht den Sync inzwischen **automatisch** in beide Richtungen — die Skripte
+`noctalia-save`/`noctalia-load` bleiben für manuelle Einzelaktionen erhalten.
+
+- **Speichern (vor dem Commit):** `~/.config/noctalia` wird ins Repo gespiegelt und landet im
+  normalen rebuild-Commit + Push. Geänderte Noctalia-Settings werden also bei jedem `rebuild`
+  mitversioniert.
+- **Laden + Neustart (nach dem Build):** `rebuild` vergleicht den git-Objekt-Hash von
+  `noctalia-settings` **vor und nach dem `git pull`**. Nur wenn der Pull echte neue Settings
+  (von einem anderen Rechner) gebracht hat, werden sie eingespielt und Noctalia neu gestartet.
+
+**Datensicherheit / „nur bei Änderung neu starten":**
+- Erkennung über die Pull-Hashes ⇒ ein ungespeicherter lokaler Stand wird **nie** durch einen
+  unrelated `rebuild` überschrieben, und Noctalia wird nicht unnötig neu gestartet.
+- Greift nur, wenn `rebuild` als echter User (nicht unter `sudo`) läuft und `~/.config/noctalia`
+  existiert. Neustart nur, wenn Noctalia (quickshell) gerade läuft.
+- Gleichzeitiges Ändern auf zwei Rechnern kann beim `pull --rebase` einen Merge-Konflikt in
+  `settings.json` geben — das fängt der normale rebuild-Konflikt-Dialog ab.
+
 ## Typischer Ablauf
 
-1. Auf Rechner A Noctalia einstellen → `noctalia-save`
-2. Auf Rechner B → `noctalia-load` → übernimmt die Settings + startet Noctalia neu
+- **Mit `rebuild` (automatisch):** Auf Rechner A einstellen → `rebuild "…"` (sichert+pusht).
+  Auf Rechner B → `rebuild "…"` (zieht A's Settings rein + startet Noctalia neu, sofern geändert).
+- **Manuell (ohne rebuild):**
+  1. Auf Rechner A Noctalia einstellen → `noctalia-save`
+  2. Auf Rechner B → `noctalia-load` → übernimmt die Settings + startet Noctalia neu
 
 ## Hinweise
 

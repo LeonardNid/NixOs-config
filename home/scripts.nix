@@ -217,6 +217,20 @@
       fi
 
       cd "$REPO"
+
+      # ── Noctalia-Settings Voll-Sync (Teil 1/2): lokalen Stand vor dem Commit ins Repo spiegeln ──
+      # Nur als echter User (nicht unter sudo) und nur wenn Noctalia-Config existiert.
+      NOCT_CFG="$HOME/.config/noctalia"
+      NOCT_REPO="$REPO/noctalia-settings"
+      NOCT_SYNC=0
+      NOCT_BEFORE=""
+      if [ -z "''${SUDO_USER:-}" ] && [ -d "$NOCT_CFG" ]; then
+        NOCT_SYNC=1
+        NOCT_BEFORE=$(git rev-parse -q --verify HEAD:noctalia-settings 2>/dev/null || true)
+        mkdir -p "$NOCT_REPO"
+        ${pkgs.rsync}/bin/rsync -a --delete "$NOCT_CFG/" "$NOCT_REPO/"
+      fi
+
       STASHED=0
       if ! git diff --quiet || ! git diff --cached --quiet; then
         git stash
@@ -247,6 +261,10 @@
 
       [ $STASHED -eq 1 ] && git stash pop
 
+      # Noctalia-Settings: Stand NACH dem Pull erfassen (≠ vorher ⇒ Pull brachte was Neues)
+      NOCT_AFTER=""
+      [ "$NOCT_SYNC" = 1 ] && NOCT_AFTER=$(git rev-parse -q --verify HEAD:noctalia-settings 2>/dev/null || true)
+
       echo "$LABEL" > "$REPO/label.txt"
       git add .
       if ! git diff --cached --quiet; then
@@ -276,6 +294,22 @@
 
       echo ""
       echo "└────────────────────────────────────────────────"
+
+      # ── Noctalia-Settings Voll-Sync (Teil 2/2): nur einspielen + neu starten wenn der Pull was Neues brachte ──
+      if [ "$NOCT_SYNC" = 1 ] && [ "$NOCT_BEFORE" != "$NOCT_AFTER" ]; then
+        echo ""
+        echo "┌─── noctalia ───────────────────────────────────"
+        ${pkgs.rsync}/bin/rsync -a --delete "$NOCT_REPO/" "$NOCT_CFG/"
+        if pgrep -f quickshell >/dev/null 2>&1; then
+          pkill -f quickshell 2>/dev/null || true
+          sleep 1
+          setsid noctalia-shell >/tmp/noctalia.log 2>&1 &
+          echo -e "│ ''${GREEN}✓ Neue Settings eingespielt, Noctalia neu gestartet''${RESET}"
+        else
+          echo -e "│ ''${GREEN}✓ Neue Settings eingespielt (Noctalia läuft nicht – kein Neustart)''${RESET}"
+        fi
+        echo "└────────────────────────────────────────────────"
+      fi
 
       if [ "$(hostname)" = "laptop" ] && [ "$XDG_CURRENT_DESKTOP" = "Hyprland" ]; then
         echo ""
