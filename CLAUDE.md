@@ -8,10 +8,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ```
 nixos-config/
-├── flake.nix                  # Inputs + Host-Definitionen (leonardn, laptop)
+├── flake.nix                  # Inputs + Host-Definitionen (leonardn, laptop, minipc)
 ├── hosts/
-│   ├── leonardn/              # Desktop-PC: nur "kde" oder "niri", GPU-Passthrough, Corsair-Daemon
-│   └── laptop/                # Laptop: "kde", "hyprland", "mango" oder "niri"
+│   ├── leonardn/              # Desktop-PC (Hardware jetzt Windows-Gaming): Nvidia, GPU-Passthrough, Corsair-Daemon
+│   ├── laptop/                # Laptop: "kde", "hyprland", "mango" oder "niri"
+│   └── minipc/                # GMKtec Nucbox M6 (AMD 760M): Niri, Moonlight-Client, kein VM/Nvidia
 ├── system/                    # NixOS-Module (systemweit, root)
 │   ├── packages.nix           # Gemeinsame System-Pakete (beide Hosts)
 │   ├── desktop.nix            # KDE Plasma 6, SDDM
@@ -24,21 +25,22 @@ nixos-config/
 │   ├── users.nix              # User leonardn, sudo, Gruppen, Tailscale
 │   ├── networking.nix / locale.nix / boot.nix / hardware.nix / audio.nix / nix-settings.nix
 ├── home/                      # Home-Manager-Module (user leonardn)
-│   ├── default.nix            # Gemeinsame Basis (BEIDE Hosts): neovim, git, shell, scripts,
-│   │                          #   packages, vscode, xdg, navi, nextcloud, vm/vm.nix
+│   ├── default.nix            # Gemeinsame Basis (ALLE Hosts): neovim, git, shell, scripts,
+│   │                          #   packages, vscode, xdg, navi, nextcloud  (vm/vm.nix NICHT mehr hier!)
 │   ├── packages.nix           # Gemeinsame user-Pakete
-│   ├── desktop-niri.nix       # NUR leonardn + Niri: Waybar, Fuzzel, Mako, swaylock, VM-Scripts
+│   ├── desktop-niri.nix       # leonardn + minipc (Niri): Fuzzel, Mako, swaylock; VM-Scripts nur bei vmTools=true
 │   ├── laptop-kde.nix         # NUR Laptop + KDE: Fusuma-Gesten, KWin-Latency-Fix, Lockscreen
 │   ├── laptop-hyprland.nix    # NUR Laptop + Hyprland: Waybar, Wofi, Mako, hyprlock, hypridle
 │   ├── laptop-mango.nix       # NUR Laptop + Mango: Waybar, Rofi, Mako, swaylock, swayidle
 │   ├── laptop-niri.nix        # NUR Laptop + Niri: Waybar, Fuzzel, Mako, swaylock, swayidle
-│   ├── scripts.nix            # Shell-Skripte: rebuild, git-overview, power-menu, waybar-mic-status, …
+│   ├── scripts.nix            # Shell-Skripte: rebuild, noctalia-save/load, git-overview, power-menu, …
 │   └── vscode.nix / git.nix / shell.nix / neovim.nix / xdg.nix / nextcloud.nix / navi.nix
-├── vm/                        # VM/GPU-Passthrough (nur leonardn: Looking Glass, KVM, VFIO)
+├── vm/                        # VM/GPU-Passthrough (nur leonardn, via hosts/leonardn importiert): Looking Glass, KVM, VFIO
+├── noctalia-settings/         # Noctalia-Settings-Backup (Sync-Ziel von rebuild / noctalia-save)
 ├── scripts/
 │   └── bootstrap.sh
-└── documentation/
-    └── fresh_install_todo.md
+└── documentation/            # u.a. MINIPC-NIXOS-SETUP, MOONLIGHT-STREAMING-SETUP,
+    └── fresh_install_todo.md  #       noctalia-settings-sync, minipc-uma-buffer
 ```
 
 ## Flake-Inputs
@@ -49,14 +51,16 @@ nixos-config/
 | `home-manager` | Home-Manager (folgt nixpkgs) |
 | `mango` | Mango WM (nur Laptop) |
 | `niri-flake` | Niri WM + cachix |
-| `zen-browser` | Zen Browser (beide Hosts) |
-| `claude-code-nix` | Claude Code CLI (beide Hosts) |
+| `zen-browser` | Zen Browser (alle Hosts) |
+| `claude-code-nix` | Claude Code CLI (alle Hosts) |
+| `noctalia` | Noctalia-Shell (Niri-Hosts: leonardn, minipc, laptop-niri) |
+| `kimi-cli` | Kimi CLI |
 
 ## Regeln
 
 ### Laptop vs. Desktop trennen
 
-- **`home/default.nix`** wird von **beiden** Hosts genutzt – enthält alles Gemeinsame inkl. `nextcloud.nix` und `vm/vm.nix`.
+- **`home/default.nix`** wird von **allen** Hosts genutzt – enthält alles Gemeinsame inkl. `nextcloud.nix`. **`vm/vm.nix` ist NICHT mehr hier**, sondern wird nur in `hosts/leonardn/default.nix` importiert (host-spezifisch via `vmTools`-Flag, damit `minipc`/Laptop kein crash-loopendes `scream` o.ä. bekommen).
 - **Desktop-Auswahl** erfolgt über die Variable `desktop` in `hosts/<host>/default.nix`:
 
 | `desktop` | Laptop System-Modul | Laptop Home-Modul | leonardn Home-Modul |
@@ -66,8 +70,11 @@ nixos-config/
 | `"mango"` | `system/mango.nix` | `home/laptop-mango.nix` | _(nur Laptop)_ |
 | `"niri"` | `system/niri.nix` | `home/laptop-niri.nix` | `home/desktop-niri.nix` |
 
-- `system/packages.nix` und `home/packages.nix` sind für **beide Hosts** – nichts Host-Spezifisches dort.
+- `system/packages.nix` und `home/packages.nix` sind für **alle Hosts** – nichts Host-Spezifisches dort.
 - Leonardn (Desktop-PC) hat **keine** `laptop-*.nix` Home-Module – für Niri wird `home/desktop-niri.nix` verwendet.
+- **minipc** (AMD, nur Niri) nutzt wie `leonardn` `home/desktop-niri.nix`, aber mit `vmTools = false`
+  (kein VM/Looking-Glass). Moonlight-Client + Direktlink-Netzwerk (`moonlight-qt`, statische
+  `enp3s0`-IP `10.0.0.2/30` + NAT von `eno1`) stehen host-spezifisch in `hosts/minipc/default.nix`.
 
 ### Desktop wechseln
 
@@ -91,4 +98,6 @@ rebuild -u "beschreibung"     # wie oben, aber zuerst nix flake update
 rebuild                       # Commit-Message "update"
 ```
 
-Das Skript nutzt `$(hostname)` – funktioniert auf beiden Hosts automatisch. Bei Hyprland auf dem Laptop wird außerdem `hyprctl reload` + `systemctl --user restart hyprpaper` ausgeführt.
+Das Skript nutzt `$(hostname)` – funktioniert auf allen Hosts automatisch. Bei Hyprland auf dem Laptop wird außerdem `hyprctl reload` + `systemctl --user restart hyprpaper` ausgeführt.
+
+`rebuild` synchronisiert außerdem die **Noctalia-Settings** (`~/.config/noctalia` ↔ `noctalia-settings/` im Repo): vor dem Commit wird der lokale Stand gesichert, nach dem `git pull` wird ein neuer Stand nur dann eingespielt + Noctalia neu gestartet, wenn der Pull tatsächlich Änderungen brachte. Details: `documentation/noctalia-settings-sync.md`.

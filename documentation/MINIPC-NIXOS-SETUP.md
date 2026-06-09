@@ -476,42 +476,62 @@ Die globale Git-Identität (`user.name`/`user.email`) kommt bereits aus dem Home
 
 ---
 
-## 13. Offene Punkte / TODO
+## 13. Status / offene Punkte
 
-- [ ] **Reboot-Test:** kommt Noctalia jetzt von selbst sauber hoch? (kam zuletzt automatisch)
+### Erledigt
+
 - [x] **GNOME-Keyring Auto-Unlock:** Keyring-Passwort via `seahorse` geleert → kein Prompt mehr
       bei Auto-Login (Details Abschnitt 11).
-- [x] **VM-/Looking-Glass-Kram für `minipc` deaktiviert** (host-spezifisch, nichts gelöscht):
-      - `vm/vm.nix` (Looking Glass, scream, `gpu-switch-reboot`, `gpu-status`, `vm`-Befehl,
-        Clipboard-Sync) wird **nicht mehr in `home/default.nix`** geladen (das galt für alle
-        Hosts), sondern nur noch in `hosts/leonardn/default.nix` importiert.
-      - Neues Modul-Arg **`vmTools`** (`_module.args.vmTools`): `true` für `leonardn`,
-        `false` für `minipc`. `home/desktop-niri.nix` gated darüber die VM-Clipboard-Autostarts
-        (`clipboard-from-vm`/`-to-vm-watch`) und die VM-Waybar-Skripte (`vm-menu` etc.).
-      - Ergebnis: auf `leonardn` läuft alles unverändert weiter; auf `minipc` ist der VM-Kram
-        nur inaktiv (kein crash-loopender `scream`, keine sinnlosen Clipboard-Prozesse). Alle
-        Skripte bleiben im Repo erhalten und sind durch Umlegen des Flags reaktivierbar.
-      - Nebeneffekt: behebt denselben `scream`-Crash-Loop auch auf dem **Laptop** (lud `vm.nix`
-        ebenfalls über `home/default.nix`).
-- [ ] **Monitor-Layout** host-spezifisch machen (Output `x=0`), aktuell bewusst offen (nur
-      temporärer Monitor). Einstellmethode + nwg-displays-Haken: siehe Abschnitt 11.
-- [x] **Git:** erledigt — `minipc`-Host gepusht, Mini-PC hat eigenen SSH-Key + frischen Clone (Abschnitt 12).
+- [x] **VM-/Looking-Glass-Kram deaktiviert** (host-spezifisch, nichts gelöscht): `vm/vm.nix`
+      (Looking Glass, scream, `gpu-switch-reboot`, `vm`-Befehl, Clipboard-Sync) wird **nicht mehr
+      in `home/default.nix`** geladen, sondern nur noch in `hosts/leonardn/default.nix`. Neues
+      Modul-Arg **`vmTools`** (`true` bei `leonardn`, `false` bei `minipc`) gated in
+      `home/desktop-niri.nix` zusätzlich die VM-Clipboard-Autostarts + VM-Waybar-Skripte. Auf
+      `minipc`/Laptop dadurch kein crash-loopender `scream` mehr. Skripte bleiben im Repo,
+      per Flag reaktivierbar.
+- [x] **RAM/UMA:** UMA-Buffer im BIOS auf `2G` → ~13 GiB nutzbar (Details `minipc-uma-buffer.md`).
+- [x] **Monitor-Layout:** Mit dem echten Dual-Setup korrekt — **DP-1** (Gigabyte M27Q)
+      2560×1440 @170 Hz/VRR links (`x=0`), **HDMI-A-1** (Asus VG248) 1920×1080 @60 Hz rechts
+      (`x=2560`). Passt 1:1 zum hartkodierten Layout in `home/desktop-niri.nix` (das „Phantom-DP-1"
+      vorher war nur der einzelne Temp-Monitor am HDMI-Port). Host-spezifischer Split unnötig, da
+      `leonardn` jetzt Windows ist. Asus über HDMI nur 60 Hz (144 Hz bräuchte DP/DL-DVI, Abschnitt 11).
+- [x] **Git:** `minipc`-Host auf GitHub, eigener SSH-Key, frischer Clone (Abschnitt 12).
+- [x] **Noctalia-Settings-Sync:** `noctalia-save`/`noctalia-load` + automatischer Voll-Sync in
+      `rebuild` (speichern vor Commit, laden + Neustart nur bei Pull-Änderung). Details:
+      `noctalia-settings-sync.md`.
+- [x] **Moonlight-Client:** `moonlight-qt` + Direktlink `enp3s0` (`10.0.0.2/30`, NM-unmanaged) +
+      NAT `eno1 → enp3s0`, Stream getestet, Launcher-Icon-Fix. Details:
+      `MOONLIGHT-STREAMING-SETUP.md`.
+- [x] **Tastatur-Layout:** geklärt — niri nutzt hart `xkb layout "de"` in `home/desktop-niri.nix`
+      (das `keyboardLayout = "neo"`-Arg wird dort nicht konsumiert). „de" ist gewollt.
+
+### Offen
+
+- [ ] **Reboot-Test Noctalia:** kommt die Shell beim echten Reboot von selbst sauber hoch? (kam
+      zuletzt automatisch; spätere manuelle Neustarts waren nur Settings-/Icon-bedingt).
 - [ ] **Passwörter** von `456456` auf etwas Eigenes ändern (`passwd`).
-- [ ] **Tastatur-Layout:** niri nutzt aktuell hart `xkb layout "de"` in `home/desktop-niri.nix`
-      (das `_module.args.keyboardLayout = "neo"` wird dort **nicht** konsumiert). „de" passt.
-- [x] **RAM/UMA:** UMA-Buffer im BIOS auf `2G` gesetzt → ~13 GiB nutzbar (Details `minipc-uma-buffer.md`).
-- [ ] **Wake-on-LAN (vorbereitet, wartet auf Ethernet):** geht nur über Kabel, nicht WLAN. Beim
-      Verkabeln zu tun: BIOS „Wake on LAN" aktivieren + `networking.interfaces.<iface>.wakeOnLan.enable
-      = true;` + `ethtool` zum Verifizieren (`Wake-on: g`). MACs: `eno1` = `84:47:09:86:FF:C2`,
-      `enp3s0` = `84:47:09:86:FF:C1` (DHCP lief zuletzt über `eno1`). Senden: `wakeonlan <MAC>`.
+- [ ] **Wake-on-LAN** auf `eno1` aktivieren (jetzt verkabelt → unblocked):
+      `networking.interfaces.eno1.wakeOnLan.enable = true;` + `ethtool` + BIOS „Wake on LAN".
+      MACs: `eno1` = `84:47:09:86:FF:C2`, `enp3s0` = `84:47:09:86:FF:C1`.
+      Senden: `wakeonlan 84:47:09:86:FF:C2`.
+- [ ] **WLAN** (`wlp2s0`) noch als Fallback neben LAN aktiv — optional abschalten für reinen LAN-Betrieb.
+
+### Weitere Dokumentation
+
+- `MOONLIGHT-STREAMING-SETUP.md` — Streaming-Setup (Host Sunshine + Client Moonlight)
+- `noctalia-settings-sync.md` — Noctalia-Settings exportieren/importieren/syncen
+- `minipc-uma-buffer.md` — iGPU-UMA-Buffer / nutzbarer RAM
 
 ---
 
 ## 14. Getesteter Stand (2026-06-09)
 
-- NixOS installiert, bootet von interner SSD, Auto-Login in Niri
-- AMD Radeon 760M via `amdgpu`, Wayland-Rendering ok (swaybg-Wallpaper)
-- Ethernet (eno1) per DHCP, SSH key-basiert als `leonardn` erreichbar
-- Noctalia-Shell läuft (nach manuellem Neustart) — First-Boot-Verhalten noch zu verifizieren
-- Git: `minipc`-Host auf GitHub, Mini-PC mit eigenem SSH-Key frisch geklont — `rebuild` einsatzbereit
-- Offen: VM-Kram entfernen, Monitor-Layout (siehe TODO)
+- NixOS installiert, bootet von interner SSD, Auto-Login in Niri + Noctalia-Shell
+- AMD Radeon 760M via `amdgpu`, Wayland-Rendering ok
+- Dual-Monitor korrekt: DP-1 (Gigabyte 1440p@170/VRR) links, HDMI-A-1 (Asus 1080p@60) rechts
+- Netzwerk: `eno1` = LAN/Internet (DHCP `192.168.178.62`), `enp3s0` = Direktlink zum Gaming-PC
+  (`10.0.0.2/30`, NM-unmanaged), WLAN als Fallback
+- Git + `rebuild`-Workflow einsatzbereit; Noctalia-Settings-Sync in `rebuild` integriert
+- **Moonlight-Streaming** vom Gaming-PC läuft (siehe `MOONLIGHT-STREAMING-SETUP.md`)
+- VM-Kram deaktiviert (host-spezifisch), RAM/UMA auf `2G` (~13 GiB)
+- Offen: Reboot-Test Noctalia, Passwörter ändern, Wake-on-LAN aktivieren (siehe Abschnitt 13)
