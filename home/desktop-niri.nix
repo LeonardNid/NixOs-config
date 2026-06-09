@@ -1,7 +1,15 @@
-{ pkgs, ... }:
+{ pkgs, lib, vmTools ? false, ... }:
 
 let
   wallpaper = "/home/leonardn/nixos-config/wallpapers/surreal-underwater-3840x2160-26042.jpg";
+
+  # VM-Clipboard-Autostarts nur wenn vmTools aktiv (leonardn) – auf dem Mini-PC
+  # gibt es keine Windows-VM/virbr0, daher leer.
+  vmSpawn = lib.optionalString vmTools ''
+    // Clipboard-Sync mit Windows-VM (TCP über virbr0)
+    spawn-at-startup "clipboard-from-vm"
+    spawn-at-startup "clipboard-to-vm-watch"
+  '';
 
   # Wrapper: zeigt Warnung wenn Heroic im gpuvm-Modus gestartet wird
   heroicGpuCheck = pkgs.writeShellScript "heroic-gpu-check" ''
@@ -71,10 +79,7 @@ in
     spawn-at-startup "swaybg" "-i" "${wallpaper}" "-m" "fill"
     spawn-at-startup "wl-paste" "--watch" "cliphist" "store"
     spawn-at-startup "nm-applet" "--indicator"
-    // Clipboard-Sync mit Windows-VM (TCP über virbr0)
-    spawn-at-startup "clipboard-from-vm"
-    spawn-at-startup "clipboard-to-vm-watch"
-
+    ${vmSpawn}
     // Hotkey-Overlay beim Start nicht anzeigen
     hotkey-overlay {
       skip-at-startup
@@ -581,6 +586,13 @@ in
     nerd-fonts.jetbrains-mono  # Icons fuer Waybar und Mako
     playerctl                  # MPRIS Media Controls
 
+    (pkgs.writeShellScriptBin "waybar-restart" ''
+      pkill -x waybar 2>/dev/null
+      sleep 0.5
+      exec waybar
+    '')
+  ] ++ lib.optionals vmTools [
+    # VM-Waybar-Steuerung – nur auf Hosts mit Windows-VM (leonardn)
     (pkgs.writeShellScriptBin "waybar-vm-status" ''
       VM="windows11"
       PROGRESS="/tmp/vm-waybar-progress"
@@ -752,12 +764,6 @@ in
         *Starten*)    (setsid vm-start-waybar &) ;;
         *Fixcon*)     vm fixcon ;;
       esac
-    '')
-
-    (pkgs.writeShellScriptBin "waybar-restart" ''
-      pkill -x waybar 2>/dev/null
-      sleep 0.5
-      exec waybar
     '')
   ];
 

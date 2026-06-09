@@ -33,6 +33,7 @@ in
   # Home-Module: desktop-spezifisch
   home-manager.users.leonardn = {
     _module.args.keyboardLayout = "neo";
+    _module.args.vmTools = false;  # kein VM/Looking-Glass/scream auf dem Mini-PC (Moonlight statt VM)
     imports = [ ]
       ++ lib.optional (desktop == "niri") ../../home/desktop-niri.nix;
   };

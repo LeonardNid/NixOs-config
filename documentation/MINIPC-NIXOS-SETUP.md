@@ -447,9 +447,18 @@ Die globale Git-Identität (`user.name`/`user.email`) kommt bereits aus dem Home
 ## 13. Offene Punkte / TODO
 
 - [ ] **Reboot-Test:** kommt Noctalia jetzt von selbst sauber hoch?
-- [ ] **VM-/Looking-Glass-Kram für `minipc` entfernen** (`vm/vm.nix`, `scream`, Looking-Glass,
-      `clipboard-to/from-vm`, VM-Waybar-Buttons) — wird durch Moonlight ersetzt. Sauber: den
-      VM-Teil host-spezifisch machen, damit `leonardn` ihn behält, `minipc` nicht.
+- [x] **VM-/Looking-Glass-Kram für `minipc` deaktiviert** (host-spezifisch, nichts gelöscht):
+      - `vm/vm.nix` (Looking Glass, scream, `gpu-switch-reboot`, `gpu-status`, `vm`-Befehl,
+        Clipboard-Sync) wird **nicht mehr in `home/default.nix`** geladen (das galt für alle
+        Hosts), sondern nur noch in `hosts/leonardn/default.nix` importiert.
+      - Neues Modul-Arg **`vmTools`** (`_module.args.vmTools`): `true` für `leonardn`,
+        `false` für `minipc`. `home/desktop-niri.nix` gated darüber die VM-Clipboard-Autostarts
+        (`clipboard-from-vm`/`-to-vm-watch`) und die VM-Waybar-Skripte (`vm-menu` etc.).
+      - Ergebnis: auf `leonardn` läuft alles unverändert weiter; auf `minipc` ist der VM-Kram
+        nur inaktiv (kein crash-loopender `scream`, keine sinnlosen Clipboard-Prozesse). Alle
+        Skripte bleiben im Repo erhalten und sind durch Umlegen des Flags reaktivierbar.
+      - Nebeneffekt: behebt denselben `scream`-Crash-Loop auch auf dem **Laptop** (lud `vm.nix`
+        ebenfalls über `home/default.nix`).
 - [ ] **Monitor-Layout** für den Single-Monitor-Mini-PC korrigieren (Output auf `x=0`), möglichst
       host-spezifisch statt im gemeinsamen `desktop-niri.nix`.
 - [x] **Git:** erledigt — `minipc`-Host gepusht, Mini-PC hat eigenen SSH-Key + frischen Clone (Abschnitt 12).

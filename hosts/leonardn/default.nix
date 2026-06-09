@@ -53,7 +53,8 @@ in
   # Home-Module: desktop-spezifisch
   home-manager.users.leonardn = {
     _module.args.keyboardLayout = "neo";
-    imports = [ ]
+    _module.args.vmTools = true;   # Looking Glass, scream, GPU-Switch, VM-Clipboard, VM-Waybar
+    imports = [ ../../vm/vm.nix ]
       ++ lib.optional (desktop == "niri") ../../home/desktop-niri.nix;
   };
 
