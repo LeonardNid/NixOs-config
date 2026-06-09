@@ -510,10 +510,13 @@ Die globale Git-Identität (`user.name`/`user.email`) kommt bereits aus dem Home
 - [ ] **Reboot-Test Noctalia:** kommt die Shell beim echten Reboot von selbst sauber hoch? (kam
       zuletzt automatisch; spätere manuelle Neustarts waren nur Settings-/Icon-bedingt).
 - [ ] **Passwörter** von `456456` auf etwas Eigenes ändern (`passwd`).
-- [ ] **Wake-on-LAN** auf `eno1` aktivieren (jetzt verkabelt → unblocked):
-      `networking.interfaces.eno1.wakeOnLan.enable = true;` + `ethtool` + BIOS „Wake on LAN".
+- [x] **Wake-on-LAN** auf `eno1` aktiviert (Config: `hosts/minipc/default.nix`):
+      `networking.interfaces.eno1.wakeOnLan.enable = true;` setzt beim Boot das WoL-Flag (`g`).
       MACs: `eno1` = `84:47:09:86:FF:C2`, `enp3s0` = `84:47:09:86:FF:C1`.
       Senden: `wakeonlan 84:47:09:86:FF:C2`.
+      **Noch zu prüfen:** im BIOS „Wake on LAN" / „Power On by PCI-E" aktivieren, sonst wacht
+      die NIC im Soft-Off (S5) nicht auf. Verifizieren mit `ethtool eno1 | grep Wake-on`
+      (soll `Wake-on: g` zeigen).
 - [ ] **WLAN** (`wlp2s0`) noch als Fallback neben LAN aktiv — optional abschalten für reinen LAN-Betrieb.
 
 ### Weitere Dokumentation
@@ -534,4 +537,5 @@ Die globale Git-Identität (`user.name`/`user.email`) kommt bereits aus dem Home
 - Git + `rebuild`-Workflow einsatzbereit; Noctalia-Settings-Sync in `rebuild` integriert
 - **Moonlight-Streaming** vom Gaming-PC läuft (siehe `MOONLIGHT-STREAMING-SETUP.md`)
 - VM-Kram deaktiviert (host-spezifisch), RAM/UMA auf `2G` (~13 GiB)
-- Offen: Reboot-Test Noctalia, Passwörter ändern, Wake-on-LAN aktivieren (siehe Abschnitt 13)
+- Offen: Reboot-Test Noctalia, Passwörter ändern (siehe Abschnitt 13). Wake-on-LAN in der
+  Config aktiviert, BIOS-Einstellung noch zu prüfen.

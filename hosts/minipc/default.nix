@@ -37,6 +37,12 @@ in
     prefixLength = 30;
   }];
 
+  # Wake-on-LAN auf dem LAN-Interface (eno1, MAC 84:47:09:86:FF:C2).
+  # Setzt beim Boot via ethtool das WoL-Magic-Packet-Flag ("g").
+  # Senden vom anderen Rechner: `wakeonlan 84:47:09:86:FF:C2`.
+  # Voraussetzung: im BIOS „Wake on LAN" / „Power On by PCI-E" aktivieren.
+  networking.interfaces.eno1.wakeOnLan.enable = true;
+
   # Internet-Sharing: eno1 (Router) → enp3s0 (Gaming-PC) via NAT
   networking.nat = {
     enable = true;
