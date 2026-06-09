@@ -1,1 +1,1 @@
-wake-on-lan-auf-eno1-aktiviert--00:22
+wol:-networkmanager-ethernet-wake-on-lan-magic--00:25

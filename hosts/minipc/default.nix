@@ -43,6 +43,12 @@ in
   # Voraussetzung: im BIOS „Wake on LAN" / „Power On by PCI-E" aktivieren.
   networking.interfaces.eno1.wakeOnLan.enable = true;
 
+  # WICHTIG: NetworkManager verwaltet eno1 und setzt das WoL-Flag beim Aktivieren der
+  # Verbindung sonst wieder auf "disabled" zurück (die .link-Datei von wakeOnLan greift nur
+  # beim Erscheinen des Geräts). Daher den NM-Default für Ethernet-WoL auf "magic" setzen
+  # (NMSettingWiredWakeOnLan: 0x40 = 64 = MAGIC), damit das Flag dauerhaft erhalten bleibt.
+  networking.networkmanager.settings.connection."ethernet.wake-on-lan" = 64;
+
   # Internet-Sharing: eno1 (Router) → enp3s0 (Gaming-PC) via NAT
   networking.nat = {
     enable = true;
