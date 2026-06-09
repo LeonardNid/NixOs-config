@@ -139,6 +139,41 @@ ip link show
 ```
 Ethernet-Interface: typisch `enp*` oder `eth*`, WLAN: typisch `wlp*` oder `wlan*`.
 
+### Mini-PC-spezifisch (umgesetzt 2026-06-09, `hosts/minipc/default.nix`)
+
+Der Mini-PC hat **zwei Ethernet-Ports** und hängt am LAN (kein WLAN-Sharing):
+- **`eno1`** = Internet (Router, DHCP `192.168.178.62`) → NAT-Quelle
+- **`enp3s0`** = Direktkabel zum Gaming-PC → statische `10.0.0.2/30`
+- `moonlight-qt` liegt im Home-Block des `minipc`-Hosts (Binary heißt schlicht **`moonlight`**)
+
+```nix
+# NetworkManager darf enp3s0 NICHT verwalten, sonst greift die statische IP nicht!
+networking.networkmanager.unmanaged = [ "interface-name:enp3s0" ];
+
+networking.interfaces.enp3s0.ipv4.addresses = [{
+  address = "10.0.0.2";
+  prefixLength = 30;
+}];
+
+networking.nat = {
+  enable = true;
+  externalInterface = "eno1";        # Internet via Router (nicht WLAN wie beim Laptop)
+  internalInterfaces = [ "enp3s0" ]; # Direktkabel zum Gaming-PC
+};
+```
+
+**Stolperfalle NetworkManager:** Ohne `networking.networkmanager.unmanaged` schnappt sich NM
+`enp3s0`, bekommt kein DHCP (Gaming-PC ist kein DHCP-Server) → die statische `10.0.0.2` wird
+**nie** gesetzt (`nmcli device status` zeigt enp3s0 dann „nicht verbunden"). Mit `unmanaged`
+übernimmt das NixOS-`network-addresses`-Service die statische IP → zeigt „nicht verwaltet".
+
+**Verbindung testen (Ping ist nutzlos):** Windows blockt ICMP per Default → `ping 10.0.0.1`
+schlägt **immer** fehl, auch bei funktionierender Verbindung. Stattdessen:
+```bash
+ping -c1 10.0.0.1; ip neigh show dev enp3s0       # → "REACHABLE" = L2/L3 ok
+timeout 3 bash -c 'echo > /dev/tcp/10.0.0.1/47989' && echo "Sunshine erreichbar"
+```
+
 ### Moonlight-Einstellungen
 
 Nach dem Start: `+` → IP `10.0.0.1` manuell eingeben.
