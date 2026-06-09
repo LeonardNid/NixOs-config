@@ -295,5 +295,64 @@
       echo "└────────────────────────────────────────────────"
       echo ""
     '')
+
+    # ── Noctalia-Settings synchronisieren (Repo-Backup) ──
+    # noctalia-save: ~/.config/noctalia → Repo, commit + push
+    # noctalia-load: Repo → ~/.config/noctalia + Noctalia-Neustart
+    # Hält die Live-Config schreibbar (kein Nix-Symlink), Repo dient als versionierter Sync.
+    (pkgs.writeShellScriptBin "noctalia-save" ''
+      set -eu
+      REPO="/home/leonardn/nixos-config"
+      SRC="$HOME/.config/noctalia"
+      DEST="$REPO/noctalia-settings"
+
+      if [ ! -d "$SRC" ]; then
+        echo "Kein Noctalia-Config-Ordner unter $SRC"; exit 1
+      fi
+
+      mkdir -p "$DEST"
+      ${pkgs.rsync}/bin/rsync -a --delete "$SRC/" "$DEST/"
+
+      cd "$REPO"
+      git add noctalia-settings
+      if git diff --cached --quiet -- noctalia-settings; then
+        echo "Noctalia-Settings unverändert — nichts zu sichern."
+        exit 0
+      fi
+      git commit -q -m "noctalia-settings: sync von $(hostname) ($(date '+%Y-%m-%d %H:%M'))" -- noctalia-settings
+      echo "✓ committet."
+      if git push -q; then
+        echo "✓ gepusht. Auf anderem Rechner: noctalia-load"
+      else
+        echo "✗ Push fehlgeschlagen (Commit liegt lokal vor)."
+      fi
+    '')
+
+    (pkgs.writeShellScriptBin "noctalia-load" ''
+      set -eu
+      REPO="/home/leonardn/nixos-config"
+      SRC="$REPO/noctalia-settings"
+      DEST="$HOME/.config/noctalia"
+
+      # Neuesten Stand aus origin holen (best effort, scheitert nicht bei dirty tree)
+      git -C "$REPO" pull --rebase --autostash -q 2>/dev/null || \
+        echo "Hinweis: git pull übersprungen — nutze lokalen Repo-Stand."
+
+      if [ ! -d "$SRC" ]; then
+        echo "Kein gesicherter Stand unter $SRC — erst irgendwo 'noctalia-save' ausführen."; exit 1
+      fi
+
+      # Noctalia stoppen, damit es die Dateien beim Beenden nicht überschreibt
+      pkill -f quickshell 2>/dev/null || true
+      sleep 1
+
+      mkdir -p "$DEST"
+      ${pkgs.rsync}/bin/rsync -a --delete "$SRC/" "$DEST/"
+      echo "✓ Settings eingespielt."
+
+      # Noctalia in der laufenden Session neu starten
+      setsid noctalia-shell >/tmp/noctalia.log 2>&1 &
+      echo "✓ Noctalia neu gestartet."
+    '')
   ];
 }
