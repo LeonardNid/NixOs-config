@@ -325,11 +325,22 @@
       echo "┌─── nixos-rebuild ──────────────────────────────"
       echo ""
 
+      # Generation vor dem Switch merken: scheitert nixos-rebuild mit Warnungen
+      # (z.B. Unit-Reload fehlgeschlagen, Exit 4), die Generation wurde aber
+      # trotzdem aktiviert → weitermachen statt abbrechen (sonst kein git push).
+      SYSTEM_BEFORE=$(readlink -f /run/current-system)
+
       if sudo nixos-rebuild switch --flake "$REPO#$(hostname)"; then
         echo ""
         echo -e "''${GREEN}┌────────────────────────────────────────────────┐''${RESET}"
         echo -e "''${GREEN}│  ✓ Build erfolgreich                           │''${RESET}"
         echo -e "''${GREEN}└────────────────────────────────────────────────┘''${RESET}"
+      elif [ "$(readlink -f /run/current-system)" != "$SYSTEM_BEFORE" ]; then
+        echo ""
+        echo -e "''${YELLOW}┌────────────────────────────────────────────────┐''${RESET}"
+        echo -e "''${YELLOW}│  ⚠ Aktiviert, aber mit Warnungen               │''${RESET}"
+        echo -e "''${YELLOW}│    (Details siehe Ausgabe oben)                │''${RESET}"
+        echo -e "''${YELLOW}└────────────────────────────────────────────────┘''${RESET}"
       else
         echo ""
         echo -e "''${RED}┌────────────────────────────────────────────────┐''${RESET}"
