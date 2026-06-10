@@ -103,11 +103,18 @@
         [.[] | select(.info.props["node.name"] == "Moonlight"
                       and .info.props["media.class"] == "Stream/Output/Audio"
                       and .info.params.Props != null)][0].id // empty')
+
+      # Benachrichtigungs-Kette: -p gibt die ID der neuen Nachricht aus, wir merken
+      # sie uns und ersetzen sie beim nächsten Aufruf per -r — so wird beim Scrollen
+      # immer dieselbe Meldung aktualisiert statt gestapelt. -r 0 = neue erstellen.
+      IDFILE="''${XDG_RUNTIME_DIR:-/tmp}/moonlight-vol.notify-id"
+      LASTID=$(cat "$IDFILE" 2>/dev/null)
+      case "$LASTID" in ""|*[!0-9]*) LASTID=0 ;; esac
+
       if [ -z "$ID" ]; then
         echo "—"
-        [ -n "$1" ] && notify-send -e -t 1500 \
-          -h string:x-canonical-private-synchronous:moonlight-vol \
-          "Moonlight" "läuft nicht"
+        [ -n "$1" ] && notify-send -e -t 1500 -p -r "$LASTID" \
+          "Moonlight" "läuft nicht" > "$IDFILE"
         exit 0
       fi
       case "$1" in
@@ -124,12 +131,9 @@
         *)       TEXT="$PCT%" ;;
       esac
       echo "$TEXT"
-      # Bei Änderungs-Aufrufen kurzes OSD-Feedback; "synchronous"-Hint sorgt dafür,
-      # dass beim Scrollen die Benachrichtigung ersetzt statt gestapelt wird.
-      [ -n "$1" ] && notify-send -e -t 1500 \
-        -h string:x-canonical-private-synchronous:moonlight-vol \
+      [ -n "$1" ] && notify-send -e -t 1500 -p -r "$LASTID" \
         -h int:value:"$PCT" \
-        "Moonlight-Lautstärke" "$TEXT"
+        "Moonlight-Lautstärke" "$TEXT" > "$IDFILE"
     '')
 
     (pkgs.writeShellScriptBin "niri-focus-or-launch" ''
