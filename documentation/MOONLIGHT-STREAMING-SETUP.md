@@ -310,17 +310,18 @@ Alle Shortcuts gelten während eines aktiven Streams:
 **Tipp:** "Erfasse System-Tastenkürzel" in den Moonlight-Einstellungen auf **"Immer"** stellen,
 damit Alt+Tab und andere Windows-Shortcuts auch im Fenstermodus an Windows weitergeleitet werden.
 
-### Niri-Bind auf dem Mini-PC: `Ctrl+Alt+Shift+Z`
+### Niri-Bind auf dem Mini-PC: `Ctrl+Alt+Shift+Y`
 
-Dieselbe Kombi wie Moonlights Capture-Toggle ist in Niri als Fokus/Start-Bind belegt
-(`moonlightClient`-Flag in `hosts/minipc/default.nix` → `home/desktop-niri.nix`):
+Fokussiert Moonlight bzw. startet es, falls es nicht läuft (`niri-focus-or-launch`).
+Aktiviert über das `moonlightClient`-Flag in `hosts/minipc/default.nix` →
+`home/desktop-niri.nix` (nur Mini-PC, nicht leonardn-Desktop).
 
-- **Im Stream (Input gecaptured):** Moonlight inhibiert die Compositor-Shortcuts →
-  die Kombi geht an Moonlight und schaltet das Capture **aus**.
-- **Außerhalb (Capture aus / anderes Fenster):** Niri fängt die Kombi →
-  Moonlight wird fokussiert bzw. gestartet (`niri-focus-or-launch`).
-- Wieder ins Capture: einfach in das Moonlight-Fenster **klicken**
-  (die Kombi erreicht Moonlight bei ausgeschaltetem Capture nicht mehr, Niri ist schneller).
+Bewusst **nicht** dasselbe wie Moonlights Capture-Toggle (`Ctrl+Alt+Shift+Z`), damit
+sich beide nicht in die Quere kommen: `Z` gehört komplett Moonlight (Capture an/aus),
+`Y` gehört Niri (fokussieren/starten). Typischer Ablauf: `Z` zum Rausgehen aus dem
+Stream, woanders arbeiten, `Y` um zurückzuspringen, Klick ins Fenster für Capture.
+(Bei aktivem Capture inhibiert Moonlight die Compositor-Shortcuts — dann geht auch
+`Y` an Windows durch; das ist egal, man ist ja schon im Stream.)
 
 ---
 
