@@ -21,7 +21,9 @@ let
     if [ -n "$WIN_ID" ]; then
       niri msg action focus-window --id "$WIN_ID"
       sleep 0.2
-      ${pkgs.wtype}/bin/wtype -M ctrl -M alt -M shift -P z -p z -m shift -m alt -m ctrl
+      # Wichtig: Modifier als echte Tastendrücke (-P Control_L …), NICHT als
+      # Status-Flags (-M ctrl) — SDL/Moonlight ignoriert die reine Modifier-Maske.
+      ${pkgs.wtype}/bin/wtype -P Control_L -P Alt_L -P Shift_L -P z -p z -p Shift_L -p Alt_L -p Control_L
     else
       exec moonlight
     fi
