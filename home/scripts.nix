@@ -92,31 +92,44 @@
     (pkgs.writeShellScriptBin "moonlight-vol" ''
       # Moonlight-Stream-Lautstärke steuern. Moonlight taucht in Noctalias App-Mixer
       # nicht auf (legt zwei PipeWire-Nodes an, einer ohne Audio-Params) — daher
-      # eigenes Script, eingebunden als CustomButton-Widget in der Noctalia-Bar.
-      # Aufrufe: moonlight-vol            → "62%" / "62% 󰝟" / "—" (für textCommand)
-      #          moonlight-vol up|down    → ±5%
-      #          moonlight-vol mute       → Mute umschalten
-      #          moonlight-vol <0-100>    → absolut setzen
+      # eigenes Script, gedacht für einen Custom Button in der Noctalia-Bar
+      # (Scroll hoch/runter → up/down, Mittelklick → mute).
+      # Aufrufe: moonlight-vol            → nur Status auf stdout: "62%" / "62% 󰝟" / "—"
+      #          moonlight-vol show       → Status als Benachrichtigung (für Linksklick)
+      #          moonlight-vol up|down    → ±5% + Benachrichtigung
+      #          moonlight-vol mute       → Mute umschalten + Benachrichtigung
+      #          moonlight-vol <0-100>    → absolut setzen + Benachrichtigung
       ID=$(pw-dump 2>/dev/null | jq -r '
         [.[] | select(.info.props["node.name"] == "Moonlight"
                       and .info.props["media.class"] == "Stream/Output/Audio"
                       and .info.params.Props != null)][0].id // empty')
       if [ -z "$ID" ]; then
         echo "—"
+        [ -n "$1" ] && notify-send -e -t 1500 \
+          -h string:x-canonical-private-synchronous:moonlight-vol \
+          "Moonlight" "läuft nicht"
         exit 0
       fi
       case "$1" in
         up)   wpctl set-volume -l 1.0 "$ID" 5%+ ;;
         down) wpctl set-volume "$ID" 5%- ;;
         mute) wpctl set-mute "$ID" toggle ;;
+        show) ;; # nichts ändern — Benachrichtigung kommt unten
         [0-9]*) wpctl set-volume -l 1.0 "$ID" "$1%" ;;
       esac
       VOL=$(wpctl get-volume "$ID")
       PCT=$(echo "$VOL" | grep -oP '\d+\.\d+' | awk '{printf "%d", $1*100}')
       case "$VOL" in
-        *MUTED*) echo "$PCT% 󰝟" ;;
-        *)       echo "$PCT%" ;;
+        *MUTED*) TEXT="$PCT% 󰝟 (stumm)" ;;
+        *)       TEXT="$PCT%" ;;
       esac
+      echo "$TEXT"
+      # Bei Änderungs-Aufrufen kurzes OSD-Feedback; "synchronous"-Hint sorgt dafür,
+      # dass beim Scrollen die Benachrichtigung ersetzt statt gestapelt wird.
+      [ -n "$1" ] && notify-send -e -t 1500 \
+        -h string:x-canonical-private-synchronous:moonlight-vol \
+        -h int:value:"$PCT" \
+        "Moonlight-Lautstärke" "$TEXT"
     '')
 
     (pkgs.writeShellScriptBin "niri-focus-or-launch" ''

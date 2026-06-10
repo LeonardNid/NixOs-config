@@ -263,15 +263,24 @@ einen zweiten Port und bleibt direkt am Router, während das Streaming-Kabel sep
 Moonlight legt **zwei** PipeWire-Nodes an (einer ohne Audio-Params) — Noctalias App-Mixer
 erkennt den Stream dadurch nicht. Kein Config-Fehler, über Noctalia-Settings nicht behebbar.
 
-**Lösung:** Script `moonlight-vol` (`home/scripts.nix`) + CustomButton-Widget in der
-Noctalia-Bar (rechts, neben dem Volume-Widget, Gamepad-Icon):
+**Lösung:** Script `moonlight-vol` (`home/scripts.nix`) + Custom Button in der Noctalia-Bar
+(selbst angelegt über Noctalia-Settings → Bar → Widget hinzufügen → Custom Button):
 
-- **Scrollrad** auf dem Widget: ±5 %
-- **Mittelklick**: Mute umschalten
-- Anzeige: aktuelle Lautstärke, `—` wenn Moonlight nicht läuft
+| Button-Feld | Befehl |
+|---|---|
+| Linksklick | `moonlight-vol show` (zeigt aktuelle Lautstärke als Benachrichtigung) |
+| Scroll up | `moonlight-vol up` |
+| Scroll down | `moonlight-vol down` |
+| Mittelklick | `moonlight-vol mute` |
 
-CLI: `moonlight-vol` / `moonlight-vol up|down|mute|<0-100>`. Das Script findet den
-richtigen Node selbst (per `pw-dump`, nimmt den mit `params.Props`).
+Jede Änderung zeigt eine Benachrichtigung mit Fortschrittsbalken (ersetzt sich beim
+Scrollen selbst, kein Spam). `moonlight-vol` ohne Argument gibt nur den Status aus
+(`62%` / `62% 󰝟 (stumm)` / `—` wenn Moonlight nicht läuft), `moonlight-vol 50` setzt absolut.
+Das Script findet den richtigen Node selbst (per `pw-dump`, nimmt den mit `params.Props`).
+
+**Hinweis Noctalia 5:** Die Settings liegen seit dem Rewrite in
+`~/.local/state/noctalia/settings.toml` (+ optional `~/.config/noctalia/config.toml`) —
+die alte `~/.config/noctalia/settings.json` ist tot und wird nicht mehr gelesen.
 
 Während eines **Discord-Screenshares** routet Moonlight nach `vencord-screen-share` —
 die Widget-Lautstärke regelt dann, was die Zuschauer hören. Lokal hören/regeln:

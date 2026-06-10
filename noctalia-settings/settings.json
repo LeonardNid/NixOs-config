@@ -207,20 +207,6 @@
           "showPowerProfiles": false
         },
         {
-          "id": "CustomButton",
-          "icon": "device-gamepad-2",
-          "generalTooltipText": "Moonlight-Lautstärke (Scrollen: ±5%, Mittelklick: Mute)",
-          "textCommand": "moonlight-vol",
-          "textIntervalMs": 3000,
-          "wheelMode": "separate",
-          "wheelUpExec": "moonlight-vol up",
-          "wheelDownExec": "moonlight-vol down",
-          "wheelUpUpdateText": true,
-          "wheelDownUpdateText": true,
-          "middleClickExec": "moonlight-vol mute",
-          "middleClickUpdateText": true
-        },
-        {
           "displayMode": "onhover",
           "iconColor": "none",
           "id": "Volume",
