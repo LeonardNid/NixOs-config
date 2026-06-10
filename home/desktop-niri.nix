@@ -11,11 +11,26 @@ let
     spawn-at-startup "clipboard-to-vm-watch"
   '';
 
-  # Nur Moonlight-Client-Hosts (minipc): gleiche Kombi wie Moonlights Capture-Toggle
-  # im Stream. Bei aktivem Input-Capture inhibiert Moonlight die Compositor-Shortcuts
-  # → Kombi geht an Moonlight (Capture aus); außerhalb fängt Niri sie → fokussieren/starten.
+  # Moonlight fokussieren/starten + Input-Capture direkt aktivieren: nach dem Fokus
+  # wird Moonlights Capture-Toggle (Ctrl+Alt+Shift+Z) per wtype geschickt — sonst ist
+  # nur das Fenster fokussiert und man müsste einmal klicken, um Windows zu steuern.
+  # Kein synthetischer Mausklick: der ginge an das Fenster unterm Zeiger, nicht an Moonlight.
+  moonlightFocus = pkgs.writeShellScript "moonlight-focus" ''
+    WIN_ID=$(niri msg -j windows 2>/dev/null | ${pkgs.jq}/bin/jq -r \
+      '[.[] | select(.app_id == "com.moonlight_stream.Moonlight")] | first | .id // empty')
+    if [ -n "$WIN_ID" ]; then
+      niri msg action focus-window --id "$WIN_ID"
+      sleep 0.2
+      ${pkgs.wtype}/bin/wtype -M ctrl -M alt -M shift -P z -p z -m shift -m alt -m ctrl
+    else
+      exec moonlight
+    fi
+  '';
+
+  # Nur Moonlight-Client-Hosts (minipc). Bei aktivem Input-Capture inhibiert Moonlight
+  # die Compositor-Shortcuts → Kombi geht an Windows durch; außerhalb fängt Niri sie.
   moonlightBind = lib.optionalString moonlightClient ''
-    Ctrl+Alt+Shift+Y { spawn "niri-focus-or-launch" "com.moonlight_stream.Moonlight" "moonlight"; }
+    Ctrl+Alt+Shift+Y { spawn "${moonlightFocus}"; }
   '';
 
   # Wrapper: zeigt Warnung wenn Heroic im gpuvm-Modus gestartet wird
