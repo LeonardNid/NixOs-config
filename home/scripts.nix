@@ -89,6 +89,36 @@
       pkill -SIGRTMIN+1 waybar 2>/dev/null || true
     '')
 
+    (pkgs.writeShellScriptBin "moonlight-vol" ''
+      # Moonlight-Stream-Lautstärke steuern. Moonlight taucht in Noctalias App-Mixer
+      # nicht auf (legt zwei PipeWire-Nodes an, einer ohne Audio-Params) — daher
+      # eigenes Script, eingebunden als CustomButton-Widget in der Noctalia-Bar.
+      # Aufrufe: moonlight-vol            → "62%" / "62% 󰝟" / "—" (für textCommand)
+      #          moonlight-vol up|down    → ±5%
+      #          moonlight-vol mute       → Mute umschalten
+      #          moonlight-vol <0-100>    → absolut setzen
+      ID=$(pw-dump 2>/dev/null | jq -r '
+        [.[] | select(.info.props["node.name"] == "Moonlight"
+                      and .info.props["media.class"] == "Stream/Output/Audio"
+                      and .info.params.Props != null)][0].id // empty')
+      if [ -z "$ID" ]; then
+        echo "—"
+        exit 0
+      fi
+      case "$1" in
+        up)   wpctl set-volume -l 1.0 "$ID" 5%+ ;;
+        down) wpctl set-volume "$ID" 5%- ;;
+        mute) wpctl set-mute "$ID" toggle ;;
+        [0-9]*) wpctl set-volume -l 1.0 "$ID" "$1%" ;;
+      esac
+      VOL=$(wpctl get-volume "$ID")
+      PCT=$(echo "$VOL" | grep -oP '\d+\.\d+' | awk '{printf "%d", $1*100}')
+      case "$VOL" in
+        *MUTED*) echo "$PCT% 󰝟" ;;
+        *)       echo "$PCT%" ;;
+      esac
+    '')
+
     (pkgs.writeShellScriptBin "niri-focus-or-launch" ''
       APP_ID="$1"; shift
       WIN_ID=$(niri msg -j windows 2>/dev/null | ${pkgs.jq}/bin/jq -r --arg id "$APP_ID" '[.[] | select(.app_id == $id)] | first | .id // empty')

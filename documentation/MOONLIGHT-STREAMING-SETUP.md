@@ -258,6 +258,27 @@ einen zweiten Port und bleibt direkt am Router, während das Streaming-Kabel sep
 
 ---
 
+## 5b. Lautstärke (Noctalia zeigt Moonlight nicht im App-Mixer)
+
+Moonlight legt **zwei** PipeWire-Nodes an (einer ohne Audio-Params) — Noctalias App-Mixer
+erkennt den Stream dadurch nicht. Kein Config-Fehler, über Noctalia-Settings nicht behebbar.
+
+**Lösung:** Script `moonlight-vol` (`home/scripts.nix`) + CustomButton-Widget in der
+Noctalia-Bar (rechts, neben dem Volume-Widget, Gamepad-Icon):
+
+- **Scrollrad** auf dem Widget: ±5 %
+- **Mittelklick**: Mute umschalten
+- Anzeige: aktuelle Lautstärke, `—` wenn Moonlight nicht läuft
+
+CLI: `moonlight-vol` / `moonlight-vol up|down|mute|<0-100>`. Das Script findet den
+richtigen Node selbst (per `pw-dump`, nimmt den mit `params.Props`).
+
+Während eines **Discord-Screenshares** routet Moonlight nach `vencord-screen-share` —
+die Widget-Lautstärke regelt dann, was die Zuschauer hören. Lokal hören/regeln:
+`pavucontrol` → Tab „Wiedergabe".
+
+---
+
 ## 6. Moonlight Tastenkombinationen
 
 Alle Shortcuts gelten während eines aktiven Streams:

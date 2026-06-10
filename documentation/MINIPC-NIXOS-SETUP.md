@@ -521,8 +521,13 @@ Die globale Git-Identität (`user.name`/`user.email`) kommt bereits aus dem Home
         dadurch dauerhaft erhalten.
       MACs: `eno1` = `84:47:09:86:FF:C2`, `enp3s0` = `84:47:09:86:FF:C1`.
       Senden: `wakeonlan 84:47:09:86:FF:C2`.
-      **Noch zu prüfen:** im BIOS „Wake on LAN" / „Power On by PCI-E" aktivieren, sonst wacht
-      die NIC im Soft-Off (S5) nicht auf.
+      - **ERGEBNIS (2026-06-10):** WoL aus **Poweroff (S5) ist auf diesem Board nicht möglich** —
+        das Mini-PC-Board legt im Aus keinen Standby-Strom auf die NIC (LAN-LED ist im Aus dunkel),
+        und es gibt **kein** ErP/Deep-Sleep-Toggle im BIOS zum Ändern. Hardware-Limit, nicht per
+        Software/BIOS behebbar. **Aus Suspend (S3) funktioniert WoL zuverlässig** → zum Aufwecken
+        `systemctl suspend` statt `poweroff` nutzen. Magic Packets kommen nachweislich korrekt an
+        (per `tcpdump` verifiziert) — das Problem ist rein die fehlende NIC-Stromversorgung im S5.
+        Vollständige Untersuchung (inkl. leoserver): **`documentation/wake-on-lan.md`**.
 - [ ] **WLAN** (`wlp2s0`) noch als Fallback neben LAN aktiv — optional abschalten für reinen LAN-Betrieb.
 
 ### Weitere Dokumentation
@@ -543,5 +548,6 @@ Die globale Git-Identität (`user.name`/`user.email`) kommt bereits aus dem Home
 - Git + `rebuild`-Workflow einsatzbereit; Noctalia-Settings-Sync in `rebuild` integriert
 - **Moonlight-Streaming** vom Gaming-PC läuft (siehe `MOONLIGHT-STREAMING-SETUP.md`)
 - VM-Kram deaktiviert (host-spezifisch), RAM/UMA auf `2G` (~13 GiB)
-- Offen: Reboot-Test Noctalia, Passwörter ändern (siehe Abschnitt 13). Wake-on-LAN in der
-  Config aktiviert, BIOS-Einstellung noch zu prüfen.
+- Offen: Reboot-Test Noctalia, Passwörter ändern (siehe Abschnitt 13). Wake-on-LAN: aus S5
+  hardwareseitig nicht möglich, aus Suspend (S3) ok → `systemctl suspend` zum Remote-Wecken
+  (Details: `documentation/wake-on-lan.md`).
