@@ -273,10 +273,13 @@ erkennt den Stream dadurch nicht. Kein Config-Fehler, über Noctalia-Settings ni
 | Scroll down | `moonlight-vol down` |
 | Mittelklick | `moonlight-vol mute` |
 
-Jede Änderung zeigt eine Benachrichtigung mit Fortschrittsbalken (ersetzt sich beim
-Scrollen selbst, kein Spam). `moonlight-vol` ohne Argument gibt nur den Status aus
-(`62%` / `62% 󰝟 (stumm)` / `—` wenn Moonlight nicht läuft), `moonlight-vol 50` setzt absolut.
-Das Script findet den richtigen Node selbst (per `pw-dump`, nimmt den mit `params.Props`).
+Jede Änderung zeigt eine Benachrichtigung mit Fortschrittsbalken. Beim Scrollen wird
+immer dieselbe Meldung aktualisiert statt gestapelt: das Script merkt sich die
+Benachrichtigungs-ID (`notify-send -p`) in `$XDG_RUNTIME_DIR/moonlight-vol.notify-id`
+und ersetzt sie beim nächsten Aufruf per `-r` (Noctalia behält die ID beim Ersetzen bei).
+`moonlight-vol` ohne Argument gibt nur den Status aus (`62%` / `62% 󰝟 (stumm)` / `—` wenn
+Moonlight nicht läuft), `moonlight-vol 50` setzt absolut. Das Script findet den richtigen
+Node selbst (per `pw-dump`, nimmt den mit `params.Props` — Moonlight legt zwei an).
 
 **Hinweis Noctalia 5:** Die Settings liegen seit dem Rewrite in
 `~/.local/state/noctalia/settings.toml` (+ optional `~/.config/noctalia/config.toml`) —
@@ -306,6 +309,18 @@ Alle Shortcuts gelten während eines aktiven Streams:
 
 **Tipp:** "Erfasse System-Tastenkürzel" in den Moonlight-Einstellungen auf **"Immer"** stellen,
 damit Alt+Tab und andere Windows-Shortcuts auch im Fenstermodus an Windows weitergeleitet werden.
+
+### Niri-Bind auf dem Mini-PC: `Ctrl+Alt+Shift+Z`
+
+Dieselbe Kombi wie Moonlights Capture-Toggle ist in Niri als Fokus/Start-Bind belegt
+(`moonlightClient`-Flag in `hosts/minipc/default.nix` → `home/desktop-niri.nix`):
+
+- **Im Stream (Input gecaptured):** Moonlight inhibiert die Compositor-Shortcuts →
+  die Kombi geht an Moonlight und schaltet das Capture **aus**.
+- **Außerhalb (Capture aus / anderes Fenster):** Niri fängt die Kombi →
+  Moonlight wird fokussiert bzw. gestartet (`niri-focus-or-launch`).
+- Wieder ins Capture: einfach in das Moonlight-Fenster **klicken**
+  (die Kombi erreicht Moonlight bei ausgeschaltetem Capture nicht mehr, Niri ist schneller).
 
 ---
 

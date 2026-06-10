@@ -64,6 +64,7 @@ in
   home-manager.users.leonardn = {
     _module.args.keyboardLayout = "neo";
     _module.args.vmTools = false;  # kein VM/Looking-Glass/scream auf dem Mini-PC (Moonlight statt VM)
+    _module.args.moonlightClient = true;  # Niri-Bind Ctrl+Alt+Shift+Z: Moonlight fokussieren/starten
     imports = [ ]
       ++ lib.optional (desktop == "niri") ../../home/desktop-niri.nix;
     home.packages = [ pkgs.moonlight-qt ];   # Moonlight-Client (Stream-Empfänger)

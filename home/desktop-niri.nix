@@ -1,4 +1,4 @@
-{ pkgs, lib, vmTools ? false, ... }:
+{ pkgs, lib, vmTools ? false, moonlightClient ? false, ... }:
 
 let
   wallpaper = "/home/leonardn/nixos-config/wallpapers/surreal-underwater-3840x2160-26042.jpg";
@@ -9,6 +9,13 @@ let
     // Clipboard-Sync mit Windows-VM (TCP über virbr0)
     spawn-at-startup "clipboard-from-vm"
     spawn-at-startup "clipboard-to-vm-watch"
+  '';
+
+  # Nur Moonlight-Client-Hosts (minipc): gleiche Kombi wie Moonlights Capture-Toggle
+  # im Stream. Bei aktivem Input-Capture inhibiert Moonlight die Compositor-Shortcuts
+  # → Kombi geht an Moonlight (Capture aus); außerhalb fängt Niri sie → fokussieren/starten.
+  moonlightBind = lib.optionalString moonlightClient ''
+    Ctrl+Alt+Shift+Z { spawn "niri-focus-or-launch" "com.moonlight_stream.Moonlight" "moonlight"; }
   '';
 
   # Wrapper: zeigt Warnung wenn Heroic im gpuvm-Modus gestartet wird
@@ -156,6 +163,7 @@ in
       Mod+Shift+Return { spawn "kitty" "--title" "float-term"; }
       Mod+A { spawn "niri-focus-or-launch" "zen" "zen"; }
       Mod+L { spawn "niri-focus-or-launch" "vesktop" "vesktop"; }
+      ${moonlightBind}
       // Mod+W { spawn "niri-focus-or-launch" "obsidian" "obsidian"; }
       Mod+E { spawn "nautilus"; }
       Mod+Shift+E { spawn "kitty" "--override" "initial_window_width=1100" "--override" "initial_window_height=700" "--title" "nc-pick" "-e" "nc-pick"; }
