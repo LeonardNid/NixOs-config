@@ -15,7 +15,7 @@ let
   # im Stream. Bei aktivem Input-Capture inhibiert Moonlight die Compositor-Shortcuts
   # → Kombi geht an Moonlight (Capture aus); außerhalb fängt Niri sie → fokussieren/starten.
   moonlightBind = lib.optionalString moonlightClient ''
-    Ctrl+Alt+Shift+Z { spawn "niri-focus-or-launch" "com.moonlight_stream.Moonlight" "moonlight"; }
+    Ctrl+Alt+Shift+Y { spawn "niri-focus-or-launch" "com.moonlight_stream.Moonlight" "moonlight"; }
   '';
 
   # Wrapper: zeigt Warnung wenn Heroic im gpuvm-Modus gestartet wird
