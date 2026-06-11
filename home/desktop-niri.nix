@@ -871,7 +871,39 @@ in
         "󰆏  Clipboard ← Windows" \
         "󰋽  Status" \
         "󰌹  Koppeln")
-      CHOICE=$(echo "$OPTS" | fuzzel --dmenu --width=26 --lines=10 --prompt="󰢹  win  ")
+      # Farben aus Noctalias generierter Palette ziehen -> Launcher matcht Noctalia
+      # (folgt auch Wallpaper-/Palettenwechsel). Fallback = aktueller Stand, falls die
+      # Datei mal fehlt. Nur win-menu betroffen, globaler App-Launcher bleibt unberührt.
+      C="$HOME/.config/noctalia/colors.json"
+      col() {
+        v=""
+        if [ -f "$C" ]; then
+          v=$(${pkgs.jq}/bin/jq -r --arg k "$1" '.[$k] // empty' "$C" | tr -d '#')
+        fi
+        [ -n "$v" ] && printf '%s' "$v" || printf '%s' "$2"
+      }
+      SURFACE=$(col mSurface 070722)
+      ONSURF=$(col mOnSurface f3edf7)
+      ONVAR=$(col mOnSurfaceVariant 7c80b4)
+      PRIMARY=$(col mPrimary fff59b)
+      ONPRIM=$(col mOnPrimary 0e0e43)
+
+      CHOICE=$(echo "$OPTS" | fuzzel --dmenu \
+        --font="JetBrainsMono Nerd Font:size=12" \
+        --prompt="󰢹  win  " \
+        --width=28 --lines=10 \
+        --horizontal-pad=26 --vertical-pad=22 --inner-pad=14 \
+        --border-width=2 --border-radius=16 --selection-radius=10 \
+        --background-color="''${SURFACE}f2" \
+        --text-color="''${ONSURF}ff" \
+        --prompt-color="''${PRIMARY}ff" \
+        --input-color="''${ONSURF}ff" \
+        --placeholder-color="''${ONVAR}ff" \
+        --match-color="''${PRIMARY}ff" \
+        --selection-color="''${PRIMARY}ff" \
+        --selection-text-color="''${ONPRIM}ff" \
+        --selection-match-color="''${ONPRIM}ff" \
+        --border-color="''${PRIMARY}ff")
       [ -z "$CHOICE" ] && exit 0
       case "$CHOICE" in
         *"Stream starten"*) (setsid win start >/dev/null 2>&1 &) ;;
