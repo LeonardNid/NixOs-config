@@ -889,7 +889,7 @@ in
       ONPRIM=$(col mOnPrimary 0e0e43)
 
       CHOICE=$(echo "$OPTS" | fuzzel --dmenu \
-        --font="JetBrainsMono Nerd Font:size=12" \
+        --font="JetBrainsMono Nerd Font:size=14" \
         --prompt="󰢹  win  " \
         --width=28 --lines=10 \
         --horizontal-pad=26 --vertical-pad=22 --inner-pad=14 \
