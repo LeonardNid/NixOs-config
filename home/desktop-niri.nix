@@ -33,6 +33,7 @@ let
   # die Compositor-Shortcuts → Kombi geht an Windows durch; außerhalb fängt Niri sie.
   moonlightBind = lib.optionalString moonlightClient ''
     Ctrl+Alt+Shift+Y { spawn "${moonlightFocus}"; }
+    Mod+G { spawn "win-menu"; }
   '';
 
   # Wrapper: zeigt Warnung wenn Heroic im gpuvm-Modus gestartet wird
@@ -788,6 +789,101 @@ in
         *Fortsetzen*) vm resume ;;
         *Starten*)    (setsid vm-start-waybar &) ;;
         *Fixcon*)     vm fixcon ;;
+      esac
+    '')
+  ] ++ lib.optionals moonlightClient [
+    # wl-clipboard wird von "win clip-to/clip-from" gebraucht (Wayland-Zwischenablage)
+    pkgs.wl-clipboard
+
+    # win: Dispatcher für den Windows-Gaming-PC (Moonlight-Stream + SSH-Fernsteuerung).
+    # Host/User fest: Direktlink 10.0.0.1, Windows-Account LeoPC. SSH ist passwortlos
+    # per Key eingerichtet (administrators_authorized_keys auf Windows).
+    (pkgs.writeShellScriptBin "win" ''
+      HOST="10.0.0.1"
+      WINUSER="LeoPC"
+      SSH="ssh -o ConnectTimeout=5 $WINUSER@$HOST"
+
+      case "$1" in
+        start)
+          # Stream direkt in den Windows-Desktop, 1080p60 ~80 Mbps
+          moonlight stream --1080 --fps 60 --bitrate 80000 "$HOST" Desktop
+          ;;
+        stop|quit)
+          moonlight quit "$HOST"
+          ;;
+        focus)
+          # Fenster fokussieren + Input-Capture an (vorhandenes moonlight-focus)
+          exec ${moonlightFocus}
+          ;;
+        sleep)
+          # rundll32 schläft den PC sofort ein -> die Verbindung friert mitten in
+          # der Session ein. ServerAlive lässt ssh nach ~2s von selbst aufgeben;
+          # der Exit != 0 ist hier erwünscht, daher || true.
+          ssh -o ServerAliveInterval=2 -o ServerAliveCountMax=1 \
+            "$WINUSER@$HOST" "rundll32.exe powrprof.dll,SetSuspendState 0,1,0" || true
+          ;;
+        shutdown|off)
+          $SSH "shutdown /s /t 0"
+          ;;
+        restart|reboot)
+          $SSH "shutdown /r /t 0"
+          ;;
+        clip-to)
+          # lokale Zwischenablage -> Windows-Clipboard
+          ${pkgs.wl-clipboard}/bin/wl-paste | $SSH clip.exe
+          ;;
+        clip-from)
+          # Windows-Clipboard -> lokale Zwischenablage
+          $SSH "powershell -Command Get-Clipboard" | ${pkgs.wl-clipboard}/bin/wl-copy
+          ;;
+        list)
+          moonlight list "$HOST"
+          ;;
+        pair)
+          moonlight pair "$HOST"
+          ;;
+        status)
+          # Windows blockt ICMP -> Ping nutzlos. Stattdessen Sunshine-Port testen.
+          if timeout 3 bash -c "echo > /dev/tcp/$HOST/47989" 2>/dev/null; then
+            echo "Gaming-PC erreichbar (Sunshine $HOST:47989)"
+          else
+            echo "Gaming-PC NICHT erreichbar ($HOST)"
+            exit 1
+          fi
+          ;;
+        *)
+          echo "Usage: win {start|stop|focus|sleep|shutdown|restart|clip-to|clip-from|list|pair|status}"
+          exit 1
+          ;;
+      esac
+    '')
+
+    # win-menu: Fuzzel-Launcher (Hotkey Mod+G) für die win-Aktionen, im Niri/Fuzzel-Look.
+    (pkgs.writeShellScriptBin "win-menu" ''
+      OPTS=$(printf '%s\n' \
+        "󰐊  Stream starten" \
+        "󰓛  Stream stoppen" \
+        "󰍹  Fokus + Capture" \
+        "󰒲  Sleep" \
+        "󰐥  Herunterfahren" \
+        "󰜉  Neustart" \
+        "󰅍  Clipboard → Windows" \
+        "󰆏  Clipboard ← Windows" \
+        "󰋽  Status" \
+        "󰌹  Koppeln")
+      CHOICE=$(echo "$OPTS" | fuzzel --dmenu --width=26 --lines=10 --prompt="󰢹  win  ")
+      [ -z "$CHOICE" ] && exit 0
+      case "$CHOICE" in
+        *"Stream starten"*) (setsid win start >/dev/null 2>&1 &) ;;
+        *"Stream stoppen"*) win stop ;;
+        *"Fokus"*)          win focus ;;
+        *Sleep*)            win sleep ;;
+        *Herunterfahren*)   win shutdown ;;
+        *Neustart*)         win restart ;;
+        *"→ Windows"*)      win clip-to ;;
+        *"← Windows"*)      win clip-from ;;
+        *Status*)           ${pkgs.libnotify}/bin/notify-send "win" "$(win status)" ;;
+        *Koppeln*)          win pair ;;
       esac
     '')
   ];

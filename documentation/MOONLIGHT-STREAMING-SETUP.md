@@ -362,6 +362,69 @@ schon an war, schaltet `Y` es aus — dann einfach `Z` drücken.)
 
 ---
 
+## 8. Windows fernsteuern: SSH + `win`-Launcher (umgesetzt 2026-06-11)
+
+Der Gaming-PC lässt sich vom Client aus per **SSH** fernsteuern (herunterfahren, sleep,
+clipboard) und der Moonlight-Stream per **CLI** starten/stoppen. Gebündelt in einem
+Dispatcher `win` plus Fuzzel-Launcher `win-menu` (Hotkey **`Mod+G`**), gegatet über das
+`moonlightClient`-Flag (nur minipc) in `home/desktop-niri.nix`.
+
+### Voraussetzung: OpenSSH-Server auf Windows (einmalig)
+
+PowerShell als Admin:
+```powershell
+Add-WindowsCapability -Online -Name OpenSSH.Server~~~~0.0.1.0
+Start-Service sshd
+Set-Service -Name sshd -StartupType Automatic
+New-NetFirewallRule -DisplayName "OpenSSH" -Direction Inbound -Protocol TCP -LocalPort 22 -Action Allow
+```
+
+**Passwortloser Key-Login** — Public Key vom Client (`cat ~/.ssh/id_ed25519.pub`) auf Windows
+ablegen. Für **Admin-User** (Standard) zwingend in die zentrale Datei, NICHT in `~/.ssh`:
+```powershell
+$key = "ssh-ed25519 AAAA... user@client"
+$f = "C:\ProgramData\ssh\administrators_authorized_keys"
+Add-Content -Path $f -Value $key -Encoding ascii
+icacls $f /inheritance:r /grant "*S-1-5-32-544:F" /grant "*S-1-5-18:F"
+```
+
+### Stolperfallen (alle drei hatten wir live)
+
+- **Falscher Windows-User:** Der SSH-Login geht auf den echten Windows-Kontonamen, hier
+  **`LeoPC`** (per `whoami` auf Windows prüfen) — NICHT `leonardn`. Bei Microsoft-Konto ist
+  das SSH-Passwort das Microsoft-Account-Passwort, die **PIN funktioniert bei SSH nicht**.
+- **Deutsches Windows + `icacls`:** „Administrators" wird nicht aufgelöst → SIDs nehmen
+  (`*S-1-5-32-544` = Administratoren, `*S-1-5-18` = SYSTEM). Ohne korrekte Datei-ACL lehnt
+  sshd den Key **kommentarlos** ab und fragt wieder nach Passwort.
+- **Sleep hängt die SSH-Session:** `rundll32 …SetSuspendState` legt den PC sofort schlafen →
+  die Verbindung friert ein, `ssh` wartet ewig. Fix: `-o ServerAliveInterval=2 -o
+  ServerAliveCountMax=1`, dann gibt ssh nach ~2 s selbst auf (Exit ≠ 0 ist hier normal →
+  im Script `|| true`). **Detachen** (`start "" rundll32 …`) ist die *falsche* Lösung: in der
+  nicht-interaktiven SSH-Session (Session 0) kommt der Suspend-Aufruf dann nicht mehr durch —
+  ssh kehrt zwar zurück, aber der PC bleibt an. Daher synchron + ServerAlive.
+
+### `win`-Befehle
+
+| Befehl | Aktion |
+|---|---|
+| `win start` | `moonlight stream --1080 --fps 60 --bitrate 80000 10.0.0.1 Desktop` |
+| `win stop` | `moonlight quit` (App auf Host beenden) |
+| `win focus` | `moonlight-focus` (Fenster fokussieren + Input-Capture an) |
+| `win sleep` | SSH Suspend (ServerAlive-Trick) |
+| `win shutdown` / `win restart` | SSH `shutdown /s` bzw. `/r` |
+| `win clip-to` / `win clip-from` | Clipboard Linux ↔ Windows (`clip.exe` / `Get-Clipboard`, braucht `wl-clipboard`) |
+| `win list` / `win pair` | Moonlight-Apps anzeigen / koppeln |
+| `win status` | Erreichbarkeit (TCP 47989, da Windows ICMP blockt) |
+
+**`Mod+G`** öffnet `win-menu` (Fuzzel-dmenu) mit denselben Aktionen im Niri/Fuzzel-Look.
+
+> Hinweis: `win sleep` macht **Hibernate**, solange auf Windows Hibernate aktiv ist —
+> für echtes Standby einmal `powercfg /h off`. Ein echter Audio-Slider im Launcher geht
+> in Fuzzel nicht (reine Textliste); dafür Noctalias Control Center
+> (`noctalia msg panel-open control-center audio`) bzw. der `moonlight-vol`-Custom-Button.
+
+---
+
 ## 7. Getesteter Stand (2026-06-06)
 
 - Streaming funktioniert flüssig über direktes Ethernet
