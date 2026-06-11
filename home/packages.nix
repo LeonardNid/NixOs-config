@@ -16,7 +16,6 @@
 
   home.packages = with pkgs; [
     # --- CLI-Tools ---
-    keymapp
     libnotify
     yazi
     helix
@@ -57,5 +56,6 @@
     file-roller
     easyeffects
     mission-center
+    keymapp
   ];
 }
