@@ -8,6 +8,7 @@
     ./scripts.nix
     ./packages.nix
     ./vscode.nix
+    ./zed.nix
     ./xdg.nix
     ./navi.nix
     ./nextcloud.nix

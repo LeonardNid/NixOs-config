@@ -322,6 +322,11 @@ Capture-Toggle (`Ctrl+Alt+Shift+Z`) per `wtype` an das Fenster schicken. Ein
 synthetischer **Mausklick** wäre die falsche Lösung: Der ginge an das Fenster unter
 dem Mauszeiger — und der steht nach dem Fokuswechsel irgendwo.
 
+**Stolperfalle wtype + SDL/Moonlight:** Die Modifier müssen als **echte Tastendrücke**
+gesendet werden (`-P Control_L -P Alt_L -P Shift_L … -p …`), nicht als Status-Flags
+(`-M ctrl …`). SDL ignoriert die reine Modifier-Maske — mit `-M` kommt bei Moonlight
+nur ein nacktes `z` ohne Strg/Alt/Shift an und der Toggle reagiert nicht.
+
 Arbeitsteilung der Kombis: `Z` gehört Moonlight (Capture an/aus), `Y` gehört Niri.
 Typischer Ablauf: `Z` zum Rausgehen aus dem Stream, woanders arbeiten, `Y` um
 zurückzuspringen — Capture ist sofort wieder an. (Bei aktivem Capture inhibiert

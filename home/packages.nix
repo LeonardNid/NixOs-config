@@ -15,7 +15,7 @@
   '';
 
   home.packages = with pkgs; [
-    # wl-clipboard
+    # --- CLI-Tools ---
     keymapp
     libnotify
     yazi
@@ -30,9 +30,32 @@
     eza
     git-lfs
     jq
+    zoxide
+    glow
+    gemini-cli
+    wget
+    nodejs
+
+    # --- Browser ---
+    (vivaldi.override { commandLineArgs = "--password-store=kwallet6 --ozone-platform=wayland --enable-features=WaylandWindowDecorations"; })
+    firefox
+    tor-browser
+
+    # --- GUI-Apps ---
+    vesktop
+    signal-desktop
+    zapzap
+    obsidian
     kdePackages.okular
     obs-studio
+    mpv
+    vlc
+    imv
+    gimp
+    drawing
+    libreoffice-qt6-fresh
+    file-roller
+    easyeffects
+    mission-center
   ];
-
-
 }

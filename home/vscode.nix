@@ -20,8 +20,13 @@
           "scminput" = false;
         };
         "vim.useSystemClipboard" = true;
+        # Strg+C/V/X von VS Code (Standard-Copy/Paste/Cut) behandeln lassen,
+        # statt von Vim. Maus-Markieren + Strg+C/V funktioniert damit wie gewohnt.
         "vim.handleKeys" = {
           "<C-f>" = false;
+          "<C-c>" = false;
+          "<C-v>" = false;
+          "<C-x>" = false;
         };
       };
     };
