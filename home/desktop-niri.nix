@@ -805,8 +805,9 @@ in
 
       case "$1" in
         start)
-          # Stream direkt in den Windows-Desktop, 1080p60 ~80 Mbps
-          moonlight stream --1080 --fps 60 --bitrate 80000 "$HOST" Desktop
+          # Keine --resolution/--fps/--bitrate-Flags: dann übernimmt moonlight die in
+          # der GUI gespeicherten Einstellungen (aktuell 1440p / 170 FPS / 150 Mbps).
+          moonlight stream "$HOST" Desktop
           ;;
         stop|quit)
           moonlight quit "$HOST"
@@ -889,7 +890,7 @@ in
       ONPRIM=$(col mOnPrimary 0e0e43)
 
       CHOICE=$(echo "$OPTS" | fuzzel --dmenu \
-        --font="JetBrainsMono Nerd Font:size=14" \
+        --font="JetBrainsMono Nerd Font:size=16" \
         --prompt="󰢹  win  " \
         --width=28 --lines=10 \
         --horizontal-pad=26 --vertical-pad=22 --inner-pad=14 \

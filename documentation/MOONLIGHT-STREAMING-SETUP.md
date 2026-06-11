@@ -407,7 +407,7 @@ icacls $f /inheritance:r /grant "*S-1-5-32-544:F" /grant "*S-1-5-18:F"
 
 | Befehl | Aktion |
 |---|---|
-| `win start` | `moonlight stream --1080 --fps 60 --bitrate 80000 10.0.0.1 Desktop` |
+| `win start` | `moonlight stream 10.0.0.1 Desktop` (ohne Flags → nutzt die in der Moonlight-GUI gespeicherten Einstellungen: Auflösung/FPS/Bitrate) |
 | `win stop` | `moonlight quit` (App auf Host beenden) |
 | `win focus` | `moonlight-focus` (Fenster fokussieren + Input-Capture an) |
 | `win sleep` | SSH Suspend (ServerAlive-Trick) |
